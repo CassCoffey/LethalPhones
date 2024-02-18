@@ -1,12 +1,21 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using LethalCompanyInputUtils.Api;
 using Scoops.patch;
 using Scoops.service;
+using UnityEngine.InputSystem;
 
 namespace Scoops;
 
+public class LethalPhonesInputClass : LcInputActions
+{
+    [InputAction("<Keyboard>/0", Name = "Toggle Phone")]
+    public InputAction TogglePhoneKey { get; set; }
+}
+
 [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+[BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
 public class Plugin : BaseUnityPlugin
 {
     public static Plugin Instance { get; set; }
@@ -15,7 +24,8 @@ public class Plugin : BaseUnityPlugin
 
     private readonly Harmony _harmony = new(PluginInfo.PLUGIN_GUID);
 
-    public TemplateService Service;
+    internal static LethalPhonesInputClass InputActionInstance = new LethalPhonesInputClass();
+    public PhoneManager PhoneManager;
 
     public Plugin()
     {
@@ -24,7 +34,7 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
-        Service = new TemplateService();
+        PhoneManager = new PhoneManager();
 
         Log.LogInfo($"Applying patches...");
         ApplyPluginPatch();
@@ -36,7 +46,6 @@ public class Plugin : BaseUnityPlugin
     /// </summary>
     private void ApplyPluginPatch()
     {
-        _harmony.PatchAll(typeof(ShipLightsPatch));
-        _harmony.PatchAll(typeof(PlayerControllerBPatch));
+        _harmony.PatchAll(typeof(PlayerPhonePatch));
     }
 }

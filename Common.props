@@ -49,6 +49,7 @@
         <!-- List of game assembly to include as reference -->
         <DllNames Include="Assembly-CSharp" Publicize="true" />
         <DllNames Include="Unity.Netcode.Runtime" />
+        <DllNames Include="Unity.InputSystem" />
 
         <Reference Include="@(DllNames)" HintPath="$(AssemblyGameDir)%(Identity).dll"/>
     </ItemGroup>
