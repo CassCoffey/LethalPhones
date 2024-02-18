@@ -1,0 +1,60 @@
+﻿<Project>
+
+    <PropertyGroup>
+        <!-- Name of the team on Thunderstore -->
+        <!-- https://thunderstore.io/settings/teams -->
+        <RootNamespace>YourThunderstoreTeam</RootNamespace>
+        <!-- The plugin will be built in the bin directory -->
+        <OutputPath>bin</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <!-- Path of the game directory, should contain Lethal Company.exe -->
+        <!-- PROGRA~1 is the short path for Program Files -->
+        <!-- PROGRA~2 is the short path for Program Files (x86) -->
+        <GameDir>C:\PROGRA~2\Steam\steamapps\common\Lethal Company\</GameDir>
+        <!-- Path of the game's plugin directory where the built plugin will be copied to -->
+        <PluginGameDir>$(GameDir)BepInEx\plugins\</PluginGameDir>
+        <!-- Path of the game's managed directory where the game's dlls are located -->
+        <AssemblyGameDir>$(GameDir)Lethal Company_Data\Managed\</AssemblyGameDir>
+        <!-- Name of the game executable -->
+        <GameExe>Lethal Company.exe</GameExe>
+        <!-- Entire path of the game executable -->
+        <GameExePath>$(GameDir)$(GameExe)</GameExePath>
+        <!-- Version of the game supported by the plugin -->
+        <!-- The value must be the same than the one in CI/CD -->
+        <!-- https://www.nuget.org/packages/LethalCompany.GameLibs.Steam -->
+        <GameVersion>49.0.0-alpha.1</GameVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Allows to interact with private fields of classes -->
+        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+
+        <!-- Determines the version of the plugin by using git tags -->
+        <PackageReference Include="MinVer" Version="4.3.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+    </ItemGroup>
+
+    <!-- Reference to the game assemblies -->
+    <!-- On local build, the assemblies are present in the game directory -->
+    <ItemGroup Condition="$(CI) != 'true'">
+        <!-- List of game assembly to include as reference -->
+        <DllNames Include="Assembly-CSharp" Publicize="true" />
+        <DllNames Include="Unity.Netcode.Runtime" />
+
+        <Reference Include="@(DllNames)" HintPath="$(AssemblyGameDir)%(Identity).dll"/>
+    </ItemGroup>
+
+    <!-- On CI build, the assemblies are downloaded from NuGet -->
+    <ItemGroup Condition="$(CI) == 'true'">
+        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="$(GameVersion)" PrivateAssets="all" />
+    </ItemGroup>
+</Project>
