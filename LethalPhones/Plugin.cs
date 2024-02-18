@@ -1,10 +1,10 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
-using YourThunderstoreTeam.patch;
-using YourThunderstoreTeam.service;
+using Scoops.patch;
+using Scoops.service;
 
-namespace YourThunderstoreTeam;
+namespace Scoops;
 
 [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
 public class Plugin : BaseUnityPlugin

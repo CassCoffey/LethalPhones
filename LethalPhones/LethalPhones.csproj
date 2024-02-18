@@ -54,7 +54,7 @@
         <!-- We can't move the original plugin because it is used by reference for Test project -->
         <Move SourceFiles="$(TargetDir)$(TargetFileName).tmp" DestinationFiles="$(PluginGameDir)$(TargetFileName)"/>
         <!-- Kill every instance of the game, ignore errors if none are running -->
-        <Exec Command='taskkill /F /IM "$(GameExe)" /T || exit 0'/>
+        <Exec Command='taskkill /F /IM "$(GameExe)" /T 2>nul 1>nul || exit 0'/>
         <!-- Start new instances of the game as many times as specified in NumberOfClients -->
         <!-- The ping command is used to apply a delay between each instance, otherwise only one BepInEx debug terminal would be opened -->
         <!-- Use ping command is a workaround because Windows doesn't have a sleep command -->
@@ -63,7 +63,7 @@
 
     <!-- Build the plugin for Thunderstore publication -->
     <!-- The command will create a zip file in the target directory using the thunderstore.toml file -->
-    <Target Condition="'$(BuildThunderstorePackage)' == 'true'" Name="ThunderstoreBuild" AfterTargets="PostBuildEvent" DependsOnTargets="MinVer;NetcodePatch">
+    <Target Condition="'$(BuildThunderstorePackage)' == 'false'" Name="ThunderstoreBuild" AfterTargets="PostBuildEvent" DependsOnTargets="MinVer;NetcodePatch">
         <PropertyGroup>
             <PluginVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</PluginVersion>
         </PropertyGroup>

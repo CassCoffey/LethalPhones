@@ -21,6 +21,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Template\Template.csproj" />
+        <ProjectReference Include="..\LethalPhones\LethalPhones.csproj" />
     </ItemGroup>
 </Project>
