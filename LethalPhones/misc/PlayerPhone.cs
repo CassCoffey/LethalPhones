@@ -9,6 +9,7 @@ namespace Scoops.misc
     {
         public PlayerControllerB player;
         public string phoneNumber;
+        public bool toggled = false;
 
         public PlayerPhone(PlayerControllerB player, string phoneNumber)
         {

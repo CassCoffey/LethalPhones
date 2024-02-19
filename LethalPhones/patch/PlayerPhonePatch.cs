@@ -3,6 +3,8 @@ using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
 using BepInEx.Logging;
+using Scoops.misc;
+using Scoops.service;
 
 namespace Scoops.patch;
 
@@ -12,11 +14,14 @@ namespace Scoops.patch;
 [HarmonyPatch(typeof(PlayerControllerB))]
 public class PlayerPhonePatch
 {
-    [HarmonyPatch("Start")]
+    public static PhoneManager PhoneManager;
+
+    [HarmonyPatch("ConnectClientToPlayerObject")]
     [HarmonyPostfix]
     private static void InitPhone(ref PlayerControllerB __instance)
     {
-        Plugin.Instance.PhoneManager.CreateNewPhone(__instance);
+        PhoneManager = Plugin.Instance.PhoneManager;
+        PhoneManager.CreateNewPhone(__instance);
     }
 
     [HarmonyPatch("Update")]
@@ -30,7 +35,14 @@ public class PlayerPhonePatch
 
         if (Plugin.InputActionInstance.TogglePhoneKey.triggered)
         {
-            Plugin.Log.LogInfo("Phone opened!");
+            PhoneManager.localPhone.toggled = !PhoneManager.localPhone.toggled;
+            if (PhoneManager.localPhone.toggled)
+            {
+                Plugin.Log.LogInfo("Phone opened!");
+            } else
+            {
+                Plugin.Log.LogInfo("Phone closed!");
+            }
         }
     }
 }

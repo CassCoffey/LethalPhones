@@ -1,28 +1,26 @@
 ﻿using GameNetcodeStuff;
 using Scoops.misc;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Scoops.service;
 
-public class PhoneManager
+public class PhoneManager : NetworkBehaviour
 {
-    private List<PlayerPhone> allPhones;
-    private Dictionary<PlayerControllerB, PlayerPhone> playerPhoneDict;
-    private Dictionary<string, PlayerPhone> numberPhoneDict;
+    private Dictionary<string, PlayerControllerB> phoneNumberDict;
+    public PlayerPhone localPhone;
 
     public PhoneManager()
     {
-        allPhones = new List<PlayerPhone>();
-        playerPhoneDict = new Dictionary<PlayerControllerB, PlayerPhone>();
-        numberPhoneDict = new Dictionary<string, PlayerPhone>();
+        phoneNumberDict = new Dictionary<string, PlayerControllerB>();
     }
 
     public void AddPhone(PlayerPhone phone)
     {
-        allPhones.Add(phone);
-        playerPhoneDict.Add(phone.player, phone);
-        numberPhoneDict.Add(phone.phoneNumber, phone);
+        phoneNumberDict.Add(phone.phoneNumber, phone.player);
+
+        localPhone = phone;
     }
 
     public void CreateNewPhone(PlayerControllerB player)
