@@ -4,6 +4,7 @@ using HarmonyLib;
 using LethalCompanyInputUtils.Api;
 using Scoops.patch;
 using Scoops.service;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace Scoops;
@@ -21,6 +22,7 @@ public class Plugin : BaseUnityPlugin
     public static Plugin Instance { get; set; }
 
     public static ManualLogSource Log => Instance.Logger;
+    public static AssetBundle LethalPhoneAssets;
 
     private readonly Harmony _harmony = new(PluginInfo.PLUGIN_GUID);
 
@@ -34,6 +36,10 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
+        var dllFolderPath = System.IO.Path.GetDirectoryName(Info.Location);
+        var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "lethalphonesassets");
+        LethalPhoneAssets = AssetBundle.LoadFromFile(assetBundleFilePath);
+
         PhoneManager = new PhoneManager();
 
         Log.LogInfo($"Applying patches...");
@@ -47,5 +53,6 @@ public class Plugin : BaseUnityPlugin
     private void ApplyPluginPatch()
     {
         _harmony.PatchAll(typeof(PlayerPhonePatch));
+        _harmony.PatchAll(typeof(NetworkObjectManager));
     }
 }
