@@ -14,12 +14,17 @@ namespace Scoops.misc
 
         public Queue<int> dialedNumbers;
 
+        public Queue<string> incomingCalls;
+        public string activeCall;
+        public string outgoingCall;
+
         public PlayerPhone(PlayerControllerB player, string phoneNumber)
         {
             this.player = player;
             this.phoneNumber = phoneNumber;
 
             dialedNumbers = new Queue<int>(4);
+            incomingCalls = new Queue<string>();
         }
 
         public string GetFullDialNumber()
@@ -39,15 +44,77 @@ namespace Scoops.misc
             Plugin.Log.LogInfo("Current dialing number: " + GetFullDialNumber());
         }
 
+        public void CallButtonPressed()
+        {
+            if (activeCall != null)
+            {
+                // We're on a call, hang up
+                Plugin.Log.LogInfo("Hanging Up: " + activeCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                activeCall = null;
+            }
+            else if (outgoingCall != null)
+            {
+                // We're calling, cancel
+                Plugin.Log.LogInfo("Canceling: " + outgoingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
+                outgoingCall = null;
+            } 
+            else if (incomingCalls.Count > 0)
+            {
+                // We have incoming calls, pick up
+                activeCall = incomingCalls.Dequeue();
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
+                Plugin.Log.LogInfo("Picking up: " + activeCall);
+            }
+            else
+            {
+                // No calls of any sort are happening, make a new one
+                CallDialedNumber();
+            }
+        }
+
         public void CallDialedNumber()
         {
+            string number = GetFullDialNumber();
             if (dialedNumbers.Count != 4)
             {
-                Plugin.Log.LogInfo("Not enough numbers: " + GetFullDialNumber());
+                Plugin.Log.LogInfo("Not enough digits: " + number);
                 return;
             }
 
-            PhoneNetworkHandler.Instance.MakeOutgoingCall(GetFullDialNumber());
+            PhoneNetworkHandler.Instance.MakeOutgoingCall(number);
+            outgoingCall = number;
+
+            dialedNumbers.Clear();
+        }
+
+        public void RecieveCall(string number)
+        {
+            incomingCalls.Enqueue(number);
+        }
+
+        public void OutgoingCallAccepted(string number)
+        {
+            if (outgoingCall != number)
+            {
+                // Whoops, how did we get this call? Send back a no.
+                return;
+            }
+
+            outgoingCall = null;
+            activeCall = number;
+        }
+
+        public void HangUpCall(string number)
+        {
+            if (activeCall != number)
+            {
+                // No you can't hang up a call you're not on.
+                return;
+            }
+
+            activeCall = null;
         }
     }
 }

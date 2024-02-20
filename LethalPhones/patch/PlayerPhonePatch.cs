@@ -53,7 +53,7 @@ public class PlayerPhonePatch
         {
             if (Plugin.InputActionInstance.PickupHangupPhoneKey.triggered)
             {
-                PhoneManager.localPhone.CallDialedNumber();
+                PhoneManager.localPhone.CallButtonPressed();
             }
         }
     }

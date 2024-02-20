@@ -1,6 +1,7 @@
 ﻿using GameNetcodeStuff;
 using Scoops.misc;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 using Unity.Netcode;
@@ -77,6 +78,7 @@ namespace Scoops.service
         {
             ulong senderClientId = serverRpcParams.Receive.SenderClientId;
             int senderPlayerId = StartOfRound.Instance.ClientPlayerList[senderClientId];
+            string senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderClientId).Key;
 
             if (phoneNumberDict.ContainsKey(number))
             {
@@ -91,7 +93,7 @@ namespace Scoops.service
                     }
                 };
 
-                RecieveCallClientRpc(senderPlayerId, validCallClientRpcParams);
+                RecieveCallClientRpc(senderPlayerId, senderPhoneNumber, validCallClientRpcParams);
             }
             else
             {
@@ -109,17 +111,79 @@ namespace Scoops.service
         }
 
         [ClientRpc]
-        public void RecieveCallClientRpc(int callerId, ClientRpcParams clientRpcParams = default)
+        public void RecieveCallClientRpc(int callerId, string callerNumber, ClientRpcParams clientRpcParams = default)
         {
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[callerId];
 
-            Plugin.Log.LogInfo("You've got a call from " + caller.name);
+            Plugin.Log.LogInfo("You've got a call from " + caller.name + " with number " + callerNumber);
+
+            localPhone.RecieveCall(callerNumber);
         }
 
         [ClientRpc]
         public void InvalidCallClientRpc(ClientRpcParams clientRpcParams = default)
         {
             Plugin.Log.LogInfo("Invalid number.");
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void AcceptIncomingCallServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        {
+            ulong accepterClientId = serverRpcParams.Receive.SenderClientId;
+            int accepterPlayerId = StartOfRound.Instance.ClientPlayerList[accepterClientId];
+            string accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterClientId).Key;
+
+            ulong recieverClientId = phoneNumberDict[number];
+
+            ClientRpcParams acceptCallClientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new ulong[] { recieverClientId }
+                }
+            };
+
+            CallAcceptedClientRpc(accepterPlayerId, accepterPhoneNumber, acceptCallClientRpcParams);
+        }
+
+        [ClientRpc]
+        public void CallAcceptedClientRpc(int accepterId, string accepterNumber, ClientRpcParams clientRpcParams = default)
+        {
+            PlayerControllerB accepter = StartOfRound.Instance.allPlayerScripts[accepterId];
+
+            Plugin.Log.LogInfo("Your call was accepted by " + accepter.name + " with number " + accepterNumber);
+
+            localPhone.OutgoingCallAccepted(accepterNumber);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void HangUpCallServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        {
+            ulong cancellerClientId = serverRpcParams.Receive.SenderClientId;
+            int cancellerPlayerId = StartOfRound.Instance.ClientPlayerList[cancellerClientId];
+            string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerClientId).Key;
+
+            ulong recieverClientId = phoneNumberDict[number];
+
+            ClientRpcParams hangupCallClientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new ulong[] { recieverClientId }
+                }
+            };
+
+            HangupCallClientRpc(cancellerPlayerId, cancellerPhoneNumber, hangupCallClientRpcParams);
+        }
+
+        [ClientRpc]
+        public void HangupCallClientRpc(int cancellerId, string cancellerNumber, ClientRpcParams clientRpcParams = default)
+        {
+            PlayerControllerB caneller = StartOfRound.Instance.allPlayerScripts[cancellerId];
+
+            Plugin.Log.LogInfo("Your call was hung up by " + caneller.name + " with number " + cancellerNumber);
+
+            localPhone.HangUpCall(cancellerNumber);
         }
     }
 }
