@@ -82,6 +82,10 @@ namespace Scoops.misc
                 Plugin.Log.LogInfo("Not enough digits: " + number);
                 return;
             }
+            if (number == phoneNumber)
+            {
+                Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
+            }
 
             PhoneNetworkHandler.Instance.MakeOutgoingCall(number);
             outgoingCall = number;
