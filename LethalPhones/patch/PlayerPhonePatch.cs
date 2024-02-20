@@ -14,13 +14,13 @@ namespace Scoops.patch;
 [HarmonyPatch(typeof(PlayerControllerB))]
 public class PlayerPhonePatch
 {
-    public static PhoneManager PhoneManager;
+    public static PhoneNetworkHandler PhoneManager;
 
     [HarmonyPatch("ConnectClientToPlayerObject")]
     [HarmonyPostfix]
     private static void InitPhone(ref PlayerControllerB __instance)
     {
-        PhoneManager = Plugin.Instance.PhoneManager;
+        PhoneManager = PhoneNetworkHandler.Instance;
         PhoneManager.CreateNewPhone(__instance);
     }
 
