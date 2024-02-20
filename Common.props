@@ -23,6 +23,10 @@
         <!-- The value must be the same than the one in CI/CD -->
         <!-- https://www.nuget.org/packages/LethalCompany.GameLibs.Steam -->
         <GameVersion>49.0.0-alpha.1</GameVersion>
+        <!-- Path of the Unity Asset Bundle for this mod -->
+        <AssetBundleDir>AssetBundles\</AssetBundleDir>
+        <!-- Name of the Unity Asset Bundle for this mod -->
+        <AssetBundleName>lethalphonesassets</AssetBundleName>
     </PropertyGroup>
 
     <ItemGroup>

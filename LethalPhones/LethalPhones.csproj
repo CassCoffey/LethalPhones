@@ -24,6 +24,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="lethalphonesassets" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="lethalphonesassets">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
         <PackageReference Include="BepInEx.Core" Version="5.*" />
         <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
@@ -52,13 +62,17 @@
 
     <!-- Move the plugin to the game's plugin directory and start the game to test it -->
     <Target Condition="'$(CI)' != 'true' And $(StartGame)" Name="StartGame" AfterTargets="PostBuildEvent">
+        <PropertyGroup>
+          <PluginVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</PluginVersion>
+        </PropertyGroup>
         <!-- Create a temporary copy of the plugin in the target directory -->
         <!-- This is a workaround because if we copy it directly to the game's plugin directory, an error is thrown because the game is using the plugin -->
         <Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFiles="$(TargetDir)$(TargetFileName).tmp" />
         <!-- Move the plugin temporary copy to the game's plugin directory -->
         <!-- The move command will overwrite the plugin if it already exists and no error will be thrown -->
         <!-- We can't move the original plugin because it is used by reference for Test project -->
-        <Move SourceFiles="$(TargetDir)$(TargetFileName).tmp" DestinationFiles="$(PluginGameDir)$(TargetFileName)" />
+        <Move SourceFiles="$(TargetDir)$(TargetFileName).tmp" DestinationFiles="$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\$(TargetFileName)" />
+        <Move SourceFiles="$(TargetDir)$(AssetBundleName)" DestinationFiles="$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\$(AssetBundleName)" />
         <!-- Kill every instance of the game, ignore errors if none are running -->
         <Exec Command="taskkill /F /IM &quot;$(GameExe)&quot; /T 2&gt;nul 1&gt;nul || exit 0" />
         <!-- Start new instances of the game as many times as specified in NumberOfClients -->
