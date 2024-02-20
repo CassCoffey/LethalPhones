@@ -11,7 +11,7 @@ namespace Scoops.service
     {
         public static PhoneNetworkHandler Instance { get; private set; }
 
-        private Dictionary<string, PlayerControllerB> phoneNumberDict;
+        private Dictionary<string, int> phoneNumberDict;
         public PlayerPhone localPhone;
 
         public override void OnNetworkSpawn()
@@ -20,29 +20,30 @@ namespace Scoops.service
                 Instance?.gameObject.GetComponent<NetworkObject>().Despawn();
             Instance = this;
 
-            phoneNumberDict = new Dictionary<string, PlayerControllerB>();
+            phoneNumberDict = new Dictionary<string, int>();
 
             base.OnNetworkSpawn();
         }
 
-        public void CreateNewPhone(PlayerControllerB player)
+        public void CreateNewPhone()
         {
-            CreateNewPhoneNumberServerRpc(player);
+            CreateNewPhoneNumberServerRpc();
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void CreateNewPhoneNumberServerRpc(PlayerControllerB player, ServerRpcParams serverRpcParams = default)
+        public void CreateNewPhoneNumberServerRpc(ServerRpcParams serverRpcParams = default)
         {
-            var clientId = serverRpcParams.Receive.SenderClientId;
-            int phoneNumber = 0;
+            ulong clientId = serverRpcParams.Receive.SenderClientId;
+            int playerId = StartOfRound.Instance.ClientPlayerList[clientId];
+            int phoneNumber = Random.Range(0, 10000); ;
             string phoneString = phoneNumber.ToString("D4");
-            while (!phoneNumberDict.ContainsKey(phoneNumber.ToString()))
+            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()))
             {
                 phoneNumber = Random.Range(0, 10000);
                 phoneString = phoneNumber.ToString("D4");
             }
 
-            phoneNumberDict.Add(phoneString, player);
+            phoneNumberDict.Add(phoneString, playerId);
 
             ClientRpcParams clientRpcParams = new ClientRpcParams
             {
@@ -52,13 +53,13 @@ namespace Scoops.service
                 }
             };
 
-            ReturnNewPhoneNumberClientRpc(player, phoneString, clientRpcParams);
+            ReturnNewPhoneNumberClientRpc(phoneString, clientRpcParams);
         }
 
         [ClientRpc]
-        public void ReturnNewPhoneNumberClientRpc(PlayerControllerB player, string number, ClientRpcParams clientRpcParams = default)
+        public void ReturnNewPhoneNumberClientRpc(string number, ClientRpcParams clientRpcParams = default)
         {
-            if (IsOwner) return;
+            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
 
             PlayerPhone phone = new PlayerPhone(player, number);
             localPhone = phone;
