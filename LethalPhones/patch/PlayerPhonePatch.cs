@@ -5,6 +5,8 @@ using UnityEngine;
 using BepInEx.Logging;
 using Scoops.misc;
 using Scoops.service;
+using System;
+using UnityEngine.InputSystem;
 
 namespace Scoops.patch;
 
@@ -22,6 +24,8 @@ public class PlayerPhonePatch
     {
         PhoneManager = PhoneNetworkHandler.Instance;
         PhoneManager.CreateNewPhone();
+
+        Keyboard.current.onTextInput += KeyboardType;
     }
 
     [HarmonyPatch("Update")]
@@ -38,11 +42,27 @@ public class PlayerPhonePatch
             PhoneManager.localPhone.toggled = !PhoneManager.localPhone.toggled;
             if (PhoneManager.localPhone.toggled)
             {
-                Plugin.Log.LogInfo("Phone opened!");
+                Plugin.Log.LogInfo("Phone opened! Your number is: " + PhoneManager.localPhone.phoneNumber);
             } else
             {
                 Plugin.Log.LogInfo("Phone closed!");
             }
+        }
+
+        if (PhoneManager.localPhone.toggled)
+        {
+            if (Plugin.InputActionInstance.PickupHangupPhoneKey.triggered)
+            {
+                PhoneManager.localPhone.CallDialedNumber();
+            }
+        }
+    }
+
+    private static void KeyboardType(char ch)
+    {
+        if (PhoneManager.localPhone.toggled && Char.IsNumber(ch))
+        {
+            PhoneManager.localPhone.DialNumber(int.Parse(ch.ToString()));
         }
     }
 }
