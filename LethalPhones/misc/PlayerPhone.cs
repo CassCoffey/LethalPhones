@@ -102,6 +102,7 @@ namespace Scoops.misc
             else
             {
                 // Line is busy
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(number);
             }
         }
 
@@ -119,13 +120,19 @@ namespace Scoops.misc
 
         public void HangUpCall(string number)
         {
-            if (activeCall != number)
+            if (activeCall == number)
+            {
+                activeCall = null;
+            }
+            else if (outgoingCall == number)
+            {
+                // outgoing call was invalid
+                outgoingCall = null;
+            }
+            else
             {
                 // No you can't hang up a call you're not on.
-                return;
             }
-
-            activeCall = null;
         }
     }
 }
