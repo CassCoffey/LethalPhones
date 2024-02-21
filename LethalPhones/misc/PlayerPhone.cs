@@ -14,7 +14,7 @@ namespace Scoops.misc
 
         public Queue<int> dialedNumbers;
 
-        public Queue<string> incomingCalls;
+        public string incomingCall;
         public string activeCall;
         public string outgoingCall;
 
@@ -24,7 +24,6 @@ namespace Scoops.misc
             this.phoneNumber = phoneNumber;
 
             dialedNumbers = new Queue<int>(4);
-            incomingCalls = new Queue<string>();
         }
 
         public string GetFullDialNumber()
@@ -60,10 +59,11 @@ namespace Scoops.misc
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
                 outgoingCall = null;
             } 
-            else if (incomingCalls.Count > 0)
+            else if (incomingCall != null)
             {
-                // We have incoming calls, pick up
-                activeCall = incomingCalls.Dequeue();
+                // We have an incoming call, pick up
+                activeCall = incomingCall;
+                incomingCall = null;
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
                 Plugin.Log.LogInfo("Picking up: " + activeCall);
             }
@@ -95,7 +95,14 @@ namespace Scoops.misc
 
         public void RecieveCall(string number)
         {
-            incomingCalls.Enqueue(number);
+            if (incomingCall == null && activeCall == null)
+            {
+                incomingCall = number;
+            }
+            else
+            {
+                // Line is busy
+            }
         }
 
         public void OutgoingCallAccepted(string number)
