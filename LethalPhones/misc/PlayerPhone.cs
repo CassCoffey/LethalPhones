@@ -71,6 +71,7 @@ namespace Scoops.misc
             {
                 // No calls of any sort are happening, make a new one
                 CallDialedNumber();
+                player.itemAudio.PlayOneShot(PhoneSoundManager.phoneRing);
             }
         }
 

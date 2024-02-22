@@ -29,7 +29,7 @@
 
     <ItemGroup>
       <Content Include="lethalphonesassets">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
 
@@ -72,7 +72,8 @@
         <!-- The move command will overwrite the plugin if it already exists and no error will be thrown -->
         <!-- We can't move the original plugin because it is used by reference for Test project -->
         <Move SourceFiles="$(TargetDir)$(TargetFileName).tmp" DestinationFiles="$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\$(TargetFileName)" />
-        <Move SourceFiles="$(TargetDir)$(AssetBundleName)" DestinationFiles="$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\$(AssetBundleName)" />
+        <!-- Move Asset Bundle Files as well -->
+        <Exec Command="move /y &quot;$(TargetDir)$(AssetBundleName)&quot; &quot;$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\&quot;" />
         <!-- Kill every instance of the game, ignore errors if none are running -->
         <Exec Command="taskkill /F /IM &quot;$(GameExe)&quot; /T 2&gt;nul 1&gt;nul || exit 0" />
         <!-- Start new instances of the game as many times as specified in NumberOfClients -->

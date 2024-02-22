@@ -46,6 +46,8 @@ public class Plugin : BaseUnityPlugin
         var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "lethalphonesassets");
         LethalPhoneAssets = AssetBundle.LoadFromFile(assetBundleFilePath);
 
+        PhoneSoundManager.Init();
+
         PhoneManager = new PhoneManager();
 
         Log.LogInfo($"Applying patches...");
