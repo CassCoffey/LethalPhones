@@ -52,6 +52,7 @@ namespace Scoops.misc
                 // We're on a call, hang up
                 Plugin.Log.LogInfo("Hanging Up: " + activeCall);
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                PlayHangupSound();
                 activeCall = null;
             }
             else if (outgoingCall != null)
@@ -59,6 +60,7 @@ namespace Scoops.misc
                 // We're calling, cancel
                 Plugin.Log.LogInfo("Canceling: " + outgoingCall);
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
+                PlayHangupSound();
                 outgoingCall = null;
             } 
             else if (incomingCall != null)
@@ -73,7 +75,6 @@ namespace Scoops.misc
             {
                 // No calls of any sort are happening, make a new one
                 CallDialedNumber();
-                localPhoneAudio.PlayOneShot(PhoneSoundManager.phoneRingCaller);
             }
         }
 
@@ -92,6 +93,7 @@ namespace Scoops.misc
                 return;
             }
 
+            localPhoneAudio.Play();
             PhoneNetworkHandler.Instance.MakeOutgoingCall(number);
             outgoingCall = number;
 
@@ -127,12 +129,19 @@ namespace Scoops.misc
         {
             if (activeCall == number)
             {
+                PlayHangupSound();
                 activeCall = null;
             }
             else if (outgoingCall == number)
             {
                 // outgoing call was invalid
                 outgoingCall = null;
+            }
+            else if (incomingCall == number)
+            {
+                // incoming call cancelled
+                localPhoneAudio.Stop();
+                incomingCall = null;
             }
             else
             {
@@ -142,7 +151,21 @@ namespace Scoops.misc
 
         public void InvalidNumber()
         {
+            localPhoneAudio.Stop();
+            localPhoneAudio.PlayOneShot(PhoneSoundManager.phoneHangup);
             outgoingCall = null;
+        }
+
+        public void PlayHangupSound()
+        {
+            localPhoneAudio.Stop();
+            localPhoneAudio.PlayOneShot(PhoneSoundManager.phoneHangup);
+        }
+
+        public void PlayPickupSound()
+        {
+            localPhoneAudio.Stop();
+            localPhoneAudio.PlayOneShot(PhoneSoundManager.phonePickup);
         }
     }
 }

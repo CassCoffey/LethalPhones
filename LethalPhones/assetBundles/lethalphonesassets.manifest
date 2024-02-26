@@ -1,26 +1,40 @@
 ManifestFileVersion: 0
-CRC: 903392767
+CRC: 1331504448
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 17f4daaa8c4e56a2114e5d59765056b7
+    Hash: f4b99f62356c84aca56c8efe44a21476
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 645267f0d6a070ced8120f152bd75e19
+    Hash: 0ade2b75c684dd45dddfd17d2ad4e531
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 17f4daaa8c4e56a2114e5d59765056b7
+    Hash: f4b99f62356c84aca56c8efe44a21476
 HashAppended: 0
 ClassTypes:
 - Class: 1
   Script: {instanceID: 0}
 - Class: 4
   Script: {instanceID: 0}
+- Class: 82
+  Script: {instanceID: 0}
 - Class: 83
   Script: {instanceID: 0}
 - Class: 114
+  Script: {fileID: 11500000, guid: 04f75356a7e9c978bddc7d568e58a50b, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
 - Class: 115
+  Script: {instanceID: 0}
+- Class: 164
+  Script: {instanceID: 0}
+- Class: 169
+  Script: {instanceID: 0}
+- Class: 241
+  Script: {instanceID: 0}
+- Class: 243
+  Script: {instanceID: 0}
+- Class: 245
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
@@ -29,4 +43,6 @@ Assets:
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhoneNetworkHandler.prefab
 - Assets/Sounds/PhoneHangup.wav
+- Assets/PhoneAudioInternal.prefab
+- Assets/PhoneAudioExternal.prefab
 Dependencies: []

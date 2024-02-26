@@ -14,7 +14,6 @@ namespace Scoops.service
         public static PhoneNetworkHandler Instance { get; private set; }
 
         private Dictionary<string, ulong> phoneNumberDict;
-        private Dictionary<int, AudioSource> playerPhoneAudioSources;
 
         public PlayerPhone localPhone;
 
@@ -25,7 +24,6 @@ namespace Scoops.service
             Instance = this;
 
             phoneNumberDict = new Dictionary<string, ulong>();
-            playerPhoneAudioSources = new Dictionary<int, AudioSource>();
 
             base.OnNetworkSpawn();
         }
@@ -33,20 +31,8 @@ namespace Scoops.service
         public void CreateNewPhone()
         {
             PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-            int playerId = StartOfRound.Instance.ClientPlayerList[player.actualClientId];
 
             CreateNewPhoneNumberServerRpc();
-            SetupPhoneAudioSourceClientRpc(playerId);
-        }
-
-        [ClientRpc]
-        public void SetupPhoneAudioSourceClientRpc(int playerId)
-        {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
-            AudioSource serverPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
-            serverPhoneAudio.clip = PhoneSoundManager.phoneRingReciever;
-            
-            playerPhoneAudioSources.Add(playerId, serverPhoneAudio);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -82,8 +68,10 @@ namespace Scoops.service
             PlayerPhone phone = new PlayerPhone(player, number);
             localPhone = phone;
 
-            AudioSource localPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
-            localPhone.localPhoneAudio = localPhoneAudio;
+            GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioInternal");
+            GameObject phoneAudio = GameObject.Instantiate(phoneAudioPrefab, player.transform.Find("Audios"));
+
+            localPhone.localPhoneAudio = phoneAudio.GetComponent<AudioSource>();
 
             Plugin.Log.LogInfo("New Phone for " + player.name + "! Your number is: " + phone.phoneNumber);
         }
@@ -189,6 +177,7 @@ namespace Scoops.service
             string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerClientId).Key;
 
             ulong recieverClientId = phoneNumberDict[number];
+            int recieverPlayerId = StartOfRound.Instance.ClientPlayerList[recieverClientId];
 
             ClientRpcParams hangupCallClientRpcParams = new ClientRpcParams
             {
@@ -198,15 +187,16 @@ namespace Scoops.service
                 }
             };
 
+            StopRingingPhoneClientRpc(recieverPlayerId);
             HangupCallClientRpc(cancellerPlayerId, cancellerPhoneNumber, hangupCallClientRpcParams);
         }
 
         [ClientRpc]
         public void HangupCallClientRpc(int cancellerId, string cancellerNumber, ClientRpcParams clientRpcParams = default)
         {
-            PlayerControllerB caneller = StartOfRound.Instance.allPlayerScripts[cancellerId];
+            PlayerControllerB canceller = StartOfRound.Instance.allPlayerScripts[cancellerId];
 
-            Plugin.Log.LogInfo("Your call was hung up by " + caneller.name + " with number " + cancellerNumber);
+            Plugin.Log.LogInfo("Your call was hung up by " + canceller.name + " with number " + cancellerNumber);
 
             localPhone.HangUpCall(cancellerNumber);
         }
@@ -214,13 +204,21 @@ namespace Scoops.service
         [ClientRpc]
         public void RingPhoneClientRpc(int playerId)
         {
-            playerPhoneAudioSources[playerId].Play();
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
+
+            RoundManager.Instance.PlayAudibleNoise(player.serverPlayerPosition, 16f, 0.9f, 0, player.isInElevator && StartOfRound.Instance.hangarDoorsClosed, 0);
+
+            AudioSource phoneServerAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+            phoneServerAudio.Play();
         }
 
         [ClientRpc]
         public void StopRingingPhoneClientRpc(int playerId)
         {
-            playerPhoneAudioSources[playerId].Stop();
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
+
+            AudioSource phoneServerAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+            phoneServerAudio.Stop();
         }
     }
 }
