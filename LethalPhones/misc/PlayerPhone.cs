@@ -73,7 +73,7 @@ namespace Scoops.misc
             {
                 // No calls of any sort are happening, make a new one
                 CallDialedNumber();
-                player.itemAudio.PlayOneShot(PhoneSoundManager.phoneRing);
+                localPhoneAudio.PlayOneShot(PhoneSoundManager.phoneRingCaller);
             }
         }
 
@@ -88,6 +88,8 @@ namespace Scoops.misc
             if (number == phoneNumber)
             {
                 Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
+                dialedNumbers.Clear();
+                return;
             }
 
             PhoneNetworkHandler.Instance.MakeOutgoingCall(number);
@@ -136,6 +138,11 @@ namespace Scoops.misc
             {
                 // No you can't hang up a call you're not on.
             }
+        }
+
+        public void InvalidNumber()
+        {
+            outgoingCall = null;
         }
     }
 }

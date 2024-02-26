@@ -31,7 +31,6 @@ public class Plugin : BaseUnityPlugin
     private readonly Harmony _harmony = new(PluginInfo.PLUGIN_GUID);
 
     internal static LethalPhonesInputClass InputActionInstance = new LethalPhonesInputClass();
-    public PhoneManager PhoneManager;
 
     public Plugin()
     {
@@ -47,8 +46,6 @@ public class Plugin : BaseUnityPlugin
         LethalPhoneAssets = AssetBundle.LoadFromFile(assetBundleFilePath);
 
         PhoneSoundManager.Init();
-
-        PhoneManager = new PhoneManager();
 
         Log.LogInfo($"Applying patches...");
         ApplyPluginPatch();

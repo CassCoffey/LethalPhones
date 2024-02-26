@@ -35,8 +35,6 @@ namespace Scoops.service
             PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
             int playerId = StartOfRound.Instance.ClientPlayerList[player.actualClientId];
 
-            AudioSource localPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
-            localPhone.localPhoneAudio = localPhoneAudio;
             CreateNewPhoneNumberServerRpc();
             SetupPhoneAudioSourceClientRpc(playerId);
         }
@@ -46,6 +44,7 @@ namespace Scoops.service
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
             AudioSource serverPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
+            serverPhoneAudio.clip = PhoneSoundManager.phoneRingReciever;
             
             playerPhoneAudioSources.Add(playerId, serverPhoneAudio);
         }
@@ -83,6 +82,9 @@ namespace Scoops.service
             PlayerPhone phone = new PlayerPhone(player, number);
             localPhone = phone;
 
+            AudioSource localPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
+            localPhone.localPhoneAudio = localPhoneAudio;
+
             Plugin.Log.LogInfo("New Phone for " + player.name + "! Your number is: " + phone.phoneNumber);
         }
 
@@ -102,6 +104,7 @@ namespace Scoops.service
             {
                 // Successful call
                 ulong recieverClientId = phoneNumberDict[number];
+                int recieverPlayerId = StartOfRound.Instance.ClientPlayerList[recieverClientId];
 
                 ClientRpcParams validCallClientRpcParams = new ClientRpcParams
                 {
@@ -111,6 +114,7 @@ namespace Scoops.service
                     }
                 };
 
+                RingPhoneClientRpc(recieverPlayerId);
                 RecieveCallClientRpc(senderPlayerId, senderPhoneNumber, validCallClientRpcParams);
             }
             else
@@ -142,6 +146,8 @@ namespace Scoops.service
         public void InvalidCallClientRpc(ClientRpcParams clientRpcParams = default)
         {
             Plugin.Log.LogInfo("Invalid number.");
+
+            localPhone.InvalidNumber();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -161,6 +167,7 @@ namespace Scoops.service
                 }
             };
 
+            StopRingingPhoneClientRpc(accepterPlayerId);
             CallAcceptedClientRpc(accepterPlayerId, accepterPhoneNumber, acceptCallClientRpcParams);
         }
 
@@ -202,6 +209,18 @@ namespace Scoops.service
             Plugin.Log.LogInfo("Your call was hung up by " + caneller.name + " with number " + cancellerNumber);
 
             localPhone.HangUpCall(cancellerNumber);
+        }
+
+        [ClientRpc]
+        public void RingPhoneClientRpc(int playerId)
+        {
+            playerPhoneAudioSources[playerId].Play();
+        }
+
+        [ClientRpc]
+        public void StopRingingPhoneClientRpc(int playerId)
+        {
+            playerPhoneAudioSources[playerId].Stop();
         }
     }
 }

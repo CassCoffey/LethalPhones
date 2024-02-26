@@ -13,8 +13,6 @@ namespace Scoops.service
         public static AudioClip phonePickup;
         public static AudioClip phoneHangup;
 
-        public static AudioSource phoneAudioSource;
-
         public static void Init()
         {
             Plugin.Log.LogInfo($"Loading Sounds...");
