@@ -69,6 +69,7 @@ namespace Scoops.misc
                 activeCall = incomingCall;
                 incomingCall = null;
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
+                PlayPickupSound();
                 Plugin.Log.LogInfo("Picking up: " + activeCall);
             }
             else
@@ -120,6 +121,8 @@ namespace Scoops.misc
                 // Whoops, how did we get this call? Send back a no.
                 return;
             }
+
+            PlayPickupSound();
 
             outgoingCall = null;
             activeCall = number;
