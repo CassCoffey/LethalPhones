@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3390390645
+CRC: 903392767
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4d82ef24c5970353cb2e91dac632801a
+    Hash: 17f4daaa8c4e56a2114e5d59765056b7
   TypeTreeHash:
     serializedVersion: 2
     Hash: 645267f0d6a070ced8120f152bd75e19
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4d82ef24c5970353cb2e91dac632801a
+    Hash: 17f4daaa8c4e56a2114e5d59765056b7
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -24,6 +24,9 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/PhoneRing.mp3
+- Assets/Sounds/PhonePickup.wav
+- Assets/Sounds/PhoneRing_Caller.wav
+- Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhoneNetworkHandler.prefab
+- Assets/Sounds/PhoneHangup.wav
 Dependencies: []

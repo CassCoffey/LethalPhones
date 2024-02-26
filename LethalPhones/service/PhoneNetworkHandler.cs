@@ -14,6 +14,8 @@ namespace Scoops.service
         public static PhoneNetworkHandler Instance { get; private set; }
 
         private Dictionary<string, ulong> phoneNumberDict;
+        private Dictionary<int, AudioSource> playerPhoneAudioSources;
+
         public PlayerPhone localPhone;
 
         public override void OnNetworkSpawn()
@@ -23,13 +25,29 @@ namespace Scoops.service
             Instance = this;
 
             phoneNumberDict = new Dictionary<string, ulong>();
+            playerPhoneAudioSources = new Dictionary<int, AudioSource>();
 
             base.OnNetworkSpawn();
         }
 
         public void CreateNewPhone()
         {
+            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
+            int playerId = StartOfRound.Instance.ClientPlayerList[player.actualClientId];
+
+            AudioSource localPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
+            localPhone.localPhoneAudio = localPhoneAudio;
             CreateNewPhoneNumberServerRpc();
+            SetupPhoneAudioSourceClientRpc(playerId);
+        }
+
+        [ClientRpc]
+        public void SetupPhoneAudioSourceClientRpc(int playerId)
+        {
+            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerId];
+            AudioSource serverPhoneAudio = player.itemAudio.gameObject.AddComponent<AudioSource>();
+            
+            playerPhoneAudioSources.Add(playerId, serverPhoneAudio);
         }
 
         [ServerRpc(RequireOwnership = false)]

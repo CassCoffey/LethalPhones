@@ -3,12 +3,14 @@ using Scoops.service;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 
 namespace Scoops.misc
 {
     public class PlayerPhone
     {
         public PlayerControllerB player;
+        public AudioSource localPhoneAudio;
         public string phoneNumber;
         public bool toggled = false;
 
