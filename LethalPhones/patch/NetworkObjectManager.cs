@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Scoops.misc;
 using Scoops.service;
 using Unity.Netcode;
 using UnityEngine;
@@ -8,18 +9,27 @@ namespace Scoops.patch
     [HarmonyPatch]
     public class NetworkObjectManager
     {
-        static GameObject networkPrefab;
+        static GameObject networkPrefab = null;
+        public static GameObject phonePrefab = null;
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
         public static void Init()
         {
-            if (networkPrefab != null)
-                return;
+            if (networkPrefab == null)
+            {
+                networkPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneNetworkHandler");
+                networkPrefab.AddComponent<PhoneNetworkHandler>();
 
-            networkPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneNetworkHandler");
-            networkPrefab.AddComponent<PhoneNetworkHandler>();
+                NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
+            }
 
-            NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
+            if (phonePrefab == null)
+            {
+                phonePrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhonePrefab");
+                phonePrefab.AddComponent<PlayerPhone>();
+
+                NetworkManager.Singleton.AddNetworkPrefab(phonePrefab);
+            }
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]

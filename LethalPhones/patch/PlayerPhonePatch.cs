@@ -7,8 +7,6 @@ using Scoops.misc;
 using Scoops.service;
 using System;
 using UnityEngine.InputSystem;
-using System.Numerics;
-using System.Collections.Generic;
 
 namespace Scoops.patch;
 
@@ -26,11 +24,13 @@ public class PlayerPhonePatch
     {
         GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
-
-        GameObject phonePrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhonePrefab");
-        GameObject playerPhone = GameObject.Instantiate(phonePrefab, __instance.transform);
-        playerPhone.AddComponent<PlayerPhone>();
-        playerPhone.GetComponent<NetworkObject>().Spawn();
+        
+        if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+        {
+            GameObject playerPhone = GameObject.Instantiate(NetworkObjectManager.phonePrefab, Vector3.zero, Quaternion.identity);
+            playerPhone.GetComponent<NetworkObject>().Spawn();
+            playerPhone.GetComponent<NetworkObject>().TrySetParent(__instance.transform, false);
+        }
     }
 
     [HarmonyPatch("ConnectClientToPlayerObject")]
@@ -57,7 +57,7 @@ public class PlayerPhonePatch
             PhoneManager.localPhone.toggled = !PhoneManager.localPhone.toggled;
             if (PhoneManager.localPhone.toggled)
             {
-                Plugin.Log.LogInfo("Phone opened! Your number is: " + PhoneManager.localPhone.phoneNumber);
+                Plugin.Log.LogInfo("Phone opened! Your number is: " + PhoneManager.localPhone.phoneNumber + ", your name is: " + __instance.gameObject.name);
             } else
             {
                 Plugin.Log.LogInfo("Phone closed!");

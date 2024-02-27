@@ -2,6 +2,7 @@
 using Scoops.service;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,38 +12,55 @@ namespace Scoops.misc
     public class PlayerPhone : NetworkBehaviour
     {
         public PlayerControllerB player;
-        public AudioSource localPhoneAudio;
         public string phoneNumber;
         public bool toggled = false;
 
-        public Queue<int> dialedNumbers;
+        private bool isLocalPhone = false;
 
-        public int activeCaller;
-        public int incomingCaller;
+        private Queue<int> dialedNumbers = new Queue<int>(4);
 
-        public string incomingCall;
-        public string activeCall;
-        public string outgoingCall;
+        public int activeCaller = -1;
+        public int incomingCaller = -1;
+
+        private AudioSource ringAudio;
+        private AudioSource thisAudio;
+        private AudioSource target;
+
+        private string incomingCall = null;
+        private string activeCall = null;
+        private string outgoingCall = null;
 
         private float recordingRange = 6f;
         private float maxVolume = 0.6f;
 
         private List<AudioSource> audioSourcesToReplay = new List<AudioSource>();
         private Dictionary<AudioSource, AudioSource> audioSourcesReceiving = new Dictionary<AudioSource, AudioSource>();
-        private int audioSourcesToReplayLastFrameCount;
 
-        public Collider listenCollider;
         public Collider[] collidersInRange = new Collider[30];
 
         private float cleanUpInterval;
         private float updateInterval;
 
-        public void Init(PlayerControllerB player, string phoneNumber)
+        public void Init(string phoneNumber)
         {
-            this.player = player;
             this.phoneNumber = phoneNumber;
+        }
 
-            dialedNumbers = new Queue<int>(4);
+        public void Start()
+        {
+            this.thisAudio = GetComponent<AudioSource>();
+            this.target = transform.Find("Target").gameObject.GetComponent<AudioSource>();
+
+            this.GetAllAudioSourcesToReplay();
+            this.SetupAudiosourceClip();
+
+            this.player = transform.parent.GetComponent<PlayerControllerB>();
+            this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+        }
+
+        private void SetupAudiosourceClip()
+        {
+            this.target.Stop();
         }
 
         public void Update()
@@ -117,6 +135,7 @@ namespace Scoops.misc
                 activeCaller = incomingCaller;
                 incomingCall = null;
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
+                StopRingingClientRpc();
                 PlayPickupSound();
                 Plugin.Log.LogInfo("Picking up: " + activeCall);
             }
@@ -124,6 +143,11 @@ namespace Scoops.misc
             {
                 // No calls of any sort are happening, make a new one
                 CallDialedNumber();
+            }
+
+            if (isLocalPhone)
+            {
+                UpdateCallValues();
             }
         }
 
@@ -142,83 +166,29 @@ namespace Scoops.misc
                 return;
             }
 
-            localPhoneAudio.Play();
-            PhoneNetworkHandler.Instance.MakeOutgoingCall(number);
+            thisAudio.Play();
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number);
             outgoingCall = number;
 
             dialedNumbers.Clear();
         }
 
-        public void RecieveCall(string number, int playerId)
-        {
-            if (incomingCall == null && activeCall == null)
-            {
-                incomingCall = number;
-                incomingCaller = playerId;
-            }
-            else
-            {
-                // Line is busy
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(number);
-            }
-        }
-
-        public void OutgoingCallAccepted(string number, int playerId)
-        {
-            if (outgoingCall != number)
-            {
-                // Whoops, how did we get this call? Send back a no.
-                return;
-            }
-
-            PlayPickupSound();
-
-            outgoingCall = null;
-            activeCall = number;
-            activeCaller = playerId;
-        }
-
-        public void HangUpCall(string number)
-        {
-            if (activeCall == number)
-            {
-                PlayHangupSound();
-                activeCall = null;
-            }
-            else if (outgoingCall == number)
-            {
-                // outgoing call was invalid
-                outgoingCall = null;
-            }
-            else if (incomingCall == number)
-            {
-                // incoming call cancelled
-                localPhoneAudio.Stop();
-                incomingCall = null;
-            }
-            else
-            {
-                // No you can't hang up a call you're not on.
-            }
-        }
-
-        public void InvalidNumber()
-        {
-            localPhoneAudio.Stop();
-            localPhoneAudio.PlayOneShot(PhoneSoundManager.phoneHangup);
-            outgoingCall = null;
-        }
-
         public void PlayHangupSound()
         {
-            localPhoneAudio.Stop();
-            localPhoneAudio.PlayOneShot(PhoneSoundManager.phoneHangup);
+            if (isLocalPhone)
+            {
+                thisAudio.Stop();
+                thisAudio.PlayOneShot(PhoneSoundManager.phoneHangup);
+            }
         }
 
         public void PlayPickupSound()
         {
-            localPhoneAudio.Stop();
-            localPhoneAudio.PlayOneShot(PhoneSoundManager.phonePickup);
+            if (isLocalPhone)
+            {
+                thisAudio.Stop();
+                thisAudio.PlayOneShot(PhoneSoundManager.phonePickup);
+            }
         }
 
         private void GetAllAudioSourcesToReplay()
@@ -227,7 +197,7 @@ namespace Scoops.misc
             {
                 return;
             }
-            int num = Physics.OverlapSphereNonAlloc(base.transform.position, this.recordingRange, this.collidersInRange, 11010632, QueryTriggerInteraction.Collide);
+            int num = Physics.OverlapSphereNonAlloc(base.transform.position, this.recordingRange, this.collidersInRange, Physics.AllLayers, QueryTriggerInteraction.Collide);
             for (int i = 0; i < num; i++)
             {
                 if (!this.collidersInRange[i].gameObject.GetComponent<WalkieTalkie>())
@@ -239,6 +209,12 @@ namespace Scoops.misc
                     }
                 }
             }
+            if (!this.audioSourcesToReplay.Contains(player.currentVoiceChatAudioSource))
+            {
+                this.audioSourcesToReplay.Add(player.currentVoiceChatAudioSource);
+            }
+
+            Plugin.Log.LogInfo("Audio Sources To Replay Count: " + audioSourcesToReplay.Count);
         }
 
         private void TimeAllAudioSources()
@@ -246,7 +222,7 @@ namespace Scoops.misc
             if (activeCaller == -1) return;
 
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
-            PlayerPhone callerPhone = caller.transform.Find("CellPhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            PlayerPhone callerPhone = caller.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
 
             if (activeCall != null)
             {
@@ -257,13 +233,13 @@ namespace Scoops.misc
                     {
                         if (this.audioSourcesReceiving.TryAdd(audioSource, null))
                         {
-                            this.audioSourcesReceiving[audioSource] = this.localPhoneAudio.gameObject.AddComponent<AudioSource>();
+                            this.audioSourcesReceiving[audioSource] = this.target.gameObject.AddComponent<AudioSource>();
                             this.audioSourcesReceiving[audioSource].clip = audioSource.clip;
                             try
                             {
                                 if (audioSource.time >= audioSource.clip.length)
                                 {
-                                    Debug.Log(string.Format("phone: {0}, {1}, {2}", audioSource.time, audioSource.clip.length, audioSource.clip.name));
+                                    Plugin.Log.LogInfo(string.Format("phone: {0}, {1}, {2}", audioSource.time, audioSource.clip.length, audioSource.clip.name));
                                     if (audioSource.time - 0.05f < audioSource.clip.length)
                                     {
                                         this.audioSourcesReceiving[audioSource].time = Mathf.Clamp(audioSource.time - 0.05f, 0f, 1000f);
@@ -272,7 +248,7 @@ namespace Scoops.misc
                                     {
                                         this.audioSourcesReceiving[audioSource].time = audioSource.time / 5f;
                                     }
-                                    Debug.Log(string.Format("sourcetime: {0}", this.audioSourcesReceiving[audioSource].time));
+                                    Plugin.Log.LogInfo(string.Format("sourcetime: {0}", this.audioSourcesReceiving[audioSource].time));
                                 }
                                 else
                                 {
@@ -283,7 +259,7 @@ namespace Scoops.misc
                             }
                             catch (Exception ex)
                             {
-                                Debug.LogError(string.Format("Error while playing audio clip in phone. Clip name: {0} object: {1}; time: {2}; {3}", new object[]
+                                Plugin.Log.LogInfo(string.Format("Error while playing audio clip in phone. Clip name: {0} object: {1}; time: {2}; {3}", new object[]
                                 {
                                         audioSource.clip.name,
                                         audioSource.gameObject.name,
@@ -293,10 +269,10 @@ namespace Scoops.misc
                             }
                         }
                         float num = Vector3.Distance(audioSource.transform.position, callerPhone.transform.position);
-                        Debug.Log(string.Format("Receiving audiosource with name: {0}; recording distance: {1}", audioSource.gameObject.name, num));
+                        Plugin.Log.LogInfo(string.Format("Receiving audiosource with name: {0}; recording distance: {1}", audioSource.gameObject.name, num));
                         if (num > this.recordingRange + 7f)
                         {
-                            Debug.Log("Recording distance out of range; removing audio with name: " + audioSource.gameObject.name);
+                            Plugin.Log.LogInfo("Recording distance out of range; removing audio with name: " + audioSource.gameObject.name);
                             AudioSource obj;
                             this.audioSourcesReceiving.Remove(audioSource, out obj);
                             UnityEngine.Object.Destroy(obj);
@@ -333,6 +309,134 @@ namespace Scoops.misc
                 }
                 callerPhone.audioSourcesToReplay.Clear();
             }
+        }
+
+        [ClientRpc]
+        public void SetNewPhoneNumberClientRpc(string number, int playerId)
+        {
+            Plugin.Log.LogInfo("New Phone Setup");
+
+            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
+
+            Init(number);
+            if (this.IsOwner)
+            {
+                PhoneNetworkHandler.Instance.localPhone = this;
+                isLocalPhone = true;
+            }
+
+            if (isLocalPhone) Plugin.Log.LogInfo("New Phone for " + player.name + "! Your number is: " + phoneNumber);
+        }
+
+        [ClientRpc]
+        public void InvalidCallClientRpc()
+        {
+            Plugin.Log.LogInfo("Invalid number.");
+
+            PlayHangupSound();
+            outgoingCall = null;
+        }
+
+        [ClientRpc]
+        public void RecieveCallClientRpc(int callerId, string callerNumber)
+        {
+            Plugin.Log.LogInfo("Someone is calling with ID " + callerId + " with number " + callerNumber);
+            PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[callerId];
+
+            RoundManager.Instance.PlayAudibleNoise(player.serverPlayerPosition, 16f, 0.9f, 0, player.isInElevator && StartOfRound.Instance.hangarDoorsClosed, 0);
+            ringAudio.Play();
+
+            if (isLocalPhone) Plugin.Log.LogInfo("You've got a call from " + caller.name + " with number " + callerNumber);
+
+            if (incomingCall == null && activeCall == null)
+            {
+                Plugin.Log.LogInfo("Updating call values");
+                incomingCall = callerNumber;
+                incomingCaller = callerId;
+            }
+            else if (isLocalPhone)
+            {
+                // Line is busy
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(callerNumber);
+            }
+        }
+
+        [ClientRpc]
+        public void CallAcceptedClientRpc(int accepterId, string accepterNumber)
+        {
+            PlayerControllerB accepter = StartOfRound.Instance.allPlayerScripts[accepterId];
+
+            if (isLocalPhone) Plugin.Log.LogInfo("Your call was accepted by " + accepter.name + " with number " + accepterNumber);
+
+            if (outgoingCall != accepterNumber)
+            {
+                // Whoops, how did we get this call? Send back a no.
+                return;
+            }
+
+            ringAudio.Stop();
+            PlayPickupSound();
+
+            outgoingCall = null;
+            activeCall = accepterNumber;
+            activeCaller = accepterId;
+        }
+
+        [ClientRpc]
+        public void HangupCallClientRpc(int cancellerId, string cancellerNumber)
+        {
+            PlayerControllerB canceller = StartOfRound.Instance.allPlayerScripts[cancellerId];
+
+            if (isLocalPhone) Plugin.Log.LogInfo("Your call was hung up by " + canceller.name + " with number " + cancellerNumber);
+
+            if (activeCall == cancellerNumber)
+            {
+                PlayHangupSound();
+                activeCall = null;
+            }
+            else if (outgoingCall == cancellerNumber)
+            {
+                // outgoing call was invalid
+                outgoingCall = null;
+            }
+            else if (incomingCall == cancellerNumber)
+            {
+                // incoming call cancelled
+                ringAudio.Stop();
+                thisAudio.Stop();
+                incomingCall = null;
+            }
+            else
+            {
+                // No you can't hang up a call you're not on.
+            }
+        }
+
+        public void UpdateCallValues()
+        {
+            UpdateCallValuesClientRpc(
+                   outgoingCall == null ? -1 : int.Parse(outgoingCall),
+                   incomingCall == null ? -1 : int.Parse(incomingCall),
+                   activeCall == null ? -1 : int.Parse(activeCall),
+                   incomingCaller,
+                   activeCaller);
+        }
+
+        [ClientRpc]
+        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate)
+        {
+            // A little messy? I don't like this.
+            outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
+            incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
+            activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
+            incomingCaller = incomingCallerUpdate;
+            activeCaller = activeCallerUpdate;
+        }
+
+        [ClientRpc]
+        public void StopRingingClientRpc()
+        {
+            ringAudio.Stop();
         }
     }
 }
