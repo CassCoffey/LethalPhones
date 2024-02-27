@@ -30,8 +30,6 @@ namespace Scoops.service
 
         public void CreateNewPhone()
         {
-            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-
             CreateNewPhoneNumberServerRpc();
         }
 
@@ -39,6 +37,8 @@ namespace Scoops.service
         public void CreateNewPhoneNumberServerRpc(ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
+            int playerId = StartOfRound.Instance.ClientPlayerList[clientId];
+            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
             int phoneNumber = Random.Range(0, 10000); ;
             string phoneString = phoneNumber.ToString("D4");
             while (phoneNumberDict.ContainsKey(phoneNumber.ToString()))
@@ -57,6 +57,8 @@ namespace Scoops.service
                 }
             };
 
+            playerController.transform.Find("CellPhonePrefab(Clone)").GetComponent<NetworkObject>().ChangeOwnership(clientId);
+
             ReturnNewPhoneNumberClientRpc(phoneString, clientRpcParams);
         }
 
@@ -65,7 +67,8 @@ namespace Scoops.service
         {
             PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
 
-            PlayerPhone phone = new PlayerPhone(player, number);
+            PlayerPhone phone = player.transform.Find("CellPhonePrefab(Clone)").gameObject.AddComponent<PlayerPhone>();
+            phone.Init(player, number);
             localPhone = phone;
 
             GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioInternal");

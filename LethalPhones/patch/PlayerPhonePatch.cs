@@ -8,6 +8,7 @@ using Scoops.service;
 using System;
 using UnityEngine.InputSystem;
 using System.Numerics;
+using System.Collections.Generic;
 
 namespace Scoops.patch;
 
@@ -21,10 +22,15 @@ public class PlayerPhonePatch
 
     [HarmonyPatch("Start")]
     [HarmonyPostfix]
-    private static void CreatePhoneAudio(ref PlayerControllerB __instance)
+    private static void CreatePhoneAssets(ref PlayerControllerB __instance)
     {
         GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
+
+        GameObject phonePrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhonePrefab");
+        GameObject playerPhone = GameObject.Instantiate(phonePrefab, __instance.transform);
+        playerPhone.AddComponent<PlayerPhone>();
+        playerPhone.GetComponent<NetworkObject>().Spawn();
     }
 
     [HarmonyPatch("ConnectClientToPlayerObject")]

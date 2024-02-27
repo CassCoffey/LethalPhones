@@ -3,11 +3,12 @@ using Scoops.service;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Scoops.misc
 {
-    public class PlayerPhone
+    public class PlayerPhone : NetworkBehaviour
     {
         public PlayerControllerB player;
         public AudioSource localPhoneAudio;
@@ -20,7 +21,17 @@ namespace Scoops.misc
         public string activeCall;
         public string outgoingCall;
 
-        public PlayerPhone(PlayerControllerB player, string phoneNumber)
+        private List<AudioSource> audioSourcesToReplay = new List<AudioSource>();
+        private Dictionary<AudioSource, AudioSource> audioSourcesReceiving = new Dictionary<AudioSource, AudioSource>();
+        private int audioSourcesToReplayLastFrameCount;
+
+        public Collider listenCollider;
+        public Collider[] collidersInRange = new Collider[30];
+
+        private float cleanUpInterval;
+        private float updateInterval;
+
+        public void Init(PlayerControllerB player, string phoneNumber)
         {
             this.player = player;
             this.phoneNumber = phoneNumber;
