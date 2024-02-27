@@ -130,7 +130,7 @@ namespace Scoops.service
 
             Plugin.Log.LogInfo("You've got a call from " + caller.name + " with number " + callerNumber);
 
-            localPhone.RecieveCall(callerNumber);
+            localPhone.RecieveCall(callerNumber, callerId);
         }
 
         [ClientRpc]
@@ -169,7 +169,7 @@ namespace Scoops.service
 
             Plugin.Log.LogInfo("Your call was accepted by " + accepter.name + " with number " + accepterNumber);
 
-            localPhone.OutgoingCallAccepted(accepterNumber);
+            localPhone.OutgoingCallAccepted(accepterNumber, accepterId);
         }
 
         [ServerRpc(RequireOwnership = false)]
