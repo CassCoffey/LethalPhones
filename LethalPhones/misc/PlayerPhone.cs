@@ -21,6 +21,9 @@ namespace Scoops.misc
         public string activeCall;
         public string outgoingCall;
 
+        private float recordingRange = 6f;
+        private float maxVolume = 0.6f;
+
         private List<AudioSource> audioSourcesToReplay = new List<AudioSource>();
         private Dictionary<AudioSource, AudioSource> audioSourcesReceiving = new Dictionary<AudioSource, AudioSource>();
         private int audioSourcesToReplayLastFrameCount;
@@ -37,6 +40,36 @@ namespace Scoops.misc
             this.phoneNumber = phoneNumber;
 
             dialedNumbers = new Queue<int>(4);
+        }
+
+        public void Update()
+        {
+            if (this.cleanUpInterval >= 0f)
+            {
+                this.cleanUpInterval -= Time.deltaTime;
+            }
+            else
+            {
+                this.cleanUpInterval = 15f;
+                if (this.audioSourcesReceiving.Count > 10)
+                {
+                    foreach (KeyValuePair<AudioSource, AudioSource> keyValuePair in this.audioSourcesReceiving)
+                    {
+                        if (keyValuePair.Key == null)
+                        {
+                            this.audioSourcesReceiving.Remove(keyValuePair.Key);
+                        }
+                    }
+                }
+            }
+            if (this.updateInterval >= 0f)
+            {
+                this.updateInterval -= Time.deltaTime;
+                return;
+            }
+            this.updateInterval = 0.3f;
+            this.GetAllAudioSourcesToReplay();
+            this.TimeAllAudioSources();
         }
 
         public string GetFullDialNumber()
@@ -180,6 +213,131 @@ namespace Scoops.misc
         {
             localPhoneAudio.Stop();
             localPhoneAudio.PlayOneShot(PhoneSoundManager.phonePickup);
+        }
+
+        private void GetAllAudioSourcesToReplay()
+        {
+            if (activeCall == null)
+            {
+                return;
+            }
+            int num = Physics.OverlapSphereNonAlloc(base.transform.position, this.recordingRange, this.collidersInRange, 11010632, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < num; i++)
+            {
+                if (!this.collidersInRange[i].gameObject.GetComponent<WalkieTalkie>())
+                {
+                    AudioSource component = this.collidersInRange[i].GetComponent<AudioSource>();
+                    if (component != null && component.isPlaying && component.clip != null && component.time > 0f && !this.audioSourcesToReplay.Contains(component))
+                    {
+                        this.audioSourcesToReplay.Add(component);
+                    }
+                }
+            }
+        }
+
+        private void TimeAllAudioSources()
+        {
+            for (int i = 0; i < WalkieTalkie.allWalkieTalkies.Count; i++)
+            {
+                if (!(WalkieTalkie.allWalkieTalkies[i] == this))
+                {
+                    if (WalkieTalkie.allWalkieTalkies[i].playerHeldBy != null && WalkieTalkie.allWalkieTalkies[i].clientIsHoldingAndSpeakingIntoThis && WalkieTalkie.allWalkieTalkies[i].isBeingUsed && this.isBeingUsed)
+                    {
+                        if (!this.talkiesSendingToThis.Contains(WalkieTalkie.allWalkieTalkies[i]))
+                        {
+                            this.talkiesSendingToThis.Add(WalkieTalkie.allWalkieTalkies[i]);
+                        }
+                        for (int j = WalkieTalkie.allWalkieTalkies[i].audioSourcesToReplay.Count - 1; j >= 0; j--)
+                        {
+                            AudioSource audioSource = WalkieTalkie.allWalkieTalkies[i].audioSourcesToReplay[j];
+                            if (!(audioSource == null))
+                            {
+                                if (this.audioSourcesReceiving.TryAdd(audioSource, null))
+                                {
+                                    this.audioSourcesReceiving[audioSource] = this.target.gameObject.AddComponent<AudioSource>();
+                                    this.audioSourcesReceiving[audioSource].clip = audioSource.clip;
+                                    try
+                                    {
+                                        if (audioSource.time >= audioSource.clip.length)
+                                        {
+                                            Debug.Log(string.Format("walkie: {0}, {1}, {2}", audioSource.time, audioSource.clip.length, audioSource.clip.name));
+                                            if (audioSource.time - 0.05f < audioSource.clip.length)
+                                            {
+                                                this.audioSourcesReceiving[audioSource].time = Mathf.Clamp(audioSource.time - 0.05f, 0f, 1000f);
+                                            }
+                                            else
+                                            {
+                                                this.audioSourcesReceiving[audioSource].time = audioSource.time / 5f;
+                                            }
+                                            Debug.Log(string.Format("sourcetime: {0}", this.audioSourcesReceiving[audioSource].time));
+                                        }
+                                        else
+                                        {
+                                            this.audioSourcesReceiving[audioSource].time = audioSource.time;
+                                        }
+                                        this.audioSourcesReceiving[audioSource].spatialBlend = 1f;
+                                        this.audioSourcesReceiving[audioSource].Play();
+                                        goto IL_3E8;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Debug.LogError(string.Format("Error while playing audio clip in walkie talkie. Clip name: {0} object: {1}; time: {2}; {3}", new object[]
+                                        {
+                                        audioSource.clip.name,
+                                        audioSource.gameObject.name,
+                                        audioSource.time,
+                                        ex
+                                        }));
+                                        goto IL_3E8;
+                                    }
+                                }
+                                float num = Vector3.Distance(audioSource.transform.position, WalkieTalkie.allWalkieTalkies[i].transform.position);
+                                Debug.Log(string.Format("Receiving audiosource with name: {0}; recording distance: {1}", audioSource.gameObject.name, num));
+                                if (num > this.recordingRange + 7f)
+                                {
+                                    Debug.Log("Recording distance out of range; removing audio with name: " + audioSource.gameObject.name);
+                                    AudioSource obj;
+                                    this.audioSourcesReceiving.Remove(audioSource, out obj);
+                                    UnityEngine.Object.Destroy(obj);
+                                    WalkieTalkie.allWalkieTalkies[i].audioSourcesToReplay.RemoveAt(j);
+                                }
+                                else
+                                {
+                                    this.audioSourcesReceiving[audioSource].volume = Mathf.Lerp(this.maxVolume, 0f, num / (this.recordingRange + 3f));
+                                    if ((audioSource.isPlaying && !this.audioSourcesReceiving[audioSource].isPlaying) || audioSource.clip != this.audioSourcesReceiving[audioSource].clip)
+                                    {
+                                        this.audioSourcesReceiving[audioSource].clip = audioSource.clip;
+                                        this.audioSourcesReceiving[audioSource].Play();
+                                    }
+                                    else if (!audioSource.isPlaying)
+                                    {
+                                        this.audioSourcesReceiving[audioSource].Stop();
+                                    }
+                                    this.audioSourcesReceiving[audioSource].time = audioSource.time;
+                                }
+                            }
+                        IL_3E8:;
+                        }
+                    }
+                    else if (this.talkiesSendingToThis.Contains(WalkieTalkie.allWalkieTalkies[i]))
+                    {
+                        this.talkiesSendingToThis.Remove(WalkieTalkie.allWalkieTalkies[i]);
+                        foreach (AudioSource key in WalkieTalkie.allWalkieTalkies[i].audioSourcesToReplay)
+                        {
+                            for (int k = 0; k < WalkieTalkie.allWalkieTalkies.Count; k++)
+                            {
+                                if (WalkieTalkie.allWalkieTalkies[k].audioSourcesReceiving.ContainsKey(key))
+                                {
+                                    AudioSource obj;
+                                    WalkieTalkie.allWalkieTalkies[k].audioSourcesReceiving.Remove(key, out obj);
+                                    UnityEngine.Object.Destroy(obj);
+                                }
+                            }
+                        }
+                        WalkieTalkie.allWalkieTalkies[i].audioSourcesToReplay.Clear();
+                    }
+                }
+            }
         }
     }
 }
