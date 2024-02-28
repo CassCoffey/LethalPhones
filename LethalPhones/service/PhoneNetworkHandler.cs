@@ -56,7 +56,7 @@ namespace Scoops.service
 
             phoneObjectDict.Add(phoneString, phone);
 
-            phone.SetNewPhoneNumberClientRpc(phoneString, playerId);
+            phone.SetNewPhoneNumberClientRpc(phoneString);
         }
 
         [ServerRpc(RequireOwnership = false)]

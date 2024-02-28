@@ -18,6 +18,8 @@ public class PlayerPhonePatch
 {
     public static PhoneNetworkHandler PhoneManager;
 
+    private static float updateInterval = 0f;
+
     [HarmonyPatch("Start")]
     [HarmonyPostfix]
     private static void CreatePhoneAssets(ref PlayerControllerB __instance)

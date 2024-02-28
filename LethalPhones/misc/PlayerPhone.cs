@@ -41,11 +41,6 @@ namespace Scoops.misc
         private float cleanUpInterval;
         private float updateInterval;
 
-        public void Init(string phoneNumber)
-        {
-            this.phoneNumber = phoneNumber;
-        }
-
         public void Start()
         {
             this.thisAudio = GetComponent<AudioSource>();
@@ -91,6 +86,7 @@ namespace Scoops.misc
             this.updateInterval = 0.3f;
             this.GetAllAudioSourcesToReplay();
             this.TimeAllAudioSources();
+            this.UpdatePlayerVoices();
         }
 
         public string GetFullDialNumber()
@@ -119,6 +115,7 @@ namespace Scoops.misc
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
                 PlayHangupSound();
                 activeCall = null;
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
             }
             else if (outgoingCall != null)
             {
@@ -135,7 +132,7 @@ namespace Scoops.misc
                 activeCaller = incomingCaller;
                 incomingCall = null;
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
-                StopRingingClientRpc();
+                StopRingingServerRpc();
                 PlayPickupSound();
                 Plugin.Log.LogInfo("Picking up: " + activeCall);
             }
@@ -167,10 +164,12 @@ namespace Scoops.misc
             }
 
             thisAudio.Play();
-            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number);
             outgoingCall = number;
-
             dialedNumbers.Clear();
+
+            Plugin.Log.LogInfo("Dialing: " + number);
+
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number);
         }
 
         public void PlayHangupSound()
@@ -209,12 +208,6 @@ namespace Scoops.misc
                     }
                 }
             }
-            if (!this.audioSourcesToReplay.Contains(player.currentVoiceChatAudioSource))
-            {
-                this.audioSourcesToReplay.Add(player.currentVoiceChatAudioSource);
-            }
-
-            Plugin.Log.LogInfo("Audio Sources To Replay Count: " + audioSourcesToReplay.Count);
         }
 
         private void TimeAllAudioSources()
@@ -311,16 +304,42 @@ namespace Scoops.misc
             }
         }
 
-        [ClientRpc]
-        public void SetNewPhoneNumberClientRpc(string number, int playerId)
+        private void UpdatePlayerVoices()
         {
+            if (player == null || GameNetworkManager.Instance == null || player != GameNetworkManager.Instance.localPlayerController || GameNetworkManager.Instance.localPlayerController == null || !isLocalPhone)
+            {
+                return;
+            }
+
+            if (activeCaller != -1)
+            {
+                PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
+
+                applyPhoneVoiceEffect(caller);
+
+                // Later we'll hear others in the background
+                for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+                {
+
+                }
+            }
+        }
+
+        [ClientRpc]
+        public void SetNewPhoneNumberClientRpc(string number)
+        {
+            if (player == null)
+            {
+                player = transform.parent.GetComponent<PlayerControllerB>();
+            }
+
             Plugin.Log.LogInfo("New Phone Setup");
 
-            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
+            this.phoneNumber = number;
 
-            Init(number);
             if (this.IsOwner)
             {
+                Plugin.Log.LogInfo("This is our phone, setting local");
                 PhoneNetworkHandler.Instance.localPhone = this;
                 isLocalPhone = true;
             }
@@ -350,7 +369,7 @@ namespace Scoops.misc
 
             if (incomingCall == null && activeCall == null)
             {
-                Plugin.Log.LogInfo("Updating call values");
+                Plugin.Log.LogInfo("Updating call values for " + player.name);
                 incomingCall = callerNumber;
                 incomingCaller = callerId;
             }
@@ -370,6 +389,7 @@ namespace Scoops.misc
 
             if (outgoingCall != accepterNumber)
             {
+                Plugin.Log.LogInfo("We got a call we never made? " + player.name);
                 // Whoops, how did we get this call? Send back a no.
                 return;
             }
@@ -393,6 +413,7 @@ namespace Scoops.misc
             {
                 PlayHangupSound();
                 activeCall = null;
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
             }
             else if (outgoingCall == cancellerNumber)
             {
@@ -414,12 +435,18 @@ namespace Scoops.misc
 
         public void UpdateCallValues()
         {
-            UpdateCallValuesClientRpc(
+            UpdateCallValuesServerRpc(
                    outgoingCall == null ? -1 : int.Parse(outgoingCall),
                    incomingCall == null ? -1 : int.Parse(incomingCall),
                    activeCall == null ? -1 : int.Parse(activeCall),
                    incomingCaller,
                    activeCaller);
+        }
+
+        [ServerRpc]
+        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate)
+        {
+            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate);
         }
 
         [ClientRpc]
@@ -433,10 +460,37 @@ namespace Scoops.misc
             activeCaller = activeCallerUpdate;
         }
 
+        [ServerRpc]
+        public void StopRingingServerRpc()
+        {
+            StopRingingClientRpc();
+        }
+
         [ClientRpc]
         public void StopRingingClientRpc()
         {
             ringAudio.Stop();
+        }
+
+        private static void applyPhoneVoiceEffect(PlayerControllerB playerController)
+        {
+            AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
+            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
+            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
+            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+
+            highPass.enabled = true;
+            lowPass.enabled = true;
+            occludeAudio.overridingLowPass = true;
+
+            currentVoiceChatAudioSource.spatialBlend = 0f;
+            playerController.currentVoiceChatIngameSettings.set2D = true;
+            currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
+            currentVoiceChatAudioSource.bypassListenerEffects = false;
+            currentVoiceChatAudioSource.bypassEffects = false;
+            currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : 0.4f;
+            occludeAudio.lowPassOverride = 4000f;
+            lowPass.lowpassResonanceQ = 3f;
         }
     }
 }
