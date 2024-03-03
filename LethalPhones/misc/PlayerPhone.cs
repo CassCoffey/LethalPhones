@@ -12,6 +12,7 @@ namespace Scoops.misc
     public class PlayerPhone : NetworkBehaviour
     {
         public PlayerControllerB player;
+        public GameObject localPhoneModel;
         public string phoneNumber;
         public bool toggled = false;
 
@@ -51,6 +52,8 @@ namespace Scoops.misc
 
             this.player = transform.parent.GetComponent<PlayerControllerB>();
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+
+            this.localPhoneModel = player.localArmsTransform.Find("RigArms").Find("LeftArm").Find("ArmsLeftArm_target").Find("LocalPhoneModel(Clone)").gameObject;
         }
 
         private void SetupAudiosourceClip()

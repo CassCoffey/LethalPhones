@@ -2,8 +2,6 @@
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
-using BepInEx.Logging;
-using Scoops.misc;
 using Scoops.service;
 using System;
 using UnityEngine.InputSystem;
@@ -18,15 +16,17 @@ public class PlayerPhonePatch
 {
     public static PhoneNetworkHandler PhoneManager;
 
-    private static float updateInterval = 0f;
-
     [HarmonyPatch("Start")]
     [HarmonyPostfix]
     private static void CreatePhoneAssets(ref PlayerControllerB __instance)
     {
         GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
-        
+
+        Transform leftHand = __instance.localArmsTransform.Find("RigArms").Find("LeftArm").Find("ArmsLeftArm_target");
+        GameObject phoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LocalPhoneModel");
+        GameObject.Instantiate(phoneModelPrefab, leftHand, false);
+
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
         {
             GameObject playerPhone = GameObject.Instantiate(NetworkObjectManager.phonePrefab, Vector3.zero, Quaternion.identity);

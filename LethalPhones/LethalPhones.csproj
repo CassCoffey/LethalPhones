@@ -41,8 +41,14 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Reference Include="DissonanceVoip">
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\DissonanceVoip.dll</HintPath>
+      </Reference>
       <Reference Include="LethalCompanyInputUtils">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Rune580-LethalCompany_InputUtils-0.6.3\plugins\LethalCompanyInputUtils\LethalCompanyInputUtils.dll</HintPath>
+      </Reference>
+      <Reference Include="Unity.Animation.Rigging">
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
       </Reference>
     </ItemGroup>
 
