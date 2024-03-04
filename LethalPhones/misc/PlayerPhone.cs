@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 
 namespace Scoops.misc
 {
@@ -53,12 +54,40 @@ namespace Scoops.misc
             this.player = transform.parent.GetComponent<PlayerControllerB>();
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
 
-            this.localPhoneModel = player.localArmsTransform.Find("RigArms").Find("LeftArm").Find("ArmsLeftArm_target").Find("LocalPhoneModel(Clone)").gameObject;
+            this.localPhoneModel = player.localArmsTransform.Find("RigArms").Find("LeftArmPhone(Clone)").Find("ArmsLeftArm_target").Find("LocalPhoneModel").gameObject;
         }
 
         private void SetupAudiosourceClip()
         {
             this.target.Stop();
+        }
+
+        public void ToggleActive(bool active)
+        {
+            toggled = active;
+            localPhoneModel.SetActive(active);
+        }
+
+        public void LateUpdate()
+        {
+            Transform targetTransform = player.localArmsRotationTarget;
+            //player.rightArmProceduralTarget.position = targetTransform.position;
+            //player.rightArmProceduralTarget.rotation = targetTransform.rotation;
+            //
+            //Transform leftArm = player.rightArmNormalRig.transform.parent.Find("LeftArm");
+            //
+            //leftArm.Find("ArmsLeftArm_target").position = targetTransform.position;
+            //leftArm.Find("ArmsLeftArm_target").rotation = targetTransform.rotation;
+            //
+            //player.rightArmProceduralRig.weight = 1;
+            //leftArm.GetComponent<ChainIKConstraint>().weight = 1;
+            //player.rightArmNormalRig.transform.parent.GetComponent<Rig>().weight = 1;
+
+            Transform ArmsRig = player.localArmsTransform.Find("RigArms");
+            Transform RightArmRig = ArmsRig.Find("RightArmPhone(Clone)");
+            Transform LeftArmRig = ArmsRig.Find("LeftArmPhone(Clone)");
+
+            RightArmRig.GetComponent<ChainIKConstraint>().weight = 1.0f;
         }
 
         public void Update()

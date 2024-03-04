@@ -5,6 +5,7 @@ using UnityEngine;
 using Scoops.service;
 using System;
 using UnityEngine.InputSystem;
+using UnityEngine.Animations.Rigging;
 
 namespace Scoops.patch;
 
@@ -23,9 +24,23 @@ public class PlayerPhonePatch
         GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
 
-        Transform leftHand = __instance.localArmsTransform.Find("RigArms").Find("LeftArm").Find("ArmsLeftArm_target");
-        GameObject phoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LocalPhoneModel");
-        GameObject.Instantiate(phoneModelPrefab, leftHand, false);
+        Transform ArmsRig = __instance.localArmsTransform.Find("RigArms");
+        GameObject rightArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("RightArmPhone");
+        GameObject leftArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LeftArmPhone");
+
+        GameObject rightArmPhoneRig = GameObject.Instantiate(rightArmPhoneRigPrefab, ArmsRig, false);
+        GameObject leftArmPhoneRig = GameObject.Instantiate(leftArmPhoneRigPrefab, ArmsRig, false);
+
+        rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.R").Find("arm.R_upper");
+        rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
+
+        leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper");
+        leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+
+        rightArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
+        leftArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
+
+        __instance.playerBodyAnimator.GetComponent<RigBuilder>().Build();
 
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
         {
@@ -56,7 +71,7 @@ public class PlayerPhonePatch
 
         if (Plugin.InputActionInstance.TogglePhoneKey.triggered)
         {
-            PhoneManager.localPhone.toggled = !PhoneManager.localPhone.toggled;
+            PhoneManager.localPhone.ToggleActive(!PhoneManager.localPhone.toggled);
             if (PhoneManager.localPhone.toggled)
             {
                 Plugin.Log.LogInfo("Phone opened! Your number is: " + PhoneManager.localPhone.phoneNumber + ", your name is: " + __instance.gameObject.name);

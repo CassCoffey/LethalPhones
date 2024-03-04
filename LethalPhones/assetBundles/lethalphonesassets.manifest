@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 407826245
+CRC: 716882659
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 1dacc28c6a4ed674ddaa2a26cc1feefd
+    Hash: 447285b31a6011e4c399eb9ab619bb36
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 69893bcb59a0062ae554ea41f3171832
+    Hash: 666136ce06a47f56616637211e89c83b
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 1dacc28c6a4ed674ddaa2a26cc1feefd
+    Hash: 447285b31a6011e4c399eb9ab619bb36
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -30,8 +30,6 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
-- Class: 74
-  Script: {instanceID: 0}
 - Class: 82
   Script: {instanceID: 0}
 - Class: 83
@@ -40,6 +38,8 @@ ClassTypes:
   Script: {fileID: 11500000, guid: 8650dbf8a4fad0c4dac487ffaddec400, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 796b75e345bd64d47a31edd757bd2670, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 - Class: 137
@@ -52,16 +52,19 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 170
   Script: {instanceID: 0}
-SerializeReferenceClassIdentifiers: []
+SerializeReferenceClassIdentifiers:
+- AssemblyName: Unity.Animation.Rigging
+  ClassName: UnityEngine.Animations.Rigging.ChainIKConstraintData
 Assets:
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
 - Assets/LocalPhoneModel.prefab
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhonePrefab.prefab
+- Assets/RightArmPhone.prefab
 - Assets/PhoneAudioInternal.prefab
 - Assets/PhoneNetworkHandler.prefab
 - Assets/Sounds/PhoneHangup.wav
-- Assets/Animations/HoldPhone.anim
 - Assets/PhoneAudioExternal.prefab
+- Assets/LeftArmPhone.prefab
 Dependencies: []
