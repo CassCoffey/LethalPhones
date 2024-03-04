@@ -17,6 +17,7 @@ namespace Scoops.misc
         public GameObject localPhoneModel;
         public Transform localPhoneInteractionNode;
         public Vector3 localPhoneInteractionBase;
+        public Transform localPhoneDial;
         public List<GameObject> localPhoneDialNumbers;
         public string phoneNumber;
         public bool toggled = false;
@@ -24,6 +25,7 @@ namespace Scoops.misc
         private bool isLocalPhone = false;
 
         private Queue<int> dialedNumbers = new Queue<int>(4);
+        private Transform currentDialingNumber;
 
         public int activeCaller = -1;
         public int incomingCaller = -1;
@@ -64,9 +66,9 @@ namespace Scoops.misc
             this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("InteractionNode");
             localPhoneInteractionBase = new Vector3(localPhoneInteractionNode.localPosition.x, localPhoneInteractionNode.localPosition.y, localPhoneInteractionNode.localPosition.z);
 
-            Transform dial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
+            localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
-            foreach (Transform child in dial)
+            foreach (Transform child in localPhoneDial)
             {
                 this.localPhoneDialNumbers.Add(child.gameObject);
             }
@@ -124,12 +126,72 @@ namespace Scoops.misc
                 {
                     vector.y *= -1f;
                 }
-
                 vector *= 0.0005f;
-                Vector3 localPosition = localPhoneInteractionNode.localPosition;
-                localPosition.x = Mathf.Clamp(localPosition.x + vector.x, localPhoneInteractionBase.x - 0.0075f, localPhoneInteractionBase.x + 0.0075f);
-                localPosition.y = Mathf.Clamp(localPosition.y + vector.y, localPhoneInteractionBase.y - 0.0075f, localPhoneInteractionBase.y + 0.0075f);
-                localPhoneInteractionNode.localPosition = new Vector3(localPosition.x, localPosition.y, localPhoneInteractionNode.localPosition.z);
+                
+
+                if (!Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
+                {
+                    Vector3 localPosition = localPhoneInteractionNode.localPosition;
+                    localPosition.x = Mathf.Clamp(localPosition.x + vector.x, localPhoneInteractionBase.x - 0.0075f, localPhoneInteractionBase.x + 0.0075f);
+                    localPosition.y = Mathf.Clamp(localPosition.y + vector.y, localPhoneInteractionBase.y - 0.0075f, localPhoneInteractionBase.y + 0.0075f);
+                    localPhoneInteractionNode.localPosition = new Vector3(localPosition.x, localPosition.y, localPhoneInteractionNode.localPosition.z);
+                } 
+                else if (Plugin.InputActionInstance.PickupPhoneKey.WasPressedThisFrame())
+                {
+                    float closestDist = 100f;
+                    GameObject closestNum = null;
+
+                    foreach (GameObject number in localPhoneDialNumbers)
+                    {
+                        float dist = Vector3.Distance(number.transform.position, localPhoneInteractionNode.transform.position);
+                        if (dist < closestDist)
+                        {
+                            closestDist = dist;
+                            closestNum = number;
+                        }
+                    }
+
+                    if (closestDist <= 0.03f)
+                    {
+                        Plugin.Log.LogInfo("Clicking on: " + int.Parse(closestNum.name));
+                        currentDialingNumber = closestNum.transform;
+                    }
+                    else
+                    {
+                        currentDialingNumber = null;
+                    }
+                } 
+                else
+                {
+                    if (currentDialingNumber != null)
+                    {
+                        Vector3 localNumberLocation = localPhoneInteractionNode.parent.InverseTransformPoint(currentDialingNumber.position);
+                        localPhoneInteractionNode.localPosition = new Vector3(localNumberLocation.x, localNumberLocation.y, localPhoneInteractionNode.localPosition.z);
+
+                        Vector2 mouseVect = vector.normalized;
+                        Vector3 radialVect3 = localPhoneInteractionNode.localPosition - localPhoneInteractionBase;
+                        Vector2 radialVect2 = new Vector2(radialVect3.x, radialVect3.y).normalized;
+                        Vector2 perpVect2 = Vector2.Perpendicular(radialVect2);
+
+                        float rotationPower = Mathf.Clamp01(Vector2.Dot(mouseVect, perpVect2));
+                        rotationPower *= vector.magnitude;
+                        rotationPower *= 7500f;
+
+                        localPhoneDial.localEulerAngles = new Vector3(0, 0, localPhoneDial.localEulerAngles.z + rotationPower);
+                    }
+                }
+            }
+
+            if (!Plugin.InputActionInstance.DialPhoneKey.IsPressed() || !Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
+            {
+                if (localPhoneDial.localEulerAngles.z >= 1f)
+                {
+                    localPhoneDial.localEulerAngles = new Vector3(0, 0, Mathf.Lerp(localPhoneDial.localEulerAngles.z, 0f, 25f * Time.deltaTime));
+                } 
+                else
+                {
+                    localPhoneDial.localEulerAngles = Vector3.zero;
+                }
             }
 
             if (this.cleanUpInterval >= 0f)
@@ -206,49 +268,31 @@ namespace Scoops.misc
 
         public void CallButtonPressed()
         {
-            if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            if (Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
             {
-                float closestDist = 100f;
-                GameObject closestNum = null;
+                return;
+            }
 
-                foreach (GameObject number in localPhoneDialNumbers)
-                {
-                    float dist = Vector3.Distance(number.transform.position, localPhoneInteractionNode.transform.position);
-                    if (dist < closestDist)
-                    {
-                        closestDist = dist;
-                        closestNum = number;
-                    }
-                }
-
-                if (closestDist <= 0.02f)
-                {
-                    DialNumber(int.Parse(closestNum.name));
-                }
+            if (incomingCall != null)
+            {
+                // We have an incoming call, pick up
+                activeCall = incomingCall;
+                activeCaller = incomingCaller;
+                incomingCall = null;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
+                StopRingingServerRpc();
+                PlayPickupSound();
+                Plugin.Log.LogInfo("Picking up: " + activeCall);
             }
             else
             {
-                if (incomingCall != null)
-                {
-                    // We have an incoming call, pick up
-                    activeCall = incomingCall;
-                    activeCaller = incomingCaller;
-                    incomingCall = null;
-                    PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
-                    StopRingingServerRpc();
-                    PlayPickupSound();
-                    Plugin.Log.LogInfo("Picking up: " + activeCall);
-                }
-                else
-                {
-                    // No calls of any sort are happening, make a new one
-                    CallDialedNumber();
-                }
+                // No calls of any sort are happening, make a new one
+                CallDialedNumber();
+            }
 
-                if (isLocalPhone)
-                {
-                    UpdateCallValues();
-                }
+            if (isLocalPhone)
+            {
+                UpdateCallValues();
             }
         }
 
