@@ -54,7 +54,8 @@ namespace Scoops.misc
             this.player = transform.parent.GetComponent<PlayerControllerB>();
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
 
-            this.localPhoneModel = player.localArmsTransform.Find("RigArms").Find("LeftArmPhone(Clone)").Find("ArmsLeftArm_target").Find("LocalPhoneModel").gameObject;
+            this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
+            localPhoneModel.SetActive(false);
         }
 
         private void SetupAudiosourceClip()
@@ -65,33 +66,43 @@ namespace Scoops.misc
         public void ToggleActive(bool active)
         {
             toggled = active;
-            localPhoneModel.SetActive(active);
-        }
-
-        public void LateUpdate()
-        {
-            Transform targetTransform = player.localArmsRotationTarget;
-            //player.rightArmProceduralTarget.position = targetTransform.position;
-            //player.rightArmProceduralTarget.rotation = targetTransform.rotation;
-            //
-            //Transform leftArm = player.rightArmNormalRig.transform.parent.Find("LeftArm");
-            //
-            //leftArm.Find("ArmsLeftArm_target").position = targetTransform.position;
-            //leftArm.Find("ArmsLeftArm_target").rotation = targetTransform.rotation;
-            //
-            //player.rightArmProceduralRig.weight = 1;
-            //leftArm.GetComponent<ChainIKConstraint>().weight = 1;
-            //player.rightArmNormalRig.transform.parent.GetComponent<Rig>().weight = 1;
-
-            Transform ArmsRig = player.localArmsTransform.Find("RigArms");
-            Transform RightArmRig = ArmsRig.Find("RightArmPhone(Clone)");
-            Transform LeftArmRig = ArmsRig.Find("LeftArmPhone(Clone)");
-
-            RightArmRig.GetComponent<ChainIKConstraint>().weight = 1.0f;
+            if (active)
+            {
+                localPhoneModel.SetActive(active);
+            }
         }
 
         public void Update()
         {
+            Transform ArmsRig = player.localArmsTransform.Find("RigArms");
+            ChainIKConstraint RightArmRig = ArmsRig.Find("RightArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+            ChainIKConstraint LeftArmRig = ArmsRig.Find("LeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+
+            if (toggled && LeftArmRig.weight < 0.9f)
+            {
+                RightArmRig.weight = Mathf.Lerp(RightArmRig.weight, 1f, 25f * Time.deltaTime);
+                LeftArmRig.weight = Mathf.Lerp(LeftArmRig.weight, 1f, 25f * Time.deltaTime);
+
+                if (LeftArmRig.weight >= 0.9f)
+                {
+                    RightArmRig.weight = 1f;
+                    LeftArmRig.weight = 1f;
+                }
+            }
+            else if (!toggled && LeftArmRig.weight > 0.1f)
+            {
+                RightArmRig.weight = Mathf.Lerp(RightArmRig.weight, 0f, 25f * Time.deltaTime);
+                LeftArmRig.weight = Mathf.Lerp(LeftArmRig.weight, 0f, 25f * Time.deltaTime);
+
+                if (LeftArmRig.weight <= 0.1f)
+                {
+                    RightArmRig.weight = 0f;
+                    LeftArmRig.weight = 0f;
+
+                    localPhoneModel.SetActive(false);
+                }
+            }
+
             if (this.cleanUpInterval >= 0f)
             {
                 this.cleanUpInterval -= Time.deltaTime;
