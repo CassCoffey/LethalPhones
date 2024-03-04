@@ -15,8 +15,14 @@ public class LethalPhonesInputClass : LcInputActions
     [InputAction("<Keyboard>/0", Name = "Toggle Phone")]
     public InputAction TogglePhoneKey { get; set; }
 
-    [InputAction("<Mouse>/rightButton", Name = "Pickup/Hangup Phone")]
-    public InputAction PickupHangupPhoneKey { get; set; }
+    [InputAction("<Mouse>/rightButton", Name = "Hangup Phone")]
+    public InputAction HangupPhoneKey { get; set; }
+
+    [InputAction("<Mouse>/leftButton", Name = "Pickup Phone")]
+    public InputAction PickupPhoneKey { get; set; }
+
+    [InputAction("<Keyboard>/z", Name = "Dial Phone")]
+    public InputAction DialPhoneKey { get; set; }
 }
 
 [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]

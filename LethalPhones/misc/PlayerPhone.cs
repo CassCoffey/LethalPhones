@@ -7,6 +7,7 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
+using UnityEngine.InputSystem;
 
 namespace Scoops.misc
 {
@@ -14,6 +15,9 @@ namespace Scoops.misc
     {
         public PlayerControllerB player;
         public GameObject localPhoneModel;
+        public Transform localPhoneInteractionNode;
+        public Vector3 localPhoneInteractionBase;
+        public List<GameObject> localPhoneDialNumbers;
         public string phoneNumber;
         public bool toggled = false;
 
@@ -56,6 +60,16 @@ namespace Scoops.misc
 
             this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
             localPhoneModel.SetActive(false);
+
+            this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("InteractionNode");
+            localPhoneInteractionBase = new Vector3(localPhoneInteractionNode.localPosition.x, localPhoneInteractionNode.localPosition.y, localPhoneInteractionNode.localPosition.z);
+
+            Transform dial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
+            this.localPhoneDialNumbers = new List<GameObject>(10);
+            foreach (Transform child in dial)
+            {
+                this.localPhoneDialNumbers.Add(child.gameObject);
+            }
         }
 
         private void SetupAudiosourceClip()
@@ -101,6 +115,21 @@ namespace Scoops.misc
 
                     localPhoneModel.SetActive(false);
                 }
+            }
+
+            if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            {
+                Vector2 vector = player.playerActions.Movement.Look.ReadValue<Vector2>() * 0.008f * (float)IngamePlayerSettings.Instance.settings.lookSensitivity;
+                if (!IngamePlayerSettings.Instance.settings.invertYAxis)
+                {
+                    vector.y *= -1f;
+                }
+
+                vector *= 0.0005f;
+                Vector3 localPosition = localPhoneInteractionNode.localPosition;
+                localPosition.x = Mathf.Clamp(localPosition.x + vector.x, localPhoneInteractionBase.x - 0.0075f, localPhoneInteractionBase.x + 0.0075f);
+                localPosition.y = Mathf.Clamp(localPosition.y + vector.y, localPhoneInteractionBase.y - 0.0075f, localPhoneInteractionBase.y + 0.0075f);
+                localPhoneInteractionNode.localPosition = new Vector3(localPosition.x, localPosition.y, localPhoneInteractionNode.localPosition.z);
             }
 
             if (this.cleanUpInterval >= 0f)
@@ -149,7 +178,7 @@ namespace Scoops.misc
             Plugin.Log.LogInfo("Current dialing number: " + GetFullDialNumber());
         }
 
-        public void CallButtonPressed()
+        public void HangupButtonPressed()
         {
             if (activeCall != null)
             {
@@ -167,27 +196,59 @@ namespace Scoops.misc
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
                 PlayHangupSound();
                 outgoingCall = null;
-            } 
-            else if (incomingCall != null)
-            {
-                // We have an incoming call, pick up
-                activeCall = incomingCall;
-                activeCaller = incomingCaller;
-                incomingCall = null;
-                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
-                StopRingingServerRpc();
-                PlayPickupSound();
-                Plugin.Log.LogInfo("Picking up: " + activeCall);
-            }
-            else
-            {
-                // No calls of any sort are happening, make a new one
-                CallDialedNumber();
             }
 
             if (isLocalPhone)
             {
                 UpdateCallValues();
+            }
+        }
+
+        public void CallButtonPressed()
+        {
+            if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            {
+                float closestDist = 100f;
+                GameObject closestNum = null;
+
+                foreach (GameObject number in localPhoneDialNumbers)
+                {
+                    float dist = Vector3.Distance(number.transform.position, localPhoneInteractionNode.transform.position);
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        closestNum = number;
+                    }
+                }
+
+                if (closestDist <= 0.02f)
+                {
+                    DialNumber(int.Parse(closestNum.name));
+                }
+            }
+            else
+            {
+                if (incomingCall != null)
+                {
+                    // We have an incoming call, pick up
+                    activeCall = incomingCall;
+                    activeCaller = incomingCaller;
+                    incomingCall = null;
+                    PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
+                    StopRingingServerRpc();
+                    PlayPickupSound();
+                    Plugin.Log.LogInfo("Picking up: " + activeCall);
+                }
+                else
+                {
+                    // No calls of any sort are happening, make a new one
+                    CallDialedNumber();
+                }
+
+                if (isLocalPhone)
+                {
+                    UpdateCallValues();
+                }
             }
         }
 

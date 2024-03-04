@@ -86,9 +86,13 @@ public class PlayerPhonePatch
 
         if (PhoneManager.localPhone.toggled)
         {
-            if (Plugin.InputActionInstance.PickupHangupPhoneKey.triggered)
+            if (Plugin.InputActionInstance.PickupPhoneKey.triggered)
             {
                 PhoneManager.localPhone.CallButtonPressed();
+            } 
+            else if (Plugin.InputActionInstance.HangupPhoneKey.triggered)
+            {
+                PhoneManager.localPhone.HangupButtonPressed();
             }
         }
     }
