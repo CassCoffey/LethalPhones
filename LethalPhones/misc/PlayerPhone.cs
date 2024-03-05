@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
@@ -17,10 +18,13 @@ namespace Scoops.misc
         public GameObject localPhoneModel;
         public Transform localPhoneInteractionNode;
         public Vector3 localPhoneInteractionBase;
+        public Transform localPhoneStopperNode;
         public Transform localPhoneDial;
         public List<GameObject> localPhoneDialNumbers;
         public string phoneNumber;
         public bool toggled = false;
+
+        public TextMeshProUGUI dialingNumberUI;
 
         private bool isLocalPhone = false;
 
@@ -51,6 +55,8 @@ namespace Scoops.misc
         private float updateInterval;
 
         private float timeSinceRotaryMoved = 0f;
+        private bool reversingRotary = false;
+        private bool previousToggled = false;
 
         public void Start()
         {
@@ -70,6 +76,9 @@ namespace Scoops.misc
 
             this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("InteractionNode");
             localPhoneInteractionBase = new Vector3(localPhoneInteractionNode.localPosition.x, localPhoneInteractionNode.localPosition.y, localPhoneInteractionNode.localPosition.z);
+            this.localPhoneStopperNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("StopperNode");
+            this.dialingNumberUI = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").Find("DialingNumber").GetComponent<TextMeshProUGUI>();
+            dialingNumberUI.text = "";
 
             localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
@@ -93,9 +102,33 @@ namespace Scoops.misc
             }
         }
 
+        // Here's where we break some bones
+        public void LateUpdate()
+        {
+            if (isLocalPhone && Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            {
+                Transform handR = player.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
+                Transform finger1 = handR.Find("finger1.R");
+                finger1.localEulerAngles = new Vector3(32.4089966f, 57.2649841f, 319.315002f);
+                finger1.Find("finger1.R.001").localEulerAngles = new Vector3(288.475983f, 341.432007f, 4.1400032f);
+                Transform finger2 = handR.Find("finger2.R");
+                finger2.localEulerAngles = new Vector3(13.0880003f, 90f, 335.346008f);
+                finger2.Find("finger2.R.001").localEulerAngles = new Vector3(351.102997f, 359.130005f, 345.136993f);
+                Transform finger3 = handR.Find("finger3.R");
+                finger3.localEulerAngles = new Vector3(5.7479949f, 89.9990005f, 262.154968f);
+                finger3.Find("finger3.R.001").localEulerAngles = new Vector3(353.714996f, 0.0349977836f, 248.507996f);
+                Transform finger4 = handR.Find("finger4.R");
+                finger4.localEulerAngles = new Vector3(359.694f, 90f, 256.720001f);
+                finger4.Find("finger4.R.001").localEulerAngles = new Vector3(351.419006f, 0.498000294f, 248.522003f);
+                Transform finger5 = handR.Find("finger5.R");
+                finger5.localEulerAngles = new Vector3(358.115021f, 90f, 241.14502f);
+                finger5.Find("finger5.R.001").localEulerAngles = new Vector3(327.817017f, 329.139008f, 267.781006f);
+            }
+        }
+
         public void Update()
         {
-            if (IsOwner)
+            if (isLocalPhone)
             {
                 ManageInputs();
             }
@@ -127,6 +160,8 @@ namespace Scoops.misc
             this.GetAllAudioSourcesToReplay();
             this.TimeAllAudioSources();
             this.UpdatePlayerVoices();
+
+            previousToggled = toggled;
         }
 
         private void ManageInputs()
@@ -137,31 +172,44 @@ namespace Scoops.misc
 
             if (toggled && LeftArmRig.weight < 0.9f)
             {
-                RightArmRig.weight = Mathf.Lerp(RightArmRig.weight, 1f, 25f * Time.deltaTime);
                 LeftArmRig.weight = Mathf.Lerp(LeftArmRig.weight, 1f, 25f * Time.deltaTime);
 
                 if (LeftArmRig.weight >= 0.9f)
                 {
-                    RightArmRig.weight = 1f;
                     LeftArmRig.weight = 1f;
                 }
             }
             else if (!toggled && LeftArmRig.weight > 0.1f)
             {
-                RightArmRig.weight = Mathf.Lerp(RightArmRig.weight, 0f, 25f * Time.deltaTime);
                 LeftArmRig.weight = Mathf.Lerp(LeftArmRig.weight, 0f, 25f * Time.deltaTime);
 
                 if (LeftArmRig.weight <= 0.1f)
                 {
-                    RightArmRig.weight = 0f;
                     LeftArmRig.weight = 0f;
 
                     localPhoneModel.SetActive(false);
                 }
             }
 
-            if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            if (toggled && Plugin.InputActionInstance.DialPhoneKey.IsPressed())
             {
+                HUDManager.Instance.SetNearDepthOfFieldEnabled(!Plugin.InputActionInstance.DialPhoneKey.IsPressed());
+
+                LeftArmRig.transform.Find("ArmsLeftArm_target").position = Vector3.Lerp(LeftArmRig.transform.Find("ArmsLeftArm_target").position, LeftArmRig.transform.Find("PhoneDialPos").position, 25f * Time.deltaTime);
+                LeftArmRig.transform.Find("ArmsLeftArm_target").rotation = Quaternion.Lerp(LeftArmRig.transform.Find("ArmsLeftArm_target").rotation, LeftArmRig.transform.Find("PhoneDialPos").rotation, 25f * Time.deltaTime);
+
+                if (RightArmRig.weight < 0.9f)
+                {
+                    RightArmRig.weight = Mathf.Lerp(RightArmRig.weight, 1f, 25f * Time.deltaTime);
+
+                    if (RightArmRig.weight >= 0.9f)
+                    {
+                        RightArmRig.weight = 1f;
+                    }
+                }
+
+                player.disableLookInput = true;
+
                 Vector2 vector = player.playerActions.Movement.Look.ReadValue<Vector2>() * 0.008f * (float)IngamePlayerSettings.Instance.settings.lookSensitivity;
                 if (!IngamePlayerSettings.Instance.settings.invertYAxis)
                 {
@@ -177,7 +225,7 @@ namespace Scoops.misc
                     localPosition.y = Mathf.Clamp(localPosition.y + vector.y, localPhoneInteractionBase.y - 0.0075f, localPhoneInteractionBase.y + 0.0075f);
                     localPhoneInteractionNode.localPosition = new Vector3(localPosition.x, localPosition.y, localPhoneInteractionNode.localPosition.z);
                 }
-                else if (Plugin.InputActionInstance.PickupPhoneKey.WasPressedThisFrame())
+                else if (!reversingRotary && Plugin.InputActionInstance.PickupPhoneKey.WasPressedThisFrame())
                 {
                     float closestDist = 100f;
                     GameObject closestNum = null;
@@ -208,14 +256,16 @@ namespace Scoops.misc
                         currentDialingNumber = null;
                     }
                 }
-                else
+                else if (currentDialingNumber != null)
                 {
-                    if (currentDialingNumber != null)
+                    float dist = Vector3.Distance(currentDialingNumber.transform.position, localPhoneStopperNode.transform.position);
+
+                    Vector3 localNumberLocation = localPhoneInteractionNode.parent.InverseTransformPoint(currentDialingNumber.position);
+                    localPhoneInteractionNode.localPosition = new Vector3(localNumberLocation.x, localNumberLocation.y, localPhoneInteractionNode.localPosition.z);
+
+                    if (dist > 0.03f)
                     {
                         timeSinceRotaryMoved += Time.deltaTime;
-
-                        Vector3 localNumberLocation = localPhoneInteractionNode.parent.InverseTransformPoint(currentDialingNumber.position);
-                        localPhoneInteractionNode.localPosition = new Vector3(localNumberLocation.x, localNumberLocation.y, localPhoneInteractionNode.localPosition.z);
 
                         Vector2 mouseVect = vector.normalized;
                         Vector3 radialVect3 = localPhoneInteractionNode.localPosition - localPhoneInteractionBase;
@@ -241,24 +291,78 @@ namespace Scoops.misc
                         {
                             rotaryAudio.Play();
                         }
+                    } 
+                    else
+                    {
+                        if (timeSinceRotaryMoved == 0f)
+                        {
+                            rotaryAudio.Stop();
+                            rotaryAudio.PlayOneShot(PhoneSoundManager.phoneRotaryStopper);
+                        }
+
+                        timeSinceRotaryMoved += Time.deltaTime;
                     }
+                }
+
+                RightArmRig.transform.Find("ArmsRightArm_target").position = localPhoneInteractionNode.Find("HandLoc").position;
+                RightArmRig.transform.Find("ArmsRightArm_target").rotation = localPhoneInteractionNode.Find("HandLoc").rotation;
+            } 
+            else if (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || (previousToggled && !toggled))
+            {
+                HUDManager.Instance.SetNearDepthOfFieldEnabled(!Plugin.InputActionInstance.DialPhoneKey.IsPressed());
+                player.disableLookInput = false;
+            } 
+            else
+            {
+                LeftArmRig.transform.Find("ArmsLeftArm_target").position = Vector3.Lerp(LeftArmRig.transform.Find("ArmsLeftArm_target").position, LeftArmRig.transform.Find("PhoneRestPos").position, 25f * Time.deltaTime);
+                LeftArmRig.transform.Find("ArmsLeftArm_target").rotation = Quaternion.Lerp(LeftArmRig.transform.Find("ArmsLeftArm_target").rotation, LeftArmRig.transform.Find("PhoneRestPos").rotation, 25f * Time.deltaTime);
+
+                RightArmRig.weight = Mathf.Lerp(RightArmRig.weight, 0f, 25f * Time.deltaTime);
+
+                if (RightArmRig.weight <= 0.1f)
+                {
+                    RightArmRig.weight = 0f;
                 }
             }
 
-            if (!Plugin.InputActionInstance.DialPhoneKey.IsPressed() || !Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
+            if (!reversingRotary && localPhoneDial.localEulerAngles.z != 0f && (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || Plugin.InputActionInstance.PickupPhoneKey.WasReleasedThisFrame()))
+            {
+                currentDialingNumber = null;
+                reversingRotary = true;
+
+                float closestDist = 100f;
+                GameObject closestNum = null;
+
+                foreach (GameObject number in localPhoneDialNumbers)
+                {
+                    float dist = Vector3.Distance(number.transform.position, localPhoneStopperNode.transform.position);
+                    Vector3 localNumPos = localPhoneStopperNode.parent.InverseTransformPoint(number.transform.position);
+                    if (dist < closestDist && localNumPos.y <= localPhoneStopperNode.localPosition.y)
+                    {
+                        closestDist = dist;
+                        closestNum = number;
+                    }
+                }
+
+                if (closestDist <= 0.05f)
+                {
+                    DialNumber(int.Parse(closestNum.name));
+                }
+
+                rotaryAudio.Stop();
+                rotaryAudio.clip = PhoneSoundManager.phoneRotaryBackward;
+                rotaryAudio.Play();
+            }
+
+            if (reversingRotary)
             {
                 if (localPhoneDial.localEulerAngles.z >= 10f)
                 {
                     localPhoneDial.localEulerAngles = new Vector3(0, 0, localPhoneDial.localEulerAngles.z - (300f * Time.deltaTime));
-                    if (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || Plugin.InputActionInstance.PickupPhoneKey.WasReleasedThisFrame())
-                    {
-                        rotaryAudio.Stop();
-                        rotaryAudio.clip = PhoneSoundManager.phoneRotaryBackward;
-                        rotaryAudio.Play();
-                    }
                 }
                 else if (localPhoneDial.localEulerAngles.z != 0f)
                 {
+                    reversingRotary = false;
                     localPhoneDial.localEulerAngles = Vector3.zero;
                     rotaryAudio.Stop();
                     rotaryAudio.PlayOneShot(PhoneSoundManager.phoneRotaryFinish);
@@ -279,6 +383,8 @@ namespace Scoops.misc
             {
                 dialedNumbers.Dequeue();
             }
+
+            dialingNumberUI.text = GetFullDialNumber();
 
             Plugin.Log.LogInfo("Current dialing number: " + GetFullDialNumber());
         }
@@ -311,7 +417,7 @@ namespace Scoops.misc
 
         public void CallButtonPressed()
         {
-            if (Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
+            if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
             {
                 return;
             }

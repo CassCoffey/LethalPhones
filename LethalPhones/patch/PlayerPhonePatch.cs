@@ -25,7 +25,7 @@ public class PlayerPhonePatch
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
 
         GameObject phoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LocalPhoneModel");
-        GameObject.Instantiate(phoneModelPrefab, __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+        GameObject phoneModel = GameObject.Instantiate(phoneModelPrefab, __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
 
         Transform ArmsRig = __instance.localArmsTransform.Find("RigArms");
         GameObject rightArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("RightArmPhone");
