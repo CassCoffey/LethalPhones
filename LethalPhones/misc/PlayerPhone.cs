@@ -32,6 +32,7 @@ namespace Scoops.misc
 
         private AudioSource ringAudio;
         private AudioSource thisAudio;
+        private AudioSource rotaryAudio;
         private AudioSource target;
 
         private string incomingCall = null;
@@ -49,6 +50,8 @@ namespace Scoops.misc
         private float cleanUpInterval;
         private float updateInterval;
 
+        private float timeSinceRotaryMoved = 0f;
+
         public void Start()
         {
             this.thisAudio = GetComponent<AudioSource>();
@@ -62,6 +65,8 @@ namespace Scoops.misc
 
             this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
             localPhoneModel.SetActive(false);
+
+            rotaryAudio = localPhoneModel.GetComponent<AudioSource>();
 
             this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("InteractionNode");
             localPhoneInteractionBase = new Vector3(localPhoneInteractionNode.localPosition.x, localPhoneInteractionNode.localPosition.y, localPhoneInteractionNode.localPosition.z);
@@ -89,6 +94,42 @@ namespace Scoops.misc
         }
 
         public void Update()
+        {
+            if (IsOwner)
+            {
+                ManageInputs();
+            }
+
+            if (this.cleanUpInterval >= 0f)
+            {
+                this.cleanUpInterval -= Time.deltaTime;
+            }
+            else
+            {
+                this.cleanUpInterval = 15f;
+                if (this.audioSourcesReceiving.Count > 10)
+                {
+                    foreach (KeyValuePair<AudioSource, AudioSource> keyValuePair in this.audioSourcesReceiving)
+                    {
+                        if (keyValuePair.Key == null)
+                        {
+                            this.audioSourcesReceiving.Remove(keyValuePair.Key);
+                        }
+                    }
+                }
+            }
+            if (this.updateInterval >= 0f)
+            {
+                this.updateInterval -= Time.deltaTime;
+                return;
+            }
+            this.updateInterval = 0.3f;
+            this.GetAllAudioSourcesToReplay();
+            this.TimeAllAudioSources();
+            this.UpdatePlayerVoices();
+        }
+
+        private void ManageInputs()
         {
             Transform ArmsRig = player.localArmsTransform.Find("RigArms");
             ChainIKConstraint RightArmRig = ArmsRig.Find("RightArmPhone(Clone)").GetComponent<ChainIKConstraint>();
@@ -127,7 +168,7 @@ namespace Scoops.misc
                     vector.y *= -1f;
                 }
                 vector *= 0.0005f;
-                
+
 
                 if (!Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
                 {
@@ -135,7 +176,7 @@ namespace Scoops.misc
                     localPosition.x = Mathf.Clamp(localPosition.x + vector.x, localPhoneInteractionBase.x - 0.0075f, localPhoneInteractionBase.x + 0.0075f);
                     localPosition.y = Mathf.Clamp(localPosition.y + vector.y, localPhoneInteractionBase.y - 0.0075f, localPhoneInteractionBase.y + 0.0075f);
                     localPhoneInteractionNode.localPosition = new Vector3(localPosition.x, localPosition.y, localPhoneInteractionNode.localPosition.z);
-                } 
+                }
                 else if (Plugin.InputActionInstance.PickupPhoneKey.WasPressedThisFrame())
                 {
                     float closestDist = 100f;
@@ -155,16 +196,24 @@ namespace Scoops.misc
                     {
                         Plugin.Log.LogInfo("Clicking on: " + int.Parse(closestNum.name));
                         currentDialingNumber = closestNum.transform;
+
+                        rotaryAudio.Stop();
+                        rotaryAudio.clip = PhoneSoundManager.phoneRotaryForward;
+                        rotaryAudio.Play();
+
+                        timeSinceRotaryMoved = 0f;
                     }
                     else
                     {
                         currentDialingNumber = null;
                     }
-                } 
+                }
                 else
                 {
                     if (currentDialingNumber != null)
                     {
+                        timeSinceRotaryMoved += Time.deltaTime;
+
                         Vector3 localNumberLocation = localPhoneInteractionNode.parent.InverseTransformPoint(currentDialingNumber.position);
                         localPhoneInteractionNode.localPosition = new Vector3(localNumberLocation.x, localNumberLocation.y, localPhoneInteractionNode.localPosition.z);
 
@@ -178,49 +227,43 @@ namespace Scoops.misc
                         rotationPower *= 7500f;
 
                         localPhoneDial.localEulerAngles = new Vector3(0, 0, localPhoneDial.localEulerAngles.z + rotationPower);
+
+                        if (rotationPower != 0f)
+                        {
+                            timeSinceRotaryMoved = 0f;
+                        }
+
+                        if (timeSinceRotaryMoved > 0.25f)
+                        {
+                            rotaryAudio.Pause();
+                        }
+                        else if (!rotaryAudio.isPlaying)
+                        {
+                            rotaryAudio.Play();
+                        }
                     }
                 }
             }
 
             if (!Plugin.InputActionInstance.DialPhoneKey.IsPressed() || !Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
             {
-                if (localPhoneDial.localEulerAngles.z >= 1f)
+                if (localPhoneDial.localEulerAngles.z >= 10f)
                 {
-                    localPhoneDial.localEulerAngles = new Vector3(0, 0, Mathf.Lerp(localPhoneDial.localEulerAngles.z, 0f, 25f * Time.deltaTime));
-                } 
-                else
-                {
-                    localPhoneDial.localEulerAngles = Vector3.zero;
-                }
-            }
-
-            if (this.cleanUpInterval >= 0f)
-            {
-                this.cleanUpInterval -= Time.deltaTime;
-            }
-            else
-            {
-                this.cleanUpInterval = 15f;
-                if (this.audioSourcesReceiving.Count > 10)
-                {
-                    foreach (KeyValuePair<AudioSource, AudioSource> keyValuePair in this.audioSourcesReceiving)
+                    localPhoneDial.localEulerAngles = new Vector3(0, 0, localPhoneDial.localEulerAngles.z - (300f * Time.deltaTime));
+                    if (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || Plugin.InputActionInstance.PickupPhoneKey.WasReleasedThisFrame())
                     {
-                        if (keyValuePair.Key == null)
-                        {
-                            this.audioSourcesReceiving.Remove(keyValuePair.Key);
-                        }
+                        rotaryAudio.Stop();
+                        rotaryAudio.clip = PhoneSoundManager.phoneRotaryBackward;
+                        rotaryAudio.Play();
                     }
                 }
+                else if (localPhoneDial.localEulerAngles.z != 0f)
+                {
+                    localPhoneDial.localEulerAngles = Vector3.zero;
+                    rotaryAudio.Stop();
+                    rotaryAudio.PlayOneShot(PhoneSoundManager.phoneRotaryFinish);
+                }
             }
-            if (this.updateInterval >= 0f)
-            {
-                this.updateInterval -= Time.deltaTime;
-                return;
-            }
-            this.updateInterval = 0.3f;
-            this.GetAllAudioSourcesToReplay();
-            this.TimeAllAudioSources();
-            this.UpdatePlayerVoices();
         }
 
         public string GetFullDialNumber()

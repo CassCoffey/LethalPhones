@@ -12,6 +12,10 @@ namespace Scoops.service
         public static AudioClip phoneRingReciever;
         public static AudioClip phonePickup;
         public static AudioClip phoneHangup;
+        public static AudioClip phoneRotaryForward;
+        public static AudioClip phoneRotaryBackward;
+        public static AudioClip phoneRotaryStopper;
+        public static AudioClip phoneRotaryFinish;
 
         public static void Init()
         {
@@ -21,6 +25,10 @@ namespace Scoops.service
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
             phonePickup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhonePickup");
             phoneHangup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneHangup");
+            phoneRotaryForward = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("RotaryDialForwardOptionTwo");
+            phoneRotaryBackward = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("RotaryDialBackOptionOne");
+            phoneRotaryStopper = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("RotaryStopperOptionOne");
+            phoneRotaryFinish = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("RotaryFinishOptionOne");
         }
     }
 }

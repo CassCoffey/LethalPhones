@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3700858056
+CRC: 2862131126
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: a57d27d3b60b106e5cbd77f65aa98432
+    Hash: 3ca45508d37b54fcb1a15ecbe99256ef
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 666136ce06a47f56616637211e89c83b
+    Hash: 40a6f3f57855915ed2a83bf47f71f5a4
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: a57d27d3b60b106e5cbd77f65aa98432
+    Hash: 3ca45508d37b54fcb1a15ecbe99256ef
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -52,19 +52,33 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 170
   Script: {instanceID: 0}
+- Class: 241
+  Script: {instanceID: 0}
+- Class: 243
+  Script: {instanceID: 0}
+- Class: 245
+  Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers:
 - AssemblyName: Unity.Animation.Rigging
   ClassName: UnityEngine.Animations.Rigging.ChainIKConstraintData
 Assets:
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
+- Assets/Sounds/RotaryStopperOptionOne.wav
 - Assets/LocalPhoneModel.prefab
+- Assets/Sounds/RotaryDialForwardOptionOne.wav
+- Assets/Sounds/RotaryDialBackOptionOne.wav
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhonePrefab.prefab
 - Assets/RightArmPhone.prefab
 - Assets/PhoneAudioInternal.prefab
 - Assets/PhoneNetworkHandler.prefab
 - Assets/Sounds/PhoneHangup.wav
+- Assets/Sounds/RotaryFinishOptionTwo.wav
+- Assets/Sounds/RotaryDialForwardOptionTwo.wav
+- Assets/Sounds/RotaryFinishOptionOne.wav
+- Assets/Sounds/RotaryDialBackOptionTwo.wav
 - Assets/PhoneAudioExternal.prefab
+- Assets/Sounds/RotaryStopperOptionTwo.wav
 - Assets/LeftArmPhone.prefab
 Dependencies: []
