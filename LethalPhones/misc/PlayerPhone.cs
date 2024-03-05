@@ -25,6 +25,7 @@ namespace Scoops.misc
         public bool toggled = false;
 
         public TextMeshProUGUI dialingNumberUI;
+        public TextMeshProUGUI personalPhoneNumberUI;
 
         private bool isLocalPhone = false;
 
@@ -80,6 +81,8 @@ namespace Scoops.misc
             this.dialingNumberUI = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").Find("DialingNumber").GetComponent<TextMeshProUGUI>();
             dialingNumberUI.text = "";
 
+            this.personalPhoneNumberUI = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
+
             localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
             foreach (Transform child in localPhoneDial)
@@ -99,6 +102,7 @@ namespace Scoops.misc
             if (active)
             {
                 localPhoneModel.SetActive(active);
+                personalPhoneNumberUI.text = phoneNumber;
             }
         }
 
