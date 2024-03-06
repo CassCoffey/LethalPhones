@@ -23,6 +23,9 @@ public class LethalPhonesInputClass : LcInputActions
 
     [InputAction("<Keyboard>/z", Name = "Dial Phone")]
     public InputAction DialPhoneKey { get; set; }
+
+    [InputAction("<Keyboard>/g", Name = "Toggle Phone Volume")]
+    public InputAction VolumePhoneKey { get; set; }
 }
 
 [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]

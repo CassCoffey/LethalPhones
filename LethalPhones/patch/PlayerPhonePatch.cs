@@ -64,6 +64,7 @@ public class PlayerPhonePatch
         Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;
         Plugin.InputActionInstance.HangupPhoneKey.performed += OnHangupPhoneKeyPressed;
+        Plugin.InputActionInstance.VolumePhoneKey.performed += OnVolumePhoneKeyPressed;
     }
 
     private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)
@@ -89,6 +90,11 @@ public class PlayerPhonePatch
     private static void OnHangupPhoneKeyPressed(InputAction.CallbackContext context)
     {
         PhoneManager.localPhone.HangupButtonPressed();
+    }
+
+    private static void OnVolumePhoneKeyPressed(InputAction.CallbackContext context)
+    {
+        PhoneManager.localPhone.VolumeButtonPressed();
     }
 
     [HarmonyPatch("KillPlayerClientRpc")]

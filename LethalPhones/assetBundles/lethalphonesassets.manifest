@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1566681823
+CRC: 2949183861
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 47726003d900ac00ea5bcfdd2d66573b
+    Hash: 5fac92d9489b189c35c96f386abe087f
   TypeTreeHash:
     serializedVersion: 2
     Hash: 178e66849b36bc22758efb2fae370fc1
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 47726003d900ac00ea5bcfdd2d66573b
+    Hash: 5fac92d9489b189c35c96f386abe087f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -116,6 +116,7 @@ SerializeReferenceClassIdentifiers:
 Assets:
 - Assets/Textures/icons8-no-connection-96.png
 - Assets/Textures/icons8-shake-phone-96.png
+- Assets/Sounds/PhoneBusy.wav
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
 - Assets/Textures/icons8-voicemail-96.png
@@ -133,9 +134,11 @@ Assets:
 - Assets/PhoneNetworkHandler.prefab
 - Assets/Textures/icons8-silent-96.png
 - Assets/Sounds/PhoneHangup.wav
+- Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/Sounds/RotaryFinishOptionTwo.wav
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav
 - Assets/Sounds/RotaryFinishOptionOne.wav
+- Assets/Sounds/PhoneSwitch.wav
 - Assets/Sounds/RotaryDialBackOptionTwo.wav
 - Assets/PhoneAudioExternal.prefab
 - Assets/Sounds/RotaryStopperOptionTwo.wav

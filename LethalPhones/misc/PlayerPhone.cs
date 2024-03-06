@@ -30,7 +30,9 @@ namespace Scoops.misc
         public TextMeshProUGUI personalPhoneNumberUI;
 
         public Image incomingCallUI;
-        public Image volumeUI;
+        public Image volumeRingUI;
+        public Image volumeSilentUI;
+        public Image volumeVibrateUI;
         public Image connectionQualityNoUI;
         public Image connectionQualityLowUI;
         public Image connectionQualityMedUI;
@@ -70,6 +72,9 @@ namespace Scoops.misc
 
         public NetworkVariable<float> connectionQuality = new NetworkVariable<float>(1f);
 
+        public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
+        private phoneVolume currentVolume = phoneVolume.Ring;
+
         private IEnumerator activePhoneRingCoroutine;
 
         public void Start()
@@ -105,7 +110,9 @@ namespace Scoops.misc
             this.connectionQualityLowUI = phoneCanvas.Find("ConnectionLow").GetComponent<Image>();
             this.connectionQualityMedUI = phoneCanvas.Find("ConnectionMed").GetComponent<Image>();
             this.connectionQualityHighUI = phoneCanvas.Find("ConnectionHigh").GetComponent<Image>();
-            this.volumeUI = phoneCanvas.Find("Audio").GetComponent<Image>();
+            this.volumeRingUI = phoneCanvas.Find("Ring").GetComponent<Image>();
+            this.volumeSilentUI = phoneCanvas.Find("Silent").GetComponent<Image>();
+            this.volumeVibrateUI = phoneCanvas.Find("Vibrate").GetComponent<Image>();
 
             localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
@@ -136,7 +143,8 @@ namespace Scoops.misc
                 HUDManager.Instance.ChangeControlTip(0, "Call Phone : [" + Plugin.InputActionInstance.PickupPhoneKey.bindings[0].ToDisplayString() + "]", true);
                 HUDManager.Instance.ChangeControlTip(1, "Hangup Phone : [" + Plugin.InputActionInstance.HangupPhoneKey.bindings[0].ToDisplayString() + "]", false);
                 HUDManager.Instance.ChangeControlTip(2, "Dial Phone : [" + Plugin.InputActionInstance.DialPhoneKey.bindings[0].ToDisplayString() + "]", false);
-                HUDManager.Instance.ChangeControlTip(3, "Put Away Phone : [" + Plugin.InputActionInstance.TogglePhoneKey.bindings[0].ToDisplayString() + "]", false);
+                HUDManager.Instance.ChangeControlTip(3, "Toggle Phone Volume : [" + Plugin.InputActionInstance.VolumePhoneKey.bindings[0].ToDisplayString() + "]", false);
+                HUDManager.Instance.ChangeControlTip(4, "Put Away Phone : [" + Plugin.InputActionInstance.TogglePhoneKey.bindings[0].ToDisplayString() + "]", false);
             } 
             else
             {
@@ -518,6 +526,11 @@ namespace Scoops.misc
 
         public void DialNumber(int number)
         {
+            if (activeCall != null || incomingCall != null || outgoingCall != null)
+            {
+                return;
+            }
+
             dialedNumbers.Enqueue(number);
 
             if (dialedNumbers.Count > 4)
@@ -606,6 +619,39 @@ namespace Scoops.misc
             if (isLocalPhone)
             {
                 UpdateCallValues();
+            }
+        }
+
+        public void VolumeButtonPressed()
+        {
+            thisAudio.Stop();
+            thisAudio.PlayOneShot(PhoneAssetManager.phoneSwitch);
+
+            switch (currentVolume)
+            {
+                case phoneVolume.Ring:
+                    currentVolume = phoneVolume.Vibrate;
+                    volumeRingUI.enabled = false;
+                    volumeVibrateUI.enabled = true;
+                    volumeSilentUI.enabled = false;
+                    localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>().SetBlendShapeWeight(0, 50f);
+                    break;
+                case phoneVolume.Vibrate:
+                    currentVolume = phoneVolume.Silent;
+                    volumeRingUI.enabled = false;
+                    volumeVibrateUI.enabled = false;
+                    volumeSilentUI.enabled = true;
+                    localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>().SetBlendShapeWeight(0, 100f);
+                    break;
+                case phoneVolume.Silent:
+                    currentVolume = phoneVolume.Ring;
+                    volumeRingUI.enabled = true;
+                    volumeVibrateUI.enabled = false;
+                    volumeSilentUI.enabled = false;
+                    localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>().SetBlendShapeWeight(0, 0f);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -888,20 +934,13 @@ namespace Scoops.misc
         [ClientRpc]
         public void RecieveCallClientRpc(int callerId, string callerNumber)
         {
-            PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[callerId];
-
-            activePhoneRingCoroutine = PhoneRingCoroutine(4);
-            StartCoroutine(activePhoneRingCoroutine);
-            ringAudio.Play();
+            StartRinging();
 
             if (incomingCall == null)
             {
                 incomingCall = callerNumber;
                 incomingCaller = callerId;
-                if (activeCall == null)
-                {
-                    dialedNumbers.Clear();
-                }
+                dialedNumbers.Clear();
                 UpdateCallingUI();
             }
             else if (isLocalPhone)
@@ -1001,6 +1040,32 @@ namespace Scoops.misc
         public void StopRingingClientRpc()
         {
             StopRinging();
+        }
+
+        private void StartRinging()
+        {
+            ringAudio.Stop();
+            switch (currentVolume)
+            {
+                case phoneVolume.Ring:
+                    activePhoneRingCoroutine = PhoneRingCoroutine(4);
+                    StartCoroutine(activePhoneRingCoroutine);
+                    ringAudio.clip = PhoneAssetManager.phoneRingReciever;
+                    ringAudio.Play();
+                    break;
+                case phoneVolume.Vibrate:
+                    if (isLocalPhone)
+                    {
+                        ringAudio.clip = PhoneAssetManager.phoneRingVibrate;
+                        ringAudio.Play();
+                    }
+                    break;
+                case phoneVolume.Silent:
+                    // Nothing
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void StopRinging()
