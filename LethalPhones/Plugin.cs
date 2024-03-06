@@ -12,7 +12,7 @@ namespace Scoops;
 
 public class LethalPhonesInputClass : LcInputActions
 {
-    [InputAction("<Keyboard>/0", Name = "Toggle Phone")]
+    [InputAction("<Keyboard>/backquote", Name = "Toggle Phone")]
     public InputAction TogglePhoneKey { get; set; }
 
     [InputAction("<Keyboard>/q", Name = "Hangup Phone")]
@@ -64,6 +64,7 @@ public class Plugin : BaseUnityPlugin
     private void ApplyPluginPatch()
     {
         _harmony.PatchAll(typeof(PlayerPhonePatch));
+        _harmony.PatchAll(typeof(StartOfRoundPhonePatch));
         _harmony.PatchAll(typeof(NetworkObjectManager));
     }
 

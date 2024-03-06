@@ -21,7 +21,13 @@ namespace Scoops.service
         public override void OnNetworkSpawn()
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-                Instance?.gameObject.GetComponent<NetworkObject>().Despawn();
+            {
+                if (Instance != null)
+                {
+                    Instance.gameObject.GetComponent<NetworkObject>().Despawn();
+                }
+            }
+
             Instance = this;
 
             phoneNumberDict = new Dictionary<string, ulong>();

@@ -61,7 +61,6 @@ public class PlayerPhonePatch
         PhoneManager = PhoneNetworkHandler.Instance;
         PhoneManager.CreateNewPhone();
 
-        Keyboard.current.onTextInput += KeyboardType;
         Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;
         Plugin.InputActionInstance.HangupPhoneKey.performed += OnHangupPhoneKeyPressed;
@@ -191,7 +190,17 @@ public class PlayerPhonePatch
         {
             return;
         }
-        if (PhoneManager.localPhone.toggled && (__instance.inTerminalMenu || __instance.isHoldingObject))
+        if (PhoneManager.localPhone.toggled && __instance.inTerminalMenu)
+        {
+            PhoneManager.localPhone.ToggleActive(false);
+        }
+    }
+
+    [HarmonyPatch("GrabObjectClientRpc")]
+    [HarmonyPostfix]
+    private static void GrabObjectClientRpc(ref PlayerControllerB __instance, bool grabValidated, NetworkObjectReference grabbedObject)
+    {
+        if (grabValidated && PhoneManager.localPhone.toggled)
         {
             PhoneManager.localPhone.ToggleActive(false);
         }
@@ -208,14 +217,6 @@ public class PlayerPhonePatch
         if (PhoneManager.localPhone.toggled && __instance.isHoldingObject)
         {
             PhoneManager.localPhone.ToggleActive(false);
-        }
-    }
-
-    private static void KeyboardType(char ch)
-    {
-        if (PhoneManager.localPhone.toggled && Char.IsNumber(ch))
-        {
-            PhoneManager.localPhone.DialNumber(int.Parse(ch.ToString()));
         }
     }
 }
