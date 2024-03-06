@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 710309124
+CRC: 1566681823
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 8e56f67e0d3c8070a9f7abfdc82785e2
+    Hash: 47726003d900ac00ea5bcfdd2d66573b
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 98bed39f1e0dd740d7dcf60a36095d2c
+    Hash: 178e66849b36bc22758efb2fae370fc1
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 8e56f67e0d3c8070a9f7abfdc82785e2
+    Hash: 47726003d900ac00ea5bcfdd2d66573b
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -37,6 +37,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: 8650dbf8a4fad0c4dac487ffaddec400, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
@@ -61,6 +63,8 @@ ClassTypes:
 - Class: 169
   Script: {instanceID: 0}
 - Class: 170
+  Script: {instanceID: 0}
+- Class: 213
   Script: {instanceID: 0}
 - Class: 222
   Script: {instanceID: 0}
@@ -110,17 +114,24 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: UnityEngine.UI
   ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
 Assets:
+- Assets/Textures/icons8-no-connection-96.png
+- Assets/Textures/icons8-shake-phone-96.png
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
+- Assets/Textures/icons8-voicemail-96.png
 - Assets/Sounds/RotaryStopperOptionOne.wav
-- Assets/LocalPhoneModel.prefab
+- Assets/Textures/icons8-incoming-call-96.png
+- Assets/Textures/icons8-medium-connection-96.png
 - Assets/Sounds/RotaryDialForwardOptionOne.wav
 - Assets/Sounds/RotaryDialBackOptionOne.wav
+- Assets/LocalPhoneModel.prefab
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhonePrefab.prefab
+- Assets/Textures/icons8-signal-96.png
 - Assets/RightArmPhone.prefab
 - Assets/PhoneAudioInternal.prefab
 - Assets/PhoneNetworkHandler.prefab
+- Assets/Textures/icons8-silent-96.png
 - Assets/Sounds/PhoneHangup.wav
 - Assets/Sounds/RotaryFinishOptionTwo.wav
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav
@@ -129,4 +140,6 @@ Assets:
 - Assets/PhoneAudioExternal.prefab
 - Assets/Sounds/RotaryStopperOptionTwo.wav
 - Assets/LeftArmPhone.prefab
+- Assets/Textures/icons8-low-connection-96.png
+- Assets/Textures/icons8-audio-96.png
 Dependencies: []

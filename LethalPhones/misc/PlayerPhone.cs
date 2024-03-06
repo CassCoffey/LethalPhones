@@ -1,14 +1,15 @@
-﻿using GameNetcodeStuff;
+﻿using Dissonance;
+using GameNetcodeStuff;
 using Scoops.service;
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
+using System.Linq;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
-using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace Scoops.misc
 {
@@ -25,7 +26,15 @@ namespace Scoops.misc
         public bool toggled = false;
 
         public TextMeshProUGUI dialingNumberUI;
+        public TextMeshProUGUI phoneStatusUI;
         public TextMeshProUGUI personalPhoneNumberUI;
+
+        public Image incomingCallUI;
+        public Image volumeUI;
+        public Image connectionQualityNoUI;
+        public Image connectionQualityLowUI;
+        public Image connectionQualityMedUI;
+        public Image connectionQualityHighUI;
 
         private bool isLocalPhone = false;
 
@@ -59,8 +68,13 @@ namespace Scoops.misc
         private bool reversingRotary = false;
         private bool previousToggled = false;
 
+        public NetworkVariable<float> connectionQuality = new NetworkVariable<float>(1f);
+
+        private IEnumerator activePhoneRingCoroutine;
+
         public void Start()
         {
+            Plugin.Log.LogInfo($"Getting Audio...");
             this.thisAudio = GetComponent<AudioSource>();
             this.target = transform.Find("Target").gameObject.GetComponent<AudioSource>();
 
@@ -75,14 +89,29 @@ namespace Scoops.misc
 
             rotaryAudio = localPhoneModel.GetComponent<AudioSource>();
 
+            Plugin.Log.LogInfo($"Getting Interaction Node...");
             this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("InteractionNode");
             localPhoneInteractionBase = new Vector3(localPhoneInteractionNode.localPosition.x, localPhoneInteractionNode.localPosition.y, localPhoneInteractionNode.localPosition.z);
             this.localPhoneStopperNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("StopperNode");
-            this.dialingNumberUI = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").Find("DialingNumber").GetComponent<TextMeshProUGUI>();
-            dialingNumberUI.text = "";
 
-            this.personalPhoneNumberUI = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
+            Plugin.Log.LogInfo($"Getting UI Elements...");
+            Transform phoneCanvas = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
+            this.dialingNumberUI = phoneCanvas.Find("DialingNumber").GetComponent<TextMeshProUGUI>();
+            dialingNumberUI.text = "----";
+            this.phoneStatusUI = phoneCanvas.Find("PhoneState").GetComponent<TextMeshProUGUI>();
+            phoneStatusUI.text = "";
+            this.personalPhoneNumberUI = phoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
 
+            Plugin.Log.LogInfo($"Getting UI Icons...");
+            this.incomingCallUI = phoneCanvas.Find("IncomingCall").GetComponent<Image>();
+            incomingCallUI.enabled = false;
+            this.connectionQualityNoUI = phoneCanvas.Find("ConnectionNo").GetComponent<Image>();
+            this.connectionQualityLowUI = phoneCanvas.Find("ConnectionLow").GetComponent<Image>();
+            this.connectionQualityMedUI = phoneCanvas.Find("ConnectionMed").GetComponent<Image>();
+            this.connectionQualityHighUI = phoneCanvas.Find("ConnectionHigh").GetComponent<Image>();
+            this.volumeUI = phoneCanvas.Find("Audio").GetComponent<Image>();
+
+            Plugin.Log.LogInfo($"Getting Dial...");
             localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
             foreach (Transform child in localPhoneDial)
@@ -103,30 +132,64 @@ namespace Scoops.misc
             {
                 localPhoneModel.SetActive(active);
                 personalPhoneNumberUI.text = phoneNumber;
+
+                if (player.twoHanded || player.isHoldingObject)
+                {
+                    player.DiscardHeldObject();
+                }
+
+                HUDManager.Instance.ChangeControlTip(0, "Call Phone : [" + Plugin.InputActionInstance.PickupPhoneKey.bindings[0].ToDisplayString() + "]", true);
+                HUDManager.Instance.ChangeControlTip(1, "Hangup Phone : [" + Plugin.InputActionInstance.HangupPhoneKey.bindings[0].ToDisplayString() + "]", false);
+                HUDManager.Instance.ChangeControlTip(2, "Dial Phone : [" + Plugin.InputActionInstance.DialPhoneKey.bindings[0].ToDisplayString() + "]", false);
+                HUDManager.Instance.ChangeControlTip(3, "Put Away Phone : [" + Plugin.InputActionInstance.TogglePhoneKey.bindings[0].ToDisplayString() + "]", false);
+            } 
+            else
+            {
+                HUDManager.Instance.ClearControlTips();
             }
         }
 
         // Here's where we break some bones
         public void LateUpdate()
         {
-            if (isLocalPhone && Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            if (isLocalPhone && toggled)
             {
-                Transform handR = player.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
-                Transform finger1 = handR.Find("finger1.R");
-                finger1.localEulerAngles = new Vector3(32.4089966f, 57.2649841f, 319.315002f);
-                finger1.Find("finger1.R.001").localEulerAngles = new Vector3(288.475983f, 341.432007f, 4.1400032f);
-                Transform finger2 = handR.Find("finger2.R");
-                finger2.localEulerAngles = new Vector3(13.0880003f, 90f, 335.346008f);
-                finger2.Find("finger2.R.001").localEulerAngles = new Vector3(351.102997f, 359.130005f, 345.136993f);
-                Transform finger3 = handR.Find("finger3.R");
-                finger3.localEulerAngles = new Vector3(5.7479949f, 89.9990005f, 262.154968f);
-                finger3.Find("finger3.R.001").localEulerAngles = new Vector3(353.714996f, 0.0349977836f, 248.507996f);
-                Transform finger4 = handR.Find("finger4.R");
-                finger4.localEulerAngles = new Vector3(359.694f, 90f, 256.720001f);
-                finger4.Find("finger4.R.001").localEulerAngles = new Vector3(351.419006f, 0.498000294f, 248.522003f);
-                Transform finger5 = handR.Find("finger5.R");
-                finger5.localEulerAngles = new Vector3(358.115021f, 90f, 241.14502f);
-                finger5.Find("finger5.R.001").localEulerAngles = new Vector3(327.817017f, 329.139008f, 267.781006f);
+                Transform handL = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+                Transform fingerL1 = handL.Find("finger1.L");
+                fingerL1.localEulerAngles = new Vector3(36.1390076f, 275.679993f, 76.3550034f);
+                fingerL1.Find("finger1.L.001").localEulerAngles = new Vector3(284.725983f, 350.876007f, 10.5490074f);
+                Transform fingerL2 = handL.Find("finger2.L");
+                fingerL2.localEulerAngles = new Vector3(5.05699778f, 270f, 98.189003f);
+                fingerL2.Find("finger2.L.001").localEulerAngles = new Vector3(2.75100255f, 356.675018f, 83.1589966f);
+                Transform fingerL3 = handL.Find("finger3.L");
+                fingerL3.localEulerAngles = new Vector3(2.48299932f, 270.306f, 88.9009857f);
+                fingerL3.Find("finger3.L.001").localEulerAngles = new Vector3(1.4079988f, 355.457977f, 97.9869995f);
+                Transform fingerL4 = handL.Find("finger4.L");
+                fingerL4.localEulerAngles = new Vector3(354.190002f, 270f, 85.822998f);
+                fingerL4.Find("finger4.L.001").localEulerAngles = new Vector3(5.63999939f, 357.084991f, 121.238007f);
+                Transform fingerL5 = handL.Find("finger5.L");
+                fingerL5.localEulerAngles = new Vector3(356.811005f, 260.109009f, 85.6919861f);
+                fingerL5.Find("finger5.L.001").localEulerAngles = new Vector3(342.890991f, 8.13000202f, 109.431984f);
+
+                if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+                {
+                    Transform handR = player.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
+                    Transform fingerR1 = handR.Find("finger1.R");
+                    fingerR1.localEulerAngles = new Vector3(32.4089966f, 57.2649841f, 319.315002f);
+                    fingerR1.Find("finger1.R.001").localEulerAngles = new Vector3(288.475983f, 341.432007f, 4.1400032f);
+                    Transform fingerR2 = handR.Find("finger2.R");
+                    fingerR2.localEulerAngles = new Vector3(13.0880003f, 90f, 335.346008f);
+                    fingerR2.Find("finger2.R.001").localEulerAngles = new Vector3(351.102997f, 359.130005f, 345.136993f);
+                    Transform fingerR3 = handR.Find("finger3.R");
+                    fingerR3.localEulerAngles = new Vector3(5.7479949f, 89.9990005f, 262.154968f);
+                    fingerR3.Find("finger3.R.001").localEulerAngles = new Vector3(353.714996f, 0.0349977836f, 248.507996f);
+                    Transform fingerR4 = handR.Find("finger4.R");
+                    fingerR4.localEulerAngles = new Vector3(359.694f, 90f, 256.720001f);
+                    fingerR4.Find("finger4.R.001").localEulerAngles = new Vector3(351.419006f, 0.498000294f, 248.522003f);
+                    Transform fingerR5 = handR.Find("finger5.R");
+                    fingerR5.localEulerAngles = new Vector3(358.115021f, 90f, 241.14502f);
+                    fingerR5.Find("finger5.R.001").localEulerAngles = new Vector3(327.817017f, 329.139008f, 267.781006f);
+                }
             }
         }
 
@@ -134,7 +197,8 @@ namespace Scoops.misc
         {
             if (isLocalPhone)
             {
-                ManageInputs();
+                this.ManageInputs();
+                this.UpdatePlayerVoices();
             }
 
             if (this.cleanUpInterval >= 0f)
@@ -163,7 +227,40 @@ namespace Scoops.misc
             this.updateInterval = 0.3f;
             this.GetAllAudioSourcesToReplay();
             this.TimeAllAudioSources();
-            this.UpdatePlayerVoices();
+
+            if (isLocalPhone)
+            {
+                this.UpdateConnectionQualityServerRpc();
+
+                if (connectionQuality.Value <= 0.25f)
+                {
+                    connectionQualityNoUI.enabled = true;
+                    connectionQualityLowUI.enabled = false;
+                    connectionQualityMedUI.enabled = false;
+                    connectionQualityHighUI.enabled = false;
+                } 
+                else if (connectionQuality.Value <= 0.5f)
+                {
+                    connectionQualityNoUI.enabled = false;
+                    connectionQualityLowUI.enabled = true;
+                    connectionQualityMedUI.enabled = false;
+                    connectionQualityHighUI.enabled = false;
+                }
+                else if (connectionQuality.Value <= 0.75f)
+                {
+                    connectionQualityNoUI.enabled = false;
+                    connectionQualityLowUI.enabled = false;
+                    connectionQualityMedUI.enabled = true;
+                    connectionQualityHighUI.enabled = false;
+                }
+                else
+                {
+                    connectionQualityNoUI.enabled = false;
+                    connectionQualityLowUI.enabled = false;
+                    connectionQualityMedUI.enabled = false;
+                    connectionQualityHighUI.enabled = true;
+                }
+            }
 
             previousToggled = toggled;
         }
@@ -244,13 +341,12 @@ namespace Scoops.misc
                         }
                     }
 
-                    if (closestDist <= 0.03f)
+                    if (closestDist <= 0.04f)
                     {
-                        Plugin.Log.LogInfo("Clicking on: " + int.Parse(closestNum.name));
                         currentDialingNumber = closestNum.transform;
 
                         rotaryAudio.Stop();
-                        rotaryAudio.clip = PhoneSoundManager.phoneRotaryForward;
+                        rotaryAudio.clip = PhoneAssetManager.phoneRotaryForward;
                         rotaryAudio.Play();
 
                         timeSinceRotaryMoved = 0f;
@@ -301,7 +397,7 @@ namespace Scoops.misc
                         if (timeSinceRotaryMoved == 0f)
                         {
                             rotaryAudio.Stop();
-                            rotaryAudio.PlayOneShot(PhoneSoundManager.phoneRotaryStopper);
+                            rotaryAudio.PlayOneShot(PhoneAssetManager.phoneRotaryStopper);
                         }
 
                         timeSinceRotaryMoved += Time.deltaTime;
@@ -354,7 +450,7 @@ namespace Scoops.misc
                 }
 
                 rotaryAudio.Stop();
-                rotaryAudio.clip = PhoneSoundManager.phoneRotaryBackward;
+                rotaryAudio.clip = PhoneAssetManager.phoneRotaryBackward;
                 rotaryAudio.Play();
             }
 
@@ -369,8 +465,40 @@ namespace Scoops.misc
                     reversingRotary = false;
                     localPhoneDial.localEulerAngles = Vector3.zero;
                     rotaryAudio.Stop();
-                    rotaryAudio.PlayOneShot(PhoneSoundManager.phoneRotaryFinish);
+                    rotaryAudio.PlayOneShot(PhoneAssetManager.phoneRotaryFinish);
                 }
+            }
+        }
+
+        public void Death(int causeOfDeath)
+        {
+            if (activeCall != null)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                activeCall = null;
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
+            }
+            if (outgoingCall != null)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
+                outgoingCall = null;
+            }
+            if (incomingCall != null)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall);
+                incomingCall = null;
+                incomingCallUI.enabled = false;
+            }
+
+            dialedNumbers.Clear();
+            UpdateCallingUI("", "");
+
+            toggled = false;
+            localPhoneModel.SetActive(false);
+
+            if (isLocalPhone)
+            {
+                UpdateCallValues();
             }
         }
 
@@ -388,13 +516,16 @@ namespace Scoops.misc
                 dialedNumbers.Dequeue();
             }
 
-            dialingNumberUI.text = GetFullDialNumber();
-
-            Plugin.Log.LogInfo("Current dialing number: " + GetFullDialNumber());
+            UpdateCallingUI(GetFullDialNumber(), "");
         }
 
         public void HangupButtonPressed()
         {
+            if (!toggled)
+            {
+                return;
+            }
+
             if (activeCall != null)
             {
                 // We're on a call, hang up
@@ -403,6 +534,7 @@ namespace Scoops.misc
                 PlayHangupSound();
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                UpdateCallingUI("", "");
             }
             else if (outgoingCall != null)
             {
@@ -411,6 +543,23 @@ namespace Scoops.misc
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
                 PlayHangupSound();
                 outgoingCall = null;
+                UpdateCallingUI("", "");
+            } 
+            else if (incomingCall != null) 
+            {
+                // We're being called, cancel
+                Plugin.Log.LogInfo("Canceling: " + incomingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall);
+                PlayHangupSound();
+                incomingCall = null;
+                incomingCallUI.enabled = false;
+                UpdateCallingUI("", "");
+            } 
+            else
+            {
+                // Clear numbers
+                dialedNumbers.Clear();
+                UpdateCallingUI("", "");
             }
 
             if (isLocalPhone)
@@ -421,7 +570,7 @@ namespace Scoops.misc
 
         public void CallButtonPressed()
         {
-            if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
+            if (!toggled || Plugin.InputActionInstance.DialPhoneKey.IsPressed())
             {
                 return;
             }
@@ -432,10 +581,13 @@ namespace Scoops.misc
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
                 incomingCall = null;
+                incomingCallUI.enabled = false;
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
                 StopRingingServerRpc();
                 PlayPickupSound();
                 Plugin.Log.LogInfo("Picking up: " + activeCall);
+
+                UpdateCallingUI(activeCall, "Connected");
             }
             else
             {
@@ -461,6 +613,7 @@ namespace Scoops.misc
             {
                 Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
                 dialedNumbers.Clear();
+                UpdateCallingUI("", "");
                 return;
             }
 
@@ -468,7 +621,7 @@ namespace Scoops.misc
             outgoingCall = number;
             dialedNumbers.Clear();
 
-            Plugin.Log.LogInfo("Dialing: " + number);
+            UpdateCallingUI(number, "Dialing...");
 
             PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number);
         }
@@ -478,7 +631,7 @@ namespace Scoops.misc
             if (isLocalPhone)
             {
                 thisAudio.Stop();
-                thisAudio.PlayOneShot(PhoneSoundManager.phoneHangup);
+                thisAudio.PlayOneShot(PhoneAssetManager.phoneHangup);
             }
         }
 
@@ -487,7 +640,7 @@ namespace Scoops.misc
             if (isLocalPhone)
             {
                 thisAudio.Stop();
-                thisAudio.PlayOneShot(PhoneSoundManager.phonePickup);
+                thisAudio.PlayOneShot(PhoneAssetManager.phonePickup);
             }
         }
 
@@ -616,7 +769,7 @@ namespace Scoops.misc
             {
                 PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
 
-                applyPhoneVoiceEffect(caller);
+                ApplyPhoneVoiceEffect(caller);
 
                 // Later we'll hear others in the background
                 for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
@@ -624,6 +777,57 @@ namespace Scoops.misc
 
                 }
             }
+        }
+
+        private void UpdateCallingUI(string number, string status)
+        {
+            string modifiedNumber = number;
+            while (modifiedNumber.Length < 4)
+            {
+                modifiedNumber = "-" + modifiedNumber;
+            }
+
+            dialingNumberUI.text = modifiedNumber;
+            phoneStatusUI.text = status;
+        }
+
+        [ServerRpc]
+        private void UpdateConnectionQualityServerRpc()
+        {
+            float newConnectionQuality = 1f;
+            LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy };
+            LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
+            if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+            {
+                newConnectionQuality -= 0.25f;
+            }
+            if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+            {
+                newConnectionQuality -= 0.5f;
+            }
+
+            if (player.isInsideFactory)
+            {
+                newConnectionQuality -= 0.1f;
+                float dist = 300f;
+
+                EntranceTeleport[] array = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>(false);
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (array[i].isEntranceToBuilding)
+                    {
+                        float newDist = Vector3.Distance(array[i].transform.position, player.transform.position);
+                        if (newDist < dist) 
+                        {
+                            dist = newDist;
+                        }
+                    }
+                }
+
+                newConnectionQuality -= Mathf.Lerp(0f, 0.4f, Mathf.InverseLerp(0f, 300f, dist));
+            }
+
+            connectionQuality.Value = newConnectionQuality;
         }
 
         [ClientRpc]
@@ -634,18 +838,13 @@ namespace Scoops.misc
                 player = transform.parent.GetComponent<PlayerControllerB>();
             }
 
-            Plugin.Log.LogInfo("New Phone Setup");
-
             this.phoneNumber = number;
 
             if (this.IsOwner)
             {
-                Plugin.Log.LogInfo("This is our phone, setting local");
                 PhoneNetworkHandler.Instance.localPhone = this;
                 isLocalPhone = true;
             }
-
-            if (isLocalPhone) Plugin.Log.LogInfo("New Phone for " + player.name + "! Your number is: " + phoneNumber);
         }
 
         [ClientRpc]
@@ -655,24 +854,28 @@ namespace Scoops.misc
 
             PlayHangupSound();
             outgoingCall = null;
+            UpdateCallingUI("", "");
         }
 
         [ClientRpc]
         public void RecieveCallClientRpc(int callerId, string callerNumber)
         {
-            Plugin.Log.LogInfo("Someone is calling with ID " + callerId + " with number " + callerNumber);
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[callerId];
 
-            RoundManager.Instance.PlayAudibleNoise(player.serverPlayerPosition, 16f, 0.9f, 0, player.isInElevator && StartOfRound.Instance.hangarDoorsClosed, 0);
+            activePhoneRingCoroutine = PhoneRingCoroutine(4);
+            StartCoroutine(activePhoneRingCoroutine);
             ringAudio.Play();
 
-            if (isLocalPhone) Plugin.Log.LogInfo("You've got a call from " + caller.name + " with number " + callerNumber);
-
-            if (incomingCall == null && activeCall == null)
+            if (incomingCall == null)
             {
-                Plugin.Log.LogInfo("Updating call values for " + player.name);
                 incomingCall = callerNumber;
                 incomingCaller = callerId;
+                incomingCallUI.enabled = true;
+                if (activeCall == null)
+                {
+                    dialedNumbers.Clear();
+                    UpdateCallingUI(incomingCall, "Incoming...");
+                }
             }
             else if (isLocalPhone)
             {
@@ -686,21 +889,19 @@ namespace Scoops.misc
         {
             PlayerControllerB accepter = StartOfRound.Instance.allPlayerScripts[accepterId];
 
-            if (isLocalPhone) Plugin.Log.LogInfo("Your call was accepted by " + accepter.name + " with number " + accepterNumber);
-
             if (outgoingCall != accepterNumber)
             {
-                Plugin.Log.LogInfo("We got a call we never made? " + player.name);
                 // Whoops, how did we get this call? Send back a no.
                 return;
             }
 
-            ringAudio.Stop();
+            StopRinging();
             PlayPickupSound();
 
             outgoingCall = null;
             activeCall = accepterNumber;
             activeCaller = accepterId;
+            UpdateCallingUI(activeCall, "Connected");
         }
 
         [ClientRpc]
@@ -708,25 +909,28 @@ namespace Scoops.misc
         {
             PlayerControllerB canceller = StartOfRound.Instance.allPlayerScripts[cancellerId];
 
-            if (isLocalPhone) Plugin.Log.LogInfo("Your call was hung up by " + canceller.name + " with number " + cancellerNumber);
-
             if (activeCall == cancellerNumber)
             {
                 PlayHangupSound();
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                UpdateCallingUI("", "");
             }
             else if (outgoingCall == cancellerNumber)
             {
                 // outgoing call was invalid
                 outgoingCall = null;
+                thisAudio.Stop();
+                UpdateCallingUI("", "");
             }
             else if (incomingCall == cancellerNumber)
             {
                 // incoming call cancelled
-                ringAudio.Stop();
+                StopRinging();
                 thisAudio.Stop();
                 incomingCall = null;
+                incomingCallUI.enabled = false;
+                UpdateCallingUI("", "");
             }
             else
             {
@@ -770,11 +974,30 @@ namespace Scoops.misc
         [ClientRpc]
         public void StopRingingClientRpc()
         {
+            StopRinging();
+        }
+
+        private void StopRinging()
+        {
+            if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
             ringAudio.Stop();
         }
 
-        private static void applyPhoneVoiceEffect(PlayerControllerB playerController)
+        private IEnumerator PhoneRingCoroutine(int repeats)
         {
+            for (int i = 0; i < repeats; i++)
+            {
+                RoundManager.Instance.PlayAudibleNoise(player.serverPlayerPosition, 16f, 0.9f, i, player.isInElevator && StartOfRound.Instance.hangarDoorsClosed, 0);
+                yield return new WaitForSeconds(4f);
+            }
+        }
+
+        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController)
+        {
+            PlayerPhone callerPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+
+            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+
             AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
@@ -789,9 +1012,10 @@ namespace Scoops.misc
             currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
             currentVoiceChatAudioSource.bypassListenerEffects = false;
             currentVoiceChatAudioSource.bypassEffects = false;
-            currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : 0.4f;
-            occludeAudio.lowPassOverride = 4000f;
-            lowPass.lowpassResonanceQ = 3f;
+            currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : -0.4f;
+            occludeAudio.lowPassOverride = Mathf.Lerp(5000f, 4000f, worseConnection);
+            lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, worseConnection);
+            highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, worseConnection);
         }
     }
 }

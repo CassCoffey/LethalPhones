@@ -15,7 +15,7 @@ public class LethalPhonesInputClass : LcInputActions
     [InputAction("<Keyboard>/0", Name = "Toggle Phone")]
     public InputAction TogglePhoneKey { get; set; }
 
-    [InputAction("<Mouse>/rightButton", Name = "Hangup Phone")]
+    [InputAction("<Keyboard>/q", Name = "Hangup Phone")]
     public InputAction HangupPhoneKey { get; set; }
 
     [InputAction("<Mouse>/leftButton", Name = "Pickup Phone")]
@@ -51,7 +51,7 @@ public class Plugin : BaseUnityPlugin
         var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "lethalphonesassets");
         LethalPhoneAssets = AssetBundle.LoadFromFile(assetBundleFilePath);
 
-        PhoneSoundManager.Init();
+        PhoneAssetManager.Init();
 
         Log.LogInfo($"Applying patches...");
         ApplyPluginPatch();

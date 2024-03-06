@@ -6,6 +6,7 @@ using Scoops.service;
 using System;
 using UnityEngine.InputSystem;
 using UnityEngine.Animations.Rigging;
+using System.ComponentModel;
 
 namespace Scoops.patch;
 
@@ -61,39 +62,152 @@ public class PlayerPhonePatch
         PhoneManager.CreateNewPhone();
 
         Keyboard.current.onTextInput += KeyboardType;
+        Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
+        Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;
+        Plugin.InputActionInstance.HangupPhoneKey.performed += OnHangupPhoneKeyPressed;
     }
 
-    [HarmonyPatch("Update")]
-    [HarmonyPostfix]
-    private static void ReadInput(ref PlayerControllerB __instance)
+    private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)
     {
-        if (((!((NetworkBehaviour)__instance).IsOwner || !__instance.isPlayerControlled || (((NetworkBehaviour)__instance).IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer) || __instance.inTerminalMenu || __instance.isTypingChat || !Application.isFocused)
+        PlayerControllerB localPlayer = PhoneManager.localPhone.player;
+        if (localPlayer == null)
+        {
+            return;
+        }
+        if (localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
         {
             return;
         }
 
-        if (Plugin.InputActionInstance.TogglePhoneKey.triggered)
-        {
-            PhoneManager.localPhone.ToggleActive(!PhoneManager.localPhone.toggled);
-            if (PhoneManager.localPhone.toggled)
-            {
-                Plugin.Log.LogInfo("Phone opened! Your number is: " + PhoneManager.localPhone.phoneNumber + ", your name is: " + __instance.gameObject.name);
-            } else
-            {
-                Plugin.Log.LogInfo("Phone closed!");
-            }
-        }
+        PhoneManager.localPhone.ToggleActive(!PhoneManager.localPhone.toggled);
+    }
 
+    private static void OnPickupPhoneKeyPressed(InputAction.CallbackContext context)
+    {
+        PhoneManager.localPhone.CallButtonPressed();
+    }
+
+    private static void OnHangupPhoneKeyPressed(InputAction.CallbackContext context)
+    {
+        PhoneManager.localPhone.HangupButtonPressed();
+    }
+
+    [HarmonyPatch("KillPlayerClientRpc")]
+    [HarmonyPostfix]
+    private static void PlayerDeath(ref PlayerControllerB __instance, int playerId, bool spawnBody, Vector3 bodyVelocity, int causeOfDeath, int deathAnimation)
+    {
+        if (__instance.IsOwner)
+        {
+            Plugin.Log.LogInfo("We died!");
+            PhoneManager.localPhone.Death(causeOfDeath);
+        }
+    }
+
+    [HarmonyPatch("ActivateItem_performed")]
+    [HarmonyPrefix]
+    private static bool ActivateItem_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return true;
+        }
         if (PhoneManager.localPhone.toggled)
         {
-            if (Plugin.InputActionInstance.PickupPhoneKey.triggered)
-            {
-                PhoneManager.localPhone.CallButtonPressed();
-            } 
-            else if (Plugin.InputActionInstance.HangupPhoneKey.triggered)
-            {
-                PhoneManager.localPhone.HangupButtonPressed();
-            }
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPatch("InspectItem_performed")]
+    [HarmonyPrefix]
+    private static bool InspectItem_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return true;
+        }
+        if (PhoneManager.localPhone.toggled)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPatch("QEItemInteract_performed")]
+    [HarmonyPrefix]
+    private static bool QEItemInteract_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return true;
+        }
+        if (PhoneManager.localPhone.toggled)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPatch("ItemSecondaryUse_performed")]
+    [HarmonyPrefix]
+    private static bool ItemSecondaryUse_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return true;
+        }
+        if (PhoneManager.localPhone.toggled)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPatch("ItemTertiaryUse_performed")]
+    [HarmonyPrefix]
+    private static bool ItemTertiaryUse_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return true;
+        }
+        if (PhoneManager.localPhone.toggled)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPatch("Interact_performed")]
+    [HarmonyPostfix]
+    private static void Interact_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return;
+        }
+        if (PhoneManager.localPhone.toggled && (__instance.inTerminalMenu || __instance.isHoldingObject))
+        {
+            PhoneManager.localPhone.ToggleActive(false);
+        }
+    }
+
+    [HarmonyPatch("ScrollMouse_performed")]
+    [HarmonyPostfix]
+    private static void ScrollMouse_performed(ref PlayerControllerB __instance)
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return;
+        }
+        if (PhoneManager.localPhone.toggled && __instance.isHoldingObject)
+        {
+            PhoneManager.localPhone.ToggleActive(false);
         }
     }
 

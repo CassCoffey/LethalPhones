@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Scoops.service
 {
-    public class PhoneSoundManager
+    public class PhoneAssetManager
     {
         public static AudioClip phoneRingCaller;
         public static AudioClip phoneRingReciever;
@@ -19,7 +19,7 @@ namespace Scoops.service
 
         public static void Init()
         {
-            Plugin.Log.LogInfo($"Loading Sounds...");
+            Plugin.Log.LogInfo($"Loading Assets...");
             Plugin.Log.LogInfo(String.Join(", ", Plugin.LethalPhoneAssets.GetAllAssetNames()));
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
