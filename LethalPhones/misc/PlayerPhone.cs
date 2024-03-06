@@ -1,5 +1,6 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
+using Scoops.patch;
 using Scoops.service;
 using System;
 using System.Collections;
@@ -704,18 +705,7 @@ namespace Scoops.misc
             {
                 return;
             }
-            int num = Physics.OverlapSphereNonAlloc(base.transform.position, this.recordingRange, this.collidersInRange, Physics.AllLayers, QueryTriggerInteraction.Collide);
-            for (int i = 0; i < num; i++)
-            {
-                if (!this.collidersInRange[i].gameObject.GetComponent<WalkieTalkie>())
-                {
-                    AudioSource component = this.collidersInRange[i].GetComponent<AudioSource>();
-                    if (component != null && component.isPlaying && component.clip != null && component.time > 0f && !this.audioSourcesToReplay.Contains(component))
-                    {
-                        this.audioSourcesToReplay.Add(component);
-                    }
-                }
-            }
+            this.audioSourcesToReplay = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(localPhoneModel.transform.position);
         }
 
         private void TimeAllAudioSources()
@@ -732,83 +722,17 @@ namespace Scoops.misc
                     AudioSource audioSource = callerPhone.audioSourcesToReplay[j];
                     if (!(audioSource == null))
                     {
-                        if (this.audioSourcesReceiving.TryAdd(audioSource, null))
-                        {
-                            this.audioSourcesReceiving[audioSource] = this.target.gameObject.AddComponent<AudioSource>();
-                            this.audioSourcesReceiving[audioSource].clip = audioSource.clip;
-                            try
-                            {
-                                if (audioSource.time >= audioSource.clip.length)
-                                {
-                                    Plugin.Log.LogInfo(string.Format("phone: {0}, {1}, {2}", audioSource.time, audioSource.clip.length, audioSource.clip.name));
-                                    if (audioSource.time - 0.05f < audioSource.clip.length)
-                                    {
-                                        this.audioSourcesReceiving[audioSource].time = Mathf.Clamp(audioSource.time - 0.05f, 0f, 1000f);
-                                    }
-                                    else
-                                    {
-                                        this.audioSourcesReceiving[audioSource].time = audioSource.time / 5f;
-                                    }
-                                    Plugin.Log.LogInfo(string.Format("sourcetime: {0}", this.audioSourcesReceiving[audioSource].time));
-                                }
-                                else
-                                {
-                                    this.audioSourcesReceiving[audioSource].time = audioSource.time;
-                                }
-                                this.audioSourcesReceiving[audioSource].spatialBlend = 1f;
-                                this.audioSourcesReceiving[audioSource].Play();
-                            }
-                            catch (Exception ex)
-                            {
-                                Plugin.Log.LogInfo(string.Format("Error while playing audio clip in phone. Clip name: {0} object: {1}; time: {2}; {3}", new object[]
-                                {
-                                        audioSource.clip.name,
-                                        audioSource.gameObject.name,
-                                        audioSource.time,
-                                        ex
-                                }));
-                            }
-                        }
-                        float num = Vector3.Distance(audioSource.transform.position, callerPhone.transform.position);
-                        Plugin.Log.LogInfo(string.Format("Receiving audiosource with name: {0}; recording distance: {1}", audioSource.gameObject.name, num));
-                        if (num > this.recordingRange + 7f)
-                        {
-                            Plugin.Log.LogInfo("Recording distance out of range; removing audio with name: " + audioSource.gameObject.name);
-                            AudioSource obj;
-                            this.audioSourcesReceiving.Remove(audioSource, out obj);
-                            UnityEngine.Object.Destroy(obj);
-                            callerPhone.audioSourcesToReplay.RemoveAt(j);
-                        }
-                        else
-                        {
-                            this.audioSourcesReceiving[audioSource].volume = Mathf.Lerp(this.maxVolume, 0f, num / (this.recordingRange + 3f));
-                            if ((audioSource.isPlaying && !this.audioSourcesReceiving[audioSource].isPlaying) || audioSource.clip != this.audioSourcesReceiving[audioSource].clip)
-                            {
-                                this.audioSourcesReceiving[audioSource].clip = audioSource.clip;
-                                this.audioSourcesReceiving[audioSource].Play();
-                            }
-                            else if (!audioSource.isPlaying)
-                            {
-                                this.audioSourcesReceiving[audioSource].Stop();
-                            }
-                            this.audioSourcesReceiving[audioSource].time = audioSource.time;
-                        }
+                        audioSource.spatialBlend = 0f;
                     }
                 }
             }
             else if (activeCall == null)
             {
                 activeCaller = -1;
-                foreach (AudioSource key in callerPhone.audioSourcesToReplay)
+                foreach (AudioSource source in callerPhone.audioSourcesToReplay)
                 {
-                    if (this.audioSourcesReceiving.ContainsKey(key))
-                    {
-                        AudioSource obj;
-                        this.audioSourcesReceiving.Remove(key, out obj);
-                        UnityEngine.Object.Destroy(obj);
-                    }
+                    source.spatialBlend = 1f;
                 }
-                callerPhone.audioSourcesToReplay.Clear();
             }
         }
 
