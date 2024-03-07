@@ -6,6 +6,129 @@ using UnityEngine;
 
 namespace Scoops.service
 {
+    public class AudioSourceStorage
+    {
+        public AudioSource audioSource;
+        private GameObject audioSourceHolder;
+        private float origVolume;
+        private float origPan;
+        private bool hadDistortion;
+        private bool hadLowPass;
+        private bool hadHighPass;
+        private float origDistortion;
+        private float origLowPass;
+        private float origHighPass;
+        
+        public AudioSourceStorage(AudioSource audioSource)
+        {
+            this.audioSource = audioSource;
+            this.audioSourceHolder = audioSource.gameObject;
+            this.origVolume = audioSource.volume;
+            this.origPan = audioSource.panStereo;
+            this.hadDistortion = audioSourceHolder.GetComponent<AudioDistortionFilter>() != null;
+            this.hadLowPass = audioSourceHolder.GetComponent<AudioLowPassFilter>() != null;
+            this.hadHighPass = audioSourceHolder.GetComponent<AudioHighPassFilter>() != null;
+
+            if (hadDistortion)
+            {
+                origDistortion = audioSourceHolder.GetComponent<AudioDistortionFilter>().distortionLevel;
+            }
+            if (hadLowPass)
+            {
+                origLowPass = audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency;
+            }
+            if (hadHighPass)
+            {
+                origHighPass = audioSourceHolder.GetComponent<AudioHighPassFilter>().cutoffFrequency;
+            }
+        }
+
+        public void InitAudio()
+        {
+            audioSource.spatialBlend = 0f;
+            audioSource.panStereo = -0.4f;
+
+            if (!hadDistortion)
+            {
+                audioSourceHolder.AddComponent<AudioDistortionFilter>();
+            }
+            if (!hadLowPass)
+            {
+                audioSourceHolder.AddComponent<AudioLowPassFilter>();
+            }
+            if (!hadHighPass)
+            {
+                audioSourceHolder.AddComponent<AudioHighPassFilter>();
+            }
+
+            audioSourceHolder.GetComponent<AudioDistortionFilter>().distortionLevel = 0.4f;
+            audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = 2899f;
+            audioSourceHolder.GetComponent<AudioHighPassFilter>().cutoffFrequency = 1613f;
+        }
+
+        public void ApplyPhone(Vector3 position)
+        {
+            float dist = Vector3.Distance(position, audioSource.transform.position);
+            if (audioSource.rolloffMode == AudioRolloffMode.Linear)
+            {
+                float mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.minDistance, audioSource.maxDistance, dist) - 0.1f);
+                audioSource.volume = origVolume * mod;
+            } 
+            else
+            {
+                float mod = Mathf.Clamp01((audioSource.minDistance * (1 / (2 * (dist - 1)))) - 0.1f);
+                audioSource.volume = origVolume * mod;
+            }
+        }
+
+        public void ApplyPhone(float dist)
+        {
+            if (audioSource.rolloffMode == AudioRolloffMode.Linear)
+            {
+                float mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.minDistance, audioSource.maxDistance, dist) - 0.1f);
+                audioSource.volume = origVolume * mod;
+            }
+            else
+            {
+                float mod = Mathf.Clamp01((audioSource.minDistance * (1 / (2 * (dist - 1)))) - 0.1f);
+                audioSource.volume = origVolume * mod;
+            }
+        }
+
+        public void Reset()
+        {
+            audioSource.spatialBlend = 1f;
+            audioSource.panStereo = origPan;
+            audioSource.volume = origVolume;
+            if (hadDistortion)
+            {
+                audioSourceHolder.GetComponent<AudioDistortionFilter>().distortionLevel = origDistortion;
+            } 
+            else
+            {
+                GameObject.Destroy(audioSourceHolder.GetComponent<AudioDistortionFilter>());
+            }
+
+            if (hadLowPass)
+            {
+                audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = origLowPass;
+            }
+            else
+            {
+                GameObject.Destroy(audioSourceHolder.GetComponent<AudioLowPassFilter>());
+            }
+
+            if (hadHighPass)
+            {
+                audioSourceHolder.GetComponent<AudioHighPassFilter>().cutoffFrequency = origHighPass;
+            }
+            else
+            {
+                GameObject.Destroy(audioSourceHolder.GetComponent<AudioHighPassFilter>());
+            }
+        }
+    }
+
     public class PhoneAssetManager
     {
         public static AudioClip phoneRingCaller;

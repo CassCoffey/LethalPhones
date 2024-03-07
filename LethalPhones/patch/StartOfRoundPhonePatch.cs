@@ -2,6 +2,7 @@
 using Scoops.service;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace Scoops.patch
 {
@@ -38,7 +39,10 @@ namespace Scoops.patch
             {
                 if (allAudioSources[i].spatialBlend != 0f)
                 {
-                    sortedSources.Add(allAudioSources[i]);
+                    if (allAudioSources[i].outputAudioMixerGroup && allAudioSources[i].outputAudioMixerGroup.audioMixer.name != "NonDiagetic")
+                    {
+                        sortedSources.Add(allAudioSources[i]);
+                    }
                 }
             }
         }

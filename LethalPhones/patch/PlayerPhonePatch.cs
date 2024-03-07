@@ -206,7 +206,7 @@ public class PlayerPhonePatch
     [HarmonyPostfix]
     private static void GrabObjectClientRpc(ref PlayerControllerB __instance, bool grabValidated, NetworkObjectReference grabbedObject)
     {
-        if (grabValidated && PhoneManager.localPhone.toggled)
+        if (grabValidated && __instance.IsLocalPlayer && PhoneManager.localPhone.toggled)
         {
             PhoneManager.localPhone.ToggleActive(false);
         }

@@ -59,8 +59,8 @@ namespace Scoops.misc
         private float recordingRange = 6f;
         private float maxVolume = 0.6f;
 
-        private List<AudioSource> audioSourcesToReplay = new List<AudioSource>();
-        private Dictionary<AudioSource, AudioSource> audioSourcesReceiving = new Dictionary<AudioSource, AudioSource>();
+        private List<AudioSource> audioSourcesInRange = new List<AudioSource>();
+        private Dictionary<AudioSource, AudioSourceStorage> audioStorages = new Dictionary<AudioSource, AudioSourceStorage>();
 
         public Collider[] collidersInRange = new Collider[30];
 
@@ -145,7 +145,6 @@ namespace Scoops.misc
                 HUDManager.Instance.ChangeControlTip(1, "Hangup Phone : [" + Plugin.InputActionInstance.HangupPhoneKey.bindings[0].ToDisplayString() + "]", false);
                 HUDManager.Instance.ChangeControlTip(2, "Dial Phone : [" + Plugin.InputActionInstance.DialPhoneKey.bindings[0].ToDisplayString() + "]", false);
                 HUDManager.Instance.ChangeControlTip(3, "Toggle Phone Volume : [" + Plugin.InputActionInstance.VolumePhoneKey.bindings[0].ToDisplayString() + "]", false);
-                HUDManager.Instance.ChangeControlTip(4, "Put Away Phone : [" + Plugin.InputActionInstance.TogglePhoneKey.bindings[0].ToDisplayString() + "]", false);
             } 
             else
             {
@@ -205,24 +204,18 @@ namespace Scoops.misc
                 this.UpdatePlayerVoices();
             }
 
-            if (this.cleanUpInterval >= 0f)
+            if (this.activeCall == null && audioStorages.Count > 0)
             {
-                this.cleanUpInterval -= Time.deltaTime;
-            }
-            else
-            {
-                this.cleanUpInterval = 15f;
-                if (this.audioSourcesReceiving.Count > 10)
+                foreach (KeyValuePair<AudioSource, AudioSourceStorage> keyValuePair in this.audioStorages)
                 {
-                    foreach (KeyValuePair<AudioSource, AudioSource> keyValuePair in this.audioSourcesReceiving)
-                    {
-                        if (keyValuePair.Key == null)
-                        {
-                            this.audioSourcesReceiving.Remove(keyValuePair.Key);
-                        }
-                    }
+                    keyValuePair.Value.Reset();
                 }
+
+                this.audioStorages.Clear();
             }
+
+            this.TimeAllAudioSources();
+
             if (this.updateInterval >= 0f)
             {
                 this.updateInterval -= Time.deltaTime;
@@ -230,7 +223,6 @@ namespace Scoops.misc
             }
             this.updateInterval = 0.3f;
             this.GetAllAudioSourcesToReplay();
-            this.TimeAllAudioSources();
 
             if (isLocalPhone)
             {
@@ -625,6 +617,8 @@ namespace Scoops.misc
 
         public void VolumeButtonPressed()
         {
+            if (!toggled)
+
             thisAudio.Stop();
             thisAudio.PlayOneShot(PhoneAssetManager.phoneSwitch);
 
@@ -701,11 +695,20 @@ namespace Scoops.misc
 
         private void GetAllAudioSourcesToReplay()
         {
-            if (activeCall == null)
+            if (isLocalPhone || PhoneNetworkHandler.Instance.localPhone == null || player == null || activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber)
             {
                 return;
             }
-            this.audioSourcesToReplay = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(localPhoneModel.transform.position);
+            audioSourcesInRange = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(player.transform.position);
+            foreach (AudioSource source in audioSourcesInRange)
+            {
+                if (source != player.currentVoiceChatAudioSource && !audioStorages.ContainsKey(source))
+                {
+                    AudioSourceStorage storage = new AudioSourceStorage(source);
+                    storage.InitAudio();
+                    audioStorages.Add(source, storage);
+                }
+            }
         }
 
         private void TimeAllAudioSources()
@@ -717,21 +720,38 @@ namespace Scoops.misc
 
             if (activeCall != null)
             {
-                for (int j = callerPhone.audioSourcesToReplay.Count - 1; j >= 0; j--)
+                for (int j = callerPhone.audioSourcesInRange.Count - 1; j >= 0; j--)
                 {
-                    AudioSource audioSource = callerPhone.audioSourcesToReplay[j];
-                    if (!(audioSource == null))
+                    if (callerPhone.audioSourcesInRange[j] != caller.currentVoiceChatAudioSource)
                     {
-                        audioSource.spatialBlend = 0f;
+                        float callerDist = Vector3.Distance(callerPhone.audioSourcesInRange[j].transform.position, caller.transform.position);
+                        float playerDist = Vector3.Distance(callerPhone.audioSourcesInRange[j].transform.position, player.transform.position);
+                        AudioSourceStorage source = callerPhone.audioStorages[callerPhone.audioSourcesInRange[j]];
+
+                        if (callerDist > playerDist)
+                        {
+                            source.ApplyPhone(callerDist);
+                        } 
+                        else
+                        {
+                            source.Reset();
+                            audioStorages.Remove(callerPhone.audioSourcesInRange[j]);
+                        }
+                        
                     }
                 }
             }
             else if (activeCall == null)
             {
                 activeCaller = -1;
-                foreach (AudioSource source in callerPhone.audioSourcesToReplay)
+                foreach (AudioSource source in callerPhone.audioSourcesInRange)
                 {
-                    source.spatialBlend = 1f;
+                    if (source != caller.currentVoiceChatAudioSource)
+                    {
+                        AudioSourceStorage storage = callerPhone.audioStorages[source];
+                        storage.Reset();
+                        audioStorages.Remove(source);
+                    }
                 }
             }
         }
