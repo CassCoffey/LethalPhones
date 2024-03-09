@@ -68,6 +68,7 @@ namespace Scoops.misc
         private float timeSinceRotaryMoved = 0f;
         private bool reversingRotary = false;
         private bool previousToggled = false;
+        private bool stoppered = false;
 
         public NetworkVariable<float> connectionQuality = new NetworkVariable<float>(1f);
 
@@ -330,6 +331,7 @@ namespace Scoops.misc
                 }
                 else if (!reversingRotary && Plugin.InputActionInstance.PickupPhoneKey.WasPressedThisFrame())
                 {
+                    stoppered = false;
                     float closestDist = 100f;
                     GameObject closestNum = null;
 
@@ -400,6 +402,7 @@ namespace Scoops.misc
                         {
                             rotaryAudio.Stop();
                             rotaryAudio.PlayOneShot(PhoneAssetManager.phoneRotaryStopper);
+                            stoppered = true;
                         }
 
                         timeSinceRotaryMoved += Time.deltaTime;
@@ -429,27 +432,35 @@ namespace Scoops.misc
 
             if (!reversingRotary && localPhoneDial.localEulerAngles.z != 0f && (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || Plugin.InputActionInstance.PickupPhoneKey.WasReleasedThisFrame()))
             {
-                currentDialingNumber = null;
-                reversingRotary = true;
-
-                float closestDist = 100f;
-                GameObject closestNum = null;
-
-                foreach (GameObject number in localPhoneDialNumbers)
+                if (stoppered)
                 {
-                    float dist = Vector3.Distance(number.transform.position, localPhoneStopperNode.transform.position);
-                    Vector3 localNumPos = localPhoneStopperNode.parent.InverseTransformPoint(number.transform.position);
-                    if (dist < closestDist && localNumPos.y <= localPhoneStopperNode.localPosition.y)
+                    DialNumber(int.Parse(currentDialingNumber.gameObject.name));
+                }
+                else
+                {
+                    float closestDist = 100f;
+                    GameObject closestNum = null;
+
+                    foreach (GameObject number in localPhoneDialNumbers)
                     {
-                        closestDist = dist;
-                        closestNum = number;
+                        float dist = Vector3.Distance(number.transform.position, localPhoneStopperNode.transform.position);
+                        Vector3 localNumPos = localPhoneStopperNode.parent.InverseTransformPoint(number.transform.position);
+                        if (dist < closestDist && localNumPos.y <= localPhoneStopperNode.localPosition.y)
+                        {
+                            closestDist = dist;
+                            closestNum = number;
+                        }
+                    }
+
+                    if (closestDist <= 0.05f)
+                    {
+                        DialNumber(int.Parse(closestNum.name));
                     }
                 }
 
-                if (closestDist <= 0.05f)
-                {
-                    DialNumber(int.Parse(closestNum.name));
-                }
+                currentDialingNumber = null;
+                reversingRotary = true;
+                stoppered = false;
 
                 rotaryAudio.Stop();
                 rotaryAudio.clip = PhoneAssetManager.phoneRotaryBackward;
