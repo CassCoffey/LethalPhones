@@ -8,6 +8,8 @@ namespace Scoops.service
 {
     public class AudioSourceStorage
     {
+        public static float GLOBAL_SOUND_MOD = -0.1f;
+
         public AudioSource audioSource;
         private GameObject audioSourceHolder;
         private float origVolume;
@@ -88,16 +90,16 @@ namespace Scoops.service
 
                 if (audioSource.rolloffMode == AudioRolloffMode.Linear)
                 {
-                    mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.maxDistance, audioSource.minDistance, dist));
+                    mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.maxDistance, audioSource.minDistance, dist) + GLOBAL_SOUND_MOD);
                 }
                 else if (audioSource.rolloffMode == AudioRolloffMode.Custom)
                 {
                     AnimationCurve audioRolloffCurve = audioSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
-                    mod = audioRolloffCurve.Evaluate(dist / audioSource.maxDistance);
+                    mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(dist / audioSource.maxDistance) + GLOBAL_SOUND_MOD);
                 }
                 else
                 {
-                    mod = Mathf.Clamp01(audioSource.minDistance * (1 / (1 + (dist - 1))));
+                    mod = Mathf.Clamp01((audioSource.minDistance * (1 / (1 + (dist - 1)))) + GLOBAL_SOUND_MOD);
                 }
 
                 audioSource.volume = origVolume * mod;

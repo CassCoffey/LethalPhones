@@ -17,6 +17,8 @@ namespace Scoops.misc
     public class PlayerPhone : NetworkBehaviour
     {
         public static float RECORDING_START_DIST = 15f;
+        public static float BACKGROUND_VOICE_DIST = 20f;
+        public static float EAVESDROP_DIST = 5f;
 
         public PlayerControllerB player;
         public GameObject localPhoneModel;
@@ -62,6 +64,8 @@ namespace Scoops.misc
 
         private List<AudioSource> untrackedAudioSources = new List<AudioSource>();
         private List<AudioSourceStorage> audioSourcesInRange = new List<AudioSourceStorage>();
+
+        private HashSet<PlayerControllerB> modifiedPlayerVoices = new HashSet<PlayerControllerB>();
 
         private float updateInterval;
 
@@ -208,19 +212,31 @@ namespace Scoops.misc
             if (isLocalPhone)
             {
                 this.ManageInputs();
-                this.UpdatePlayerVoices();
             }
 
-            if (this.activeCall == null && audioSourcesInRange.Count > 0)
+            if (this.activeCall == null)
             {
-                foreach (AudioSourceStorage storage in this.audioSourcesInRange)
+                if (audioSourcesInRange.Count > 0)
                 {
-                    storage.Reset();
-                }
+                    foreach (AudioSourceStorage storage in this.audioSourcesInRange)
+                    {
+                        storage.Reset();
+                    }
 
-                this.audioSourcesInRange.Clear();
+                    this.audioSourcesInRange.Clear();
+                }
+                if (modifiedPlayerVoices.Count > 0)
+                {
+                    foreach(PlayerControllerB player in modifiedPlayerVoices)
+                    {
+                        RemovePhoneVoiceEffect(player);
+                    }
+
+                    this.modifiedPlayerVoices.Clear();
+                }
             }
 
+            this.UpdatePlayerVoices();
             this.UpdateAllAudioSources();
             this.GetAllAudioSourcesToUpdate();
 
@@ -791,7 +807,11 @@ namespace Scoops.misc
 
         private void GetAllAudioSourcesToUpdate()
         {
-            if (isLocalPhone || PhoneNetworkHandler.Instance.localPhone == null || player == null || activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber)
+            if (isLocalPhone || PhoneNetworkHandler.Instance.localPhone == null || player == null)
+            {
+                return;
+            }
+            if (activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !(GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == player))
             {
                 return;
             }
@@ -809,7 +829,11 @@ namespace Scoops.misc
 
         private void UpdateAllAudioSources()
         {
-            if (!isLocalPhone || activeCaller == -1) return;
+            if (activeCaller == -1) return;
+            if (!isLocalPhone || !(GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == player))
+            {
+                return;
+            }
 
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
             if (caller == null)
@@ -855,7 +879,6 @@ namespace Scoops.misc
             else if (activeCall == null)
             {
                 activeCaller = -1;
-                RemovePhoneVoiceEffect(caller);
                 for (int j = callerPhone.audioSourcesInRange.Count - 1; j >= 0; j--)
                 {
                     AudioSourceStorage storage = callerPhone.audioSourcesInRange[j];
@@ -867,24 +890,58 @@ namespace Scoops.misc
 
         private void UpdatePlayerVoices()
         {
-            if (player == null || GameNetworkManager.Instance == null || player != GameNetworkManager.Instance.localPlayerController || GameNetworkManager.Instance.localPlayerController == null || !isLocalPhone)
+            if (player == null || GameNetworkManager.Instance == null || GameNetworkManager.Instance.localPlayerController == null)
             {
                 return;
             }
-
+            
             if (activeCaller != -1)
             {
+                float listenDist = 0f;
+                if (!isLocalPhone)
+                {
+                    if (!(GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == player))
+                    {
+                        listenDist = Vector3.Distance(GameNetworkManager.Instance.localPlayerController.transform.position, player.transform.position);
+                        if (listenDist > EAVESDROP_DIST)
+                        {
+                            return;
+                        }
+                    }
+                }
                 PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
 
                 float dist = Vector3.Distance(caller.transform.position, player.transform.position);
                 
                 if (dist > RECORDING_START_DIST)
                 {
-                    ApplyPhoneVoiceEffect(caller);
+                    modifiedPlayerVoices.Add(caller);
+                    ApplyPhoneVoiceEffect(caller, 0f, listenDist);
                 } 
                 else
                 {
+                    modifiedPlayerVoices.Remove(caller);
                     RemovePhoneVoiceEffect(caller);
+                }
+
+                for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+                {
+                    PlayerControllerB background = StartOfRound.Instance.allPlayerScripts[i];
+                    if (background != caller && background != player)
+                    {
+                        float callDist = Vector3.Distance(background.transform.position, caller.transform.position);
+                        float localDist = Vector3.Distance(background.transform.position, player.transform.position);
+                        if (localDist > RECORDING_START_DIST && callDist < BACKGROUND_VOICE_DIST)
+                        {
+                            modifiedPlayerVoices.Add(background);
+                            ApplyPhoneVoiceEffect(background, callDist, listenDist);
+                        }
+                        else
+                        {
+                            modifiedPlayerVoices.Remove(background);
+                            RemovePhoneVoiceEffect(background);
+                        }
+                    }
                 }
             }
         }
@@ -1078,7 +1135,6 @@ namespace Scoops.misc
             incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
             activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
             incomingCaller = incomingCallerUpdate;
-            //activeCaller = activeCallerUpdate;
             currentVolume = (phoneVolume)volumeUpdate;
         }
 
@@ -1194,7 +1250,7 @@ namespace Scoops.misc
             }
         }
 
-        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController)
+        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f)
         {
             PlayerPhone callerPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
 
@@ -1218,6 +1274,7 @@ namespace Scoops.misc
             lowPass.enabled = true;
             occludeAudio.overridingLowPass = true;
 
+            currentVoiceChatAudioSource.volume = 1f;
             currentVoiceChatAudioSource.spatialBlend = 0f;
             playerController.currentVoiceChatIngameSettings.set2D = true;
             currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
@@ -1227,6 +1284,20 @@ namespace Scoops.misc
             occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, worseConnection);
             lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, worseConnection);
             highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, worseConnection);
+
+            if (distance != 0f)
+            {
+                float mod = Mathf.Clamp01(Mathf.InverseLerp(BACKGROUND_VOICE_DIST, 0f, distance));
+                currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
+                occludeAudio.lowPassOverride = 1500f;
+            }
+
+            if (listeningDistance != 0f)
+            {
+                float mod = Mathf.Clamp01(Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance));
+                currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
+                occludeAudio.lowPassOverride = 500f;
+            }
 
             if (playerController.voiceMuffledByEnemy)
             {
@@ -1256,6 +1327,7 @@ namespace Scoops.misc
             lowPass.enabled = true;
             occludeAudio.overridingLowPass = playerController.voiceMuffledByEnemy;
 
+            currentVoiceChatAudioSource.volume = 1f;
             currentVoiceChatAudioSource.spatialBlend = 1f;
             playerController.currentVoiceChatIngameSettings.set2D = false;
             currentVoiceChatAudioSource.bypassListenerEffects = false;

@@ -57,6 +57,10 @@ namespace Scoops.patch
         {
             List<AudioSource> closeSources = new List<AudioSource>();
             PlayerControllerB localPlayer = StartOfRound.Instance.localPlayerController;
+            if (localPlayer.isPlayerDead)
+            {
+                localPlayer = localPlayer.spectatedPlayerScript;
+            }
 
             if (localPlayer != null && sortedSources.Count > 0)
             {
