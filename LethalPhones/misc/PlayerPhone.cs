@@ -946,11 +946,11 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void InvalidCallClientRpc()
+        public void InvalidCallClientRpc(string reason)
         {
-            Plugin.Log.LogInfo("Invalid number.");
+            Plugin.Log.LogInfo(reason);
 
-            StartCoroutine(PhoneBusyCoroutine("Invalid #"));
+            StartCoroutine(PhoneBusyCoroutine(reason));
         }
 
         [ClientRpc]
@@ -968,15 +968,13 @@ namespace Scoops.misc
             else if (isLocalPhone)
             {
                 // Line is busy
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(callerNumber);
+                PhoneNetworkHandler.Instance.LineBusyServerRpc(callerNumber);
             }
         }
 
         [ClientRpc]
         public void CallAcceptedClientRpc(int accepterId, string accepterNumber)
         {
-            PlayerControllerB accepter = StartOfRound.Instance.allPlayerScripts[accepterId];
-
             if (outgoingCall != accepterNumber)
             {
                 // Whoops, how did we get this call? Send back a no.
@@ -995,8 +993,6 @@ namespace Scoops.misc
         [ClientRpc]
         public void HangupCallClientRpc(int cancellerId, string cancellerNumber)
         {
-            PlayerControllerB canceller = StartOfRound.Instance.allPlayerScripts[cancellerId];
-
             if (activeCall == cancellerNumber)
             {
                 PlayHangupSound();
@@ -1007,7 +1003,9 @@ namespace Scoops.misc
             else if (outgoingCall == cancellerNumber)
             {
                 // Line busy
-                StartCoroutine(PhoneBusyCoroutine("Line Busy"));
+                PlayHangupSound();
+                outgoingCall = null;
+                UpdateCallingUI();
             }
             else if (incomingCall == cancellerNumber)
             {

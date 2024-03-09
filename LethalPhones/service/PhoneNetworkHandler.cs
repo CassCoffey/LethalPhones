@@ -83,7 +83,7 @@ namespace Scoops.service
             else
             {
                 // No matching number, failed call
-                phoneObjectDict[senderPhoneNumber].InvalidCallClientRpc();
+                phoneObjectDict[senderPhoneNumber].InvalidCallClientRpc("Invalid #");
             }
         }
 
@@ -105,6 +105,12 @@ namespace Scoops.service
             string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerClientId).Key;
 
             phoneObjectDict[number].HangupCallClientRpc(cancellerPlayerId, cancellerPhoneNumber);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void LineBusyServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        {
+            phoneObjectDict[number].InvalidCallClientRpc("Line Busy");
         }
     }
 }
