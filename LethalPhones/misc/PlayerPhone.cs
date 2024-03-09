@@ -16,6 +16,8 @@ namespace Scoops.misc
 {
     public class PlayerPhone : NetworkBehaviour
     {
+        public static float RECORDING_START_DIST = 15f;
+
         public PlayerControllerB player;
         public GameObject localPhoneModel;
         public Transform localPhoneInteractionNode;
@@ -23,6 +25,8 @@ namespace Scoops.misc
         public Transform localPhoneStopperNode;
         public Transform localPhoneDial;
         public List<GameObject> localPhoneDialNumbers;
+        public GameObject serverPhoneModel;
+
         public string phoneNumber;
         public bool toggled = false;
 
@@ -56,15 +60,9 @@ namespace Scoops.misc
         private string activeCall = null;
         private string outgoingCall = null;
 
-        private float recordingRange = 6f;
-        private float maxVolume = 0.6f;
+        private List<AudioSource> untrackedAudioSources = new List<AudioSource>();
+        private List<AudioSourceStorage> audioSourcesInRange = new List<AudioSourceStorage>();
 
-        private List<AudioSource> audioSourcesInRange = new List<AudioSource>();
-        private Dictionary<AudioSource, AudioSourceStorage> audioStorages = new Dictionary<AudioSource, AudioSourceStorage>();
-
-        public Collider[] collidersInRange = new Collider[30];
-
-        private float cleanUpInterval;
         private float updateInterval;
 
         private float timeSinceRotaryMoved = 0f;
@@ -90,7 +88,13 @@ namespace Scoops.misc
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
 
             this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
-            SetPhoneModelActive(false);
+            SetPhoneLocalModelActive(false);
+
+            this.serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+            SetPhoneServerModelActive(false);
+            Transform ServerArmsRig = player.meshContainer.Find("metarig").Find("Rig 1");
+            ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+            LeftArmRig.weight = 0f;
 
             rotaryAudio = localPhoneModel.GetComponent<AudioSource>();
 
@@ -133,9 +137,9 @@ namespace Scoops.misc
             toggled = active;
             if (active)
             {
-                SetPhoneModelActive(active);
+                SetPhoneLocalModelActive(active);
                 personalPhoneNumberUI.text = phoneNumber;
-
+                
                 if (player.twoHanded || player.isHoldingObject)
                 {
                     player.DiscardHeldObject();
@@ -150,6 +154,8 @@ namespace Scoops.misc
             {
                 HUDManager.Instance.ClearControlTips();
             }
+
+            ToggleServerPhoneModelServerRpc(active);
         }
 
         // Here's where we break some bones
@@ -204,25 +210,27 @@ namespace Scoops.misc
                 this.UpdatePlayerVoices();
             }
 
-            if (this.activeCall == null && audioStorages.Count > 0)
+            if (this.activeCall == null && audioSourcesInRange.Count > 0)
             {
-                foreach (KeyValuePair<AudioSource, AudioSourceStorage> keyValuePair in this.audioStorages)
+                foreach (AudioSourceStorage storage in this.audioSourcesInRange)
                 {
-                    keyValuePair.Value.Reset();
+                    storage.Reset();
                 }
 
-                this.audioStorages.Clear();
+                this.audioSourcesInRange.Clear();
             }
 
             this.TimeAllAudioSources();
+            this.GetAllAudioSourcesToReplay();
+
+            previousToggled = toggled;
 
             if (this.updateInterval >= 0f)
             {
                 this.updateInterval -= Time.deltaTime;
                 return;
             }
-            this.updateInterval = 0.3f;
-            this.GetAllAudioSourcesToReplay();
+            this.updateInterval = 0.5f;
 
             if (isLocalPhone)
             {
@@ -257,8 +265,6 @@ namespace Scoops.misc
                     connectionQualityHighUI.enabled = true;
                 }
             }
-
-            previousToggled = toggled;
         }
 
         private void ManageInputs()
@@ -284,7 +290,7 @@ namespace Scoops.misc
                 {
                     LeftArmRig.weight = 0f;
 
-                    SetPhoneModelActive(false);
+                    SetPhoneLocalModelActive(false);
                 }
             }
 
@@ -466,19 +472,64 @@ namespace Scoops.misc
             }
         }
 
-        public void SetPhoneModelActive(bool enabled = false)
+        public void SetPhoneLocalModelActive(bool enabled = false)
         {
-            SkinnedMeshRenderer mainRenderer = localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>();
-            mainRenderer.enabled = enabled;
-            SkinnedMeshRenderer antennaRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
-            antennaRenderer.enabled = enabled;
-            MeshRenderer topRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
-            topRenderer.enabled = enabled;
-            MeshRenderer dialRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
-            dialRenderer.enabled = enabled;
+            if (localPhoneModel)
+            {
+                SkinnedMeshRenderer mainRenderer = localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>();
+                if (mainRenderer != null)
+                {
+                    mainRenderer.enabled = enabled;
+                }
+                SkinnedMeshRenderer antennaRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
+                if (antennaRenderer != null)
+                {
+                    antennaRenderer.enabled = enabled;
+                }
+                MeshRenderer topRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
+                if (topRenderer != null)
+                {
+                    topRenderer.enabled = enabled;
+                }
+                MeshRenderer dialRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
+                if (dialRenderer != null)
+                {
+                    dialRenderer.enabled = enabled;
+                }
 
-            Canvas canvasRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").GetComponent<Canvas>();
-            canvasRenderer.enabled = enabled;
+                Canvas canvasRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").GetComponent<Canvas>();
+                if (canvasRenderer != null)
+                {
+                    canvasRenderer.enabled = enabled;
+                }
+            }
+        }
+
+        public void SetPhoneServerModelActive(bool enabled = false)
+        {
+            if (serverPhoneModel != null)
+            {
+                SkinnedMeshRenderer mainRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").GetComponent<SkinnedMeshRenderer>();
+                if (mainRenderer != null)
+                {
+                    mainRenderer.enabled = enabled;
+                }
+                SkinnedMeshRenderer antennaRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
+                if (antennaRenderer != null)
+                {
+                    antennaRenderer.enabled = enabled;
+                }
+                MeshRenderer topRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
+                if (topRenderer != null)
+                {
+                    topRenderer.enabled = enabled;
+                }
+                MeshRenderer dialRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
+                if (dialRenderer != null)
+                {
+                    dialRenderer.enabled = enabled;
+                }
+            }
         }
 
         public void Death(int causeOfDeath)
@@ -504,7 +555,8 @@ namespace Scoops.misc
             UpdateCallingUI();
 
             toggled = false;
-            SetPhoneModelActive(false);
+            SetPhoneLocalModelActive(false);
+            ToggleServerPhoneModelServerRpc(false);
 
             if (isLocalPhone)
             {
@@ -618,6 +670,9 @@ namespace Scoops.misc
         public void VolumeButtonPressed()
         {
             if (!toggled)
+            {
+                return;
+            }
 
             thisAudio.Stop();
             thisAudio.PlayOneShot(PhoneAssetManager.phoneSwitch);
@@ -647,6 +702,11 @@ namespace Scoops.misc
                     break;
                 default:
                     break;
+            }
+
+            if (isLocalPhone)
+            {
+                UpdateCallValues();
             }
         }
 
@@ -699,59 +759,58 @@ namespace Scoops.misc
             {
                 return;
             }
-            audioSourcesInRange = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(player.transform.position);
-            foreach (AudioSource source in audioSourcesInRange)
+            untrackedAudioSources = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(player.transform.position);
+            foreach (AudioSource source in untrackedAudioSources)
             {
-                if (source != player.currentVoiceChatAudioSource && !audioStorages.ContainsKey(source))
+                if (source != player.currentVoiceChatAudioSource && source.spatialBlend != 0f)
                 {
                     AudioSourceStorage storage = new AudioSourceStorage(source);
                     storage.InitAudio();
-                    audioStorages.Add(source, storage);
+                    audioSourcesInRange.Add(storage);
                 }
             }
         }
 
         private void TimeAllAudioSources()
         {
-            if (activeCaller == -1) return;
+            if (!isLocalPhone || activeCaller == -1) return;
 
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
             PlayerPhone callerPhone = caller.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+
+            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
 
             if (activeCall != null)
             {
                 for (int j = callerPhone.audioSourcesInRange.Count - 1; j >= 0; j--)
                 {
-                    if (callerPhone.audioSourcesInRange[j] != caller.currentVoiceChatAudioSource)
-                    {
-                        float callerDist = Vector3.Distance(callerPhone.audioSourcesInRange[j].transform.position, caller.transform.position);
-                        float playerDist = Vector3.Distance(callerPhone.audioSourcesInRange[j].transform.position, player.transform.position);
-                        AudioSourceStorage source = callerPhone.audioStorages[callerPhone.audioSourcesInRange[j]];
+                    AudioSourceStorage storage = callerPhone.audioSourcesInRange[j];
+                    AudioSource source = storage.audioSource;
 
-                        if (callerDist > playerDist)
-                        {
-                            source.ApplyPhone(callerDist);
-                        } 
-                        else
-                        {
-                            source.Reset();
-                            audioStorages.Remove(callerPhone.audioSourcesInRange[j]);
-                        }
-                        
+                    float callerDist = Vector3.Distance(source.transform.position, caller.transform.position);
+                    float playerDist = Vector3.Distance(source.transform.position, player.transform.position);
+                    float playerToCallerDist = Vector3.Distance(caller.transform.position, player.transform.position);
+
+                    if (playerToCallerDist <= RECORDING_START_DIST || callerDist > playerDist || callerDist > source.maxDistance)
+                    {
+                        storage.Reset();
+                        callerPhone.audioSourcesInRange.RemoveAt(j);
+                    }
+                    else
+                    {
+                        storage.ApplyPhone(callerDist, worseConnection);
                     }
                 }
             }
             else if (activeCall == null)
             {
                 activeCaller = -1;
-                foreach (AudioSource source in callerPhone.audioSourcesInRange)
+                RemovePhoneVoiceEffect(caller);
+                for (int j = callerPhone.audioSourcesInRange.Count - 1; j >= 0; j--)
                 {
-                    if (source != caller.currentVoiceChatAudioSource)
-                    {
-                        AudioSourceStorage storage = callerPhone.audioStorages[source];
-                        storage.Reset();
-                        audioStorages.Remove(source);
-                    }
+                    AudioSourceStorage storage = callerPhone.audioSourcesInRange[j];
+                    storage.Reset();
+                    callerPhone.audioSourcesInRange.RemoveAt(j);
                 }
             }
         }
@@ -767,12 +826,15 @@ namespace Scoops.misc
             {
                 PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
 
-                ApplyPhoneVoiceEffect(caller);
-
-                // Later we'll hear others in the background
-                for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+                float dist = Vector3.Distance(caller.transform.position, player.transform.position);
+                
+                if (dist > RECORDING_START_DIST)
                 {
-
+                    ApplyPhoneVoiceEffect(caller);
+                } 
+                else
+                {
+                    RemovePhoneVoiceEffect(caller);
                 }
             }
         }
@@ -954,24 +1016,26 @@ namespace Scoops.misc
                    incomingCall == null ? -1 : int.Parse(incomingCall),
                    activeCall == null ? -1 : int.Parse(activeCall),
                    incomingCaller,
-                   activeCaller);
+                   activeCaller,
+                   (int)currentVolume);
         }
 
         [ServerRpc]
-        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate)
+        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate, int volumeUpdate)
         {
-            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate);
+            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate, volumeUpdate);
         }
 
         [ClientRpc]
-        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate)
+        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate, int volumeUpdate)
         {
             // A little messy? I don't like this.
             outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
             incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
             activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
             incomingCaller = incomingCallerUpdate;
-            activeCaller = activeCallerUpdate;
+            //activeCaller = activeCallerUpdate;
+            currentVolume = (phoneVolume)volumeUpdate;
         }
 
         [ServerRpc]
@@ -1027,16 +1091,62 @@ namespace Scoops.misc
             }
         }
 
+        [ServerRpc]
+        public void ToggleServerPhoneModelServerRpc(bool active)
+        {
+            ToggleServerPhoneModelClientRpc(active);
+        }
+
+        [ClientRpc]
+        public void ToggleServerPhoneModelClientRpc(bool active)
+        {
+            if (isLocalPhone)
+            {
+                return;
+            }
+
+            SetPhoneServerModelActive(active);
+
+            Transform ServerArmsRig = player.meshContainer.Find("metarig").Find("Rig 1");
+            ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+
+            if (active)
+            {
+                LeftArmRig.weight = 1f;
+            } else
+            {
+                LeftArmRig.weight = 0f;
+
+                SetPhoneLocalModelActive(false);
+            }
+        }
+
         private void ApplyPhoneVoiceEffect(PlayerControllerB playerController)
         {
             PlayerPhone callerPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
 
             float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+            if (playerController.voiceMuffledByEnemy)
+            {
+                worseConnection = 0f;
+            }
+
+            if (playerController.currentVoiceChatAudioSource == null)
+            {
+                StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+            }
 
             AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
             OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+
+            if (!currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>())
+            {
+                currentVoiceChatAudioSource.gameObject.AddComponent<AudioDistortionFilter>();
+            }
+
+            AudioDistortionFilter distortAudio = currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>();
 
             highPass.enabled = true;
             lowPass.enabled = true;
@@ -1048,9 +1158,46 @@ namespace Scoops.misc
             currentVoiceChatAudioSource.bypassListenerEffects = false;
             currentVoiceChatAudioSource.bypassEffects = false;
             currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : -0.4f;
-            occludeAudio.lowPassOverride = Mathf.Lerp(5000f, 4000f, worseConnection);
+            occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, worseConnection);
             lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, worseConnection);
             highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, worseConnection);
+            distortAudio.distortionLevel = Mathf.Lerp(0.8f, 0.1f, worseConnection);
+
+            if (playerController.voiceMuffledByEnemy)
+            {
+                occludeAudio.lowPassOverride = 500f;
+            }
+        }
+
+        private void RemovePhoneVoiceEffect(PlayerControllerB playerController)
+        {
+            AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
+            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
+            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
+            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+
+            if (playerController.currentVoiceChatAudioSource == null)
+            {
+                StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+            }
+
+            if (currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>())
+            {
+                GameObject.Destroy(currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>());
+            }
+
+            highPass.enabled = false;
+            lowPass.enabled = true;
+            occludeAudio.overridingLowPass = playerController.voiceMuffledByEnemy;
+
+            currentVoiceChatAudioSource.spatialBlend = 1f;
+            playerController.currentVoiceChatIngameSettings.set2D = false;
+            currentVoiceChatAudioSource.bypassListenerEffects = false;
+            currentVoiceChatAudioSource.bypassEffects = false;
+            currentVoiceChatAudioSource.panStereo = 0f;
+            currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
+            lowPass.lowpassResonanceQ = 1f;
+            highPass.highpassResonanceQ = 1f;
         }
     }
 }

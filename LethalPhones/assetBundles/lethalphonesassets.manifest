@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3075054868
+CRC: 250016908
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4840de9ebeaf486d27b12d2d0c57fd5a
+    Hash: d2b51004a923006d54a5d5a31f9161fd
   TypeTreeHash:
     serializedVersion: 2
     Hash: 178e66849b36bc22758efb2fae370fc1
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4840de9ebeaf486d27b12d2d0c57fd5a
+    Hash: d2b51004a923006d54a5d5a31f9161fd
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -115,6 +115,7 @@ SerializeReferenceClassIdentifiers:
   ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
 Assets:
 - Assets/Textures/icons8-no-connection-96.png
+- Assets/Textures/icons8-low-connection-96.png
 - Assets/Textures/icons8-shake-phone-96.png
 - Assets/Sounds/PhoneBusy.wav
 - Assets/Sounds/PhonePickup.wav
@@ -129,6 +130,7 @@ Assets:
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhonePrefab.prefab
 - Assets/Textures/icons8-signal-96.png
+- Assets/ServerPhoneModel.prefab
 - Assets/RightArmPhone.prefab
 - Assets/PhoneAudioInternal.prefab
 - Assets/PhoneNetworkHandler.prefab
@@ -139,10 +141,11 @@ Assets:
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav
 - Assets/Sounds/RotaryFinishOptionOne.wav
 - Assets/Sounds/PhoneSwitch.wav
+- Assets/ServerLeftArmPhone.prefab
 - Assets/Sounds/RotaryDialBackOptionTwo.wav
 - Assets/PhoneAudioExternal.prefab
 - Assets/Sounds/RotaryStopperOptionTwo.wav
 - Assets/LeftArmPhone.prefab
-- Assets/Textures/icons8-low-connection-96.png
+- Assets/ServerPhoneTargetHolder.prefab
 - Assets/Textures/icons8-audio-96.png
 Dependencies: []

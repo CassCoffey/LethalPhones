@@ -7,6 +7,7 @@ using System;
 using UnityEngine.InputSystem;
 using UnityEngine.Animations.Rigging;
 using System.ComponentModel;
+using System.Collections.Generic;
 
 namespace Scoops.patch;
 
@@ -25,15 +26,24 @@ public class PlayerPhonePatch
         GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
 
-        GameObject phoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LocalPhoneModel");
-        GameObject phoneModel = GameObject.Instantiate(phoneModelPrefab, __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+        GameObject localPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LocalPhoneModel");
+        GameObject localPhoneModel = GameObject.Instantiate(localPhoneModelPrefab, __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+
+        GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneModel");
+        GameObject serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, __instance.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
 
         Transform ArmsRig = __instance.localArmsTransform.Find("RigArms");
+        Transform ServerArmsRig = __instance.meshContainer.Find("metarig").Find("Rig 1");
         GameObject rightArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("RightArmPhone");
         GameObject leftArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LeftArmPhone");
+        GameObject leftArmServerPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerLeftArmPhone");
+        GameObject leftArmServerPhoneTargetPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneTargetHolder");
 
         GameObject rightArmPhoneRig = GameObject.Instantiate(rightArmPhoneRigPrefab, ArmsRig, false);
         GameObject leftArmPhoneRig = GameObject.Instantiate(leftArmPhoneRigPrefab, ArmsRig, false);
+        GameObject serverLeftArmPhoneRig = GameObject.Instantiate(leftArmServerPhoneRigPrefab, ServerArmsRig, false);
+
+        GameObject serverLeftArmPhoneTarget = GameObject.Instantiate(leftArmServerPhoneTargetPrefab, __instance.lowerSpine.Find("spine.002").Find("spine.003"), false);
 
         rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.R").Find("arm.R_upper");
         rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
@@ -41,8 +51,13 @@ public class PlayerPhonePatch
         leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper");
         leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
 
+        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper");
+        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.target = serverLeftArmPhoneTarget.transform.Find("ServerPhoneTarget");
+
         rightArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
         leftArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
+        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
 
         __instance.playerBodyAnimator.GetComponent<RigBuilder>().Build();
 
@@ -74,7 +89,7 @@ public class PlayerPhonePatch
         {
             return;
         }
-        if (localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
+        if (localPlayer.quickMenuManager.isMenuOpen || localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
         {
             return;
         }
@@ -84,16 +99,46 @@ public class PlayerPhonePatch
 
     private static void OnPickupPhoneKeyPressed(InputAction.CallbackContext context)
     {
+        PlayerControllerB localPlayer = PhoneManager.localPhone.player;
+        if (localPlayer == null)
+        {
+            return;
+        }
+        if (localPlayer.quickMenuManager.isMenuOpen || localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
+        {
+            return;
+        }
+
         PhoneManager.localPhone.CallButtonPressed();
     }
 
     private static void OnHangupPhoneKeyPressed(InputAction.CallbackContext context)
     {
+        PlayerControllerB localPlayer = PhoneManager.localPhone.player;
+        if (localPlayer == null)
+        {
+            return;
+        }
+        if (localPlayer.quickMenuManager.isMenuOpen || localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
+        {
+            return;
+        }
+
         PhoneManager.localPhone.HangupButtonPressed();
     }
 
     private static void OnVolumePhoneKeyPressed(InputAction.CallbackContext context)
     {
+        PlayerControllerB localPlayer = PhoneManager.localPhone.player;
+        if (localPlayer == null)
+        {
+            return;
+        }
+        if (localPlayer.quickMenuManager.isMenuOpen || localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
+        {
+            return;
+        }
+
         PhoneManager.localPhone.VolumeButtonPressed();
     }
 
@@ -206,7 +251,11 @@ public class PlayerPhonePatch
     [HarmonyPostfix]
     private static void GrabObjectClientRpc(ref PlayerControllerB __instance, bool grabValidated, NetworkObjectReference grabbedObject)
     {
-        if (grabValidated && __instance.IsLocalPlayer && PhoneManager.localPhone.toggled)
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return;
+        }
+        if (PhoneManager.localPhone.toggled)
         {
             PhoneManager.localPhone.ToggleActive(false);
         }

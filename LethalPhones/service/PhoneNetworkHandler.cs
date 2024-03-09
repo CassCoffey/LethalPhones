@@ -16,6 +16,8 @@ namespace Scoops.service
         private Dictionary<string, ulong> phoneNumberDict;
         private Dictionary<string, PlayerPhone> phoneObjectDict;
 
+        private List<PlayerPhone> phoneList;
+
         public PlayerPhone localPhone;
 
         public override void OnNetworkSpawn()
@@ -32,6 +34,7 @@ namespace Scoops.service
 
             phoneNumberDict = new Dictionary<string, ulong>();
             phoneObjectDict = new Dictionary<string, PlayerPhone>();
+            phoneList = new List<PlayerPhone>();
 
             base.OnNetworkSpawn();
         }

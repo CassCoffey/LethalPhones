@@ -1,4 +1,6 @@
-﻿using HarmonyLib;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
+using Scoops.misc;
 using Scoops.service;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,8 +19,15 @@ namespace Scoops.patch
         [HarmonyPostfix]
         private static void ResetPhones(ref StartOfRound __instance)
         {
+            PlayerPhone[] allPhones = GameObject.FindObjectsByType<PlayerPhone>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            for (int i = 0; i < allPhones.Length; i++)
+            {
+                allPhones[i].SetPhoneLocalModelActive(false);
+                allPhones[i].SetPhoneServerModelActive(false);
+            }
+
             PhoneNetworkHandler.Instance.localPhone.ToggleActive(false);
-            PhoneNetworkHandler.Instance.localPhone.SetPhoneModelActive(false);
         }
 
         [HarmonyPatch("Update")]
@@ -32,17 +41,14 @@ namespace Scoops.patch
             }
             updateInterval = 1f;
 
-            AudioSource[] allAudioSources = GameObject.FindObjectsByType<AudioSource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            AudioSource[] allAudioSources = GameObject.FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             sortedSources = new List<AudioSource>();
 
             for (int i = 0; i < allAudioSources.Length; i++)
             {
                 if (allAudioSources[i].spatialBlend != 0f)
                 {
-                    if (allAudioSources[i].outputAudioMixerGroup && allAudioSources[i].outputAudioMixerGroup.audioMixer.name != "NonDiagetic")
-                    {
-                        sortedSources.Add(allAudioSources[i]);
-                    }
+                    sortedSources.Add(allAudioSources[i]);
                 }
             }
         }
@@ -50,13 +56,19 @@ namespace Scoops.patch
         public static List<AudioSource> GetAllAudioSourcesInRange(Vector3 position)
         {
             List<AudioSource> closeSources = new List<AudioSource>();
+            PlayerControllerB localPlayer = StartOfRound.Instance.localPlayerController;
 
-            for (int i = 0; i < sortedSources.Count; i++)
+            if (localPlayer)
             {
-                float dist = Vector3.Distance(position, sortedSources[i].transform.position);
-                if (dist < sortedSources[i].maxDistance)
+                for (int i = 0; i < sortedSources.Count; i++)
                 {
-                    closeSources.Add(sortedSources[i]);
+                    float dist = Vector3.Distance(position, sortedSources[i].transform.position);
+                    float localDist = Vector3.Distance(localPlayer.transform.position, sortedSources[i].transform.position);
+                    float localToOtherDist = Vector3.Distance(localPlayer.transform.position, position);
+                    if (localToOtherDist > PlayerPhone.RECORDING_START_DIST && dist < sortedSources[i].maxDistance && dist < localDist)
+                    {
+                        closeSources.Add(sortedSources[i]);
+                    }
                 }
             }
 
