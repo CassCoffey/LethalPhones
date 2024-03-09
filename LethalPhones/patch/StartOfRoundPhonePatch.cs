@@ -58,16 +58,19 @@ namespace Scoops.patch
             List<AudioSource> closeSources = new List<AudioSource>();
             PlayerControllerB localPlayer = StartOfRound.Instance.localPlayerController;
 
-            if (localPlayer)
+            if (localPlayer != null && sortedSources.Count > 0)
             {
                 for (int i = 0; i < sortedSources.Count; i++)
                 {
-                    float dist = Vector3.Distance(position, sortedSources[i].transform.position);
-                    float localDist = Vector3.Distance(localPlayer.transform.position, sortedSources[i].transform.position);
-                    float localToOtherDist = Vector3.Distance(localPlayer.transform.position, position);
-                    if (localToOtherDist > PlayerPhone.RECORDING_START_DIST && dist < sortedSources[i].maxDistance && dist < localDist)
+                    if (sortedSources[i])
                     {
-                        closeSources.Add(sortedSources[i]);
+                        float dist = Vector3.Distance(position, sortedSources[i].transform.position);
+                        float localDist = Vector3.Distance(localPlayer.transform.position, sortedSources[i].transform.position);
+                        float localToOtherDist = Vector3.Distance(localPlayer.transform.position, position);
+                        if (localToOtherDist > PlayerPhone.RECORDING_START_DIST && dist < sortedSources[i].maxDistance && dist < localDist)
+                        {
+                            closeSources.Add(sortedSources[i]);
+                        }
                     }
                 }
             }

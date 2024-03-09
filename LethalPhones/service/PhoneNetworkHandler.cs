@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using Dissonance;
+using GameNetcodeStuff;
 using Scoops.misc;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,6 +50,7 @@ namespace Scoops.service
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
             int playerId = StartOfRound.Instance.ClientPlayerList[clientId];
+            Plugin.Log.LogInfo($"New phone for player: " + playerId);
             PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
             int phoneNumber = Random.Range(0, 10000); ;
             string phoneString = phoneNumber.ToString("D4");

@@ -645,6 +645,13 @@ namespace Scoops.misc
             if (incomingCall != null)
             {
                 // We have an incoming call, pick up
+                if (activeCall != null)
+                {
+                    //hang up our active first!
+                    Plugin.Log.LogInfo("Hanging Up: " + activeCall);
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                    RemovePhoneVoiceEffect(activeCaller);
+                }
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
                 incomingCall = null;
@@ -780,7 +787,7 @@ namespace Scoops.misc
             untrackedAudioSources = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(player.transform.position);
             foreach (AudioSource source in untrackedAudioSources)
             {
-                if (source != player.currentVoiceChatAudioSource && source.spatialBlend != 0f)
+                if (source != null && source != player.currentVoiceChatAudioSource && source.spatialBlend != 0f)
                 {
                     AudioSourceStorage storage = new AudioSourceStorage(source);
                     storage.InitAudio();
@@ -794,7 +801,15 @@ namespace Scoops.misc
             if (!isLocalPhone || activeCaller == -1) return;
 
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
+            if (caller == null)
+            {
+                return;
+            }
             PlayerPhone callerPhone = caller.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            if (callerPhone == null)
+            {
+                return;
+            }
 
             float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
 
@@ -804,19 +819,25 @@ namespace Scoops.misc
                 {
                     AudioSourceStorage storage = callerPhone.audioSourcesInRange[j];
                     AudioSource source = storage.audioSource;
-
-                    float callerDist = Vector3.Distance(source.transform.position, caller.transform.position);
-                    float playerDist = Vector3.Distance(source.transform.position, player.transform.position);
-                    float playerToCallerDist = Vector3.Distance(caller.transform.position, player.transform.position);
-
-                    if (playerToCallerDist <= RECORDING_START_DIST || callerDist > playerDist || callerDist > source.maxDistance)
+                    if (source != null)
                     {
-                        storage.Reset();
-                        callerPhone.audioSourcesInRange.RemoveAt(j);
-                    }
+                        float callerDist = Vector3.Distance(source.transform.position, caller.transform.position);
+                        float playerDist = Vector3.Distance(source.transform.position, player.transform.position);
+                        float playerToCallerDist = Vector3.Distance(caller.transform.position, player.transform.position);
+
+                        if (playerToCallerDist <= RECORDING_START_DIST || callerDist > playerDist || callerDist > source.maxDistance)
+                        {
+                            storage.Reset();
+                            callerPhone.audioSourcesInRange.RemoveAt(j);
+                        }
+                        else
+                        {
+                            storage.ApplyPhone(callerDist, worseConnection);
+                        }
+                    } 
                     else
                     {
-                        storage.ApplyPhone(callerDist, worseConnection);
+                        callerPhone.audioSourcesInRange.RemoveAt(j);
                     }
                 }
             }
@@ -1181,13 +1202,6 @@ namespace Scoops.misc
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
             OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
 
-            if (!currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>())
-            {
-                currentVoiceChatAudioSource.gameObject.AddComponent<AudioDistortionFilter>();
-            }
-
-            AudioDistortionFilter distortAudio = currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>();
-
             highPass.enabled = true;
             lowPass.enabled = true;
             occludeAudio.overridingLowPass = true;
@@ -1201,12 +1215,17 @@ namespace Scoops.misc
             occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, worseConnection);
             lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, worseConnection);
             highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, worseConnection);
-            distortAudio.distortionLevel = Mathf.Lerp(0.8f, 0.1f, worseConnection);
 
             if (playerController.voiceMuffledByEnemy)
             {
                 occludeAudio.lowPassOverride = 500f;
             }
+        }
+
+        private void RemovePhoneVoiceEffect(int playerId)
+        {
+            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
+            RemovePhoneVoiceEffect(playerController);
         }
 
         private void RemovePhoneVoiceEffect(PlayerControllerB playerController)
@@ -1219,11 +1238,6 @@ namespace Scoops.misc
             if (playerController.currentVoiceChatAudioSource == null)
             {
                 StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-            }
-
-            if (currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>())
-            {
-                GameObject.Destroy(currentVoiceChatAudioSource.GetComponent<AudioDistortionFilter>());
             }
 
             highPass.enabled = false;
