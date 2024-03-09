@@ -1,0 +1,10 @@
+{
+    "name": "Lethal Phones",
+    "version_number": "1.0.0",
+    "website_url": "https://github.com/CassCoffey/LethalPhones",
+    "description": "Worse Walkies.",
+    "dependencies": [
+		"BepInEx-BepInExPack-5.4.2100",
+        "Rune580-LethalCompany_InputUtils-0.6.3"
+    ]
+}
