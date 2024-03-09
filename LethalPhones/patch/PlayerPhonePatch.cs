@@ -82,6 +82,25 @@ public class PlayerPhonePatch
         Plugin.InputActionInstance.VolumePhoneKey.performed += OnVolumePhoneKeyPressed;
     }
 
+    [HarmonyPatch("DamagePlayer")]
+    [HarmonyPostfix]
+    private static void PlayerDamaged(ref PlayerControllerB __instance, int damageNumber, bool hasDamageSFX = true, bool callRPC = true, CauseOfDeath causeOfDeath = CauseOfDeath.Unknown, int deathAnimation = 0, bool fallDamage = false, Vector3 force = default(Vector3))
+    {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return;
+        }
+
+        if (damageNumber < 25f)
+        {
+            PhoneManager.localPhone.InfluenceConnectionQuality(-0.25f);
+        } 
+        else
+        {
+            PhoneManager.localPhone.InfluenceConnectionQuality(-0.5f);
+        }
+    }
+
     private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)
     {
         PlayerControllerB localPlayer = PhoneManager.localPhone.player;

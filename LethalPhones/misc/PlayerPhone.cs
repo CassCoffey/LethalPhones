@@ -68,12 +68,17 @@ namespace Scoops.misc
         private HashSet<PlayerControllerB> modifiedPlayerVoices = new HashSet<PlayerControllerB>();
 
         private float updateInterval;
+        private float connectionInterval = 0f;
+        private bool staticMode = false;
+        private bool hardStatic = false;
 
         private float timeSinceRotaryMoved = 0f;
         private bool reversingRotary = false;
         private bool previousToggled = false;
         private bool stoppered = false;
 
+        public float targetConnectionQuality = 1f;
+        public float currentConnectionQuality = 1f;
         public NetworkVariable<float> connectionQuality = new NetworkVariable<float>(1f);
 
         public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
@@ -87,7 +92,6 @@ namespace Scoops.misc
             this.target = transform.Find("Target").gameObject.GetComponent<AudioSource>();
 
             this.GetAllAudioSourcesToUpdate();
-            this.SetupAudiosourceClip();
 
             this.player = transform.parent.GetComponent<PlayerControllerB>();
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
@@ -130,11 +134,6 @@ namespace Scoops.misc
             {
                 this.localPhoneDialNumbers.Add(child.gameObject);
             }
-        }
-
-        private void SetupAudiosourceClip()
-        {
-            this.target.Stop();
         }
 
         public void ToggleActive(bool active)
@@ -242,45 +241,26 @@ namespace Scoops.misc
 
             previousToggled = toggled;
 
-            if (this.updateInterval >= 0f)
-            {
-                this.updateInterval -= Time.deltaTime;
-                return;
-            }
-            this.updateInterval = 0.5f;
-
             if (isLocalPhone)
             {
-                this.UpdateConnectionQualityServerRpc();
-
-                if (connectionQuality.Value <= 0.25f)
+                if (this.connectionInterval >= 0.2f)
                 {
-                    connectionQualityNoUI.enabled = true;
-                    connectionQualityLowUI.enabled = false;
-                    connectionQualityMedUI.enabled = false;
-                    connectionQualityHighUI.enabled = false;
-                } 
-                else if (connectionQuality.Value <= 0.5f)
-                {
-                    connectionQualityNoUI.enabled = false;
-                    connectionQualityLowUI.enabled = true;
-                    connectionQualityMedUI.enabled = false;
-                    connectionQualityHighUI.enabled = false;
-                }
-                else if (connectionQuality.Value <= 0.75f)
-                {
-                    connectionQualityNoUI.enabled = false;
-                    connectionQualityLowUI.enabled = false;
-                    connectionQualityMedUI.enabled = true;
-                    connectionQualityHighUI.enabled = false;
+                    this.connectionInterval = 0f;
+                    ManageConnectionQuality();
                 }
                 else
                 {
-                    connectionQualityNoUI.enabled = false;
-                    connectionQualityLowUI.enabled = false;
-                    connectionQualityMedUI.enabled = false;
-                    connectionQualityHighUI.enabled = true;
+                    this.connectionInterval += Time.deltaTime;
                 }
+
+                if (this.updateInterval >= 0f)
+                {
+                    this.updateInterval -= Time.deltaTime;
+                    return;
+                }
+                this.updateInterval = 0.5f;
+
+                this.UpdateConnectionQualityServerRpc(currentConnectionQuality);
             }
         }
 
@@ -834,6 +814,10 @@ namespace Scoops.misc
             {
                 return;
             }
+            if (hardStatic)
+            {
+                return;
+            }
 
             PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
             if (caller == null)
@@ -910,13 +894,23 @@ namespace Scoops.misc
                     }
                 }
                 PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
+                PlayerPhone callerPhone = caller.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+
+                float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+
+                UpdateStatic(worseConnection, listenDist);
+
+                if (hardStatic)
+                {
+                    return;
+                }
 
                 float dist = Vector3.Distance(caller.transform.position, player.transform.position);
                 
                 if (dist > RECORDING_START_DIST)
                 {
                     modifiedPlayerVoices.Add(caller);
-                    ApplyPhoneVoiceEffect(caller, 0f, listenDist);
+                    ApplyPhoneVoiceEffect(caller, 0f, listenDist, worseConnection);
                 } 
                 else
                 {
@@ -934,7 +928,7 @@ namespace Scoops.misc
                         if (localDist > RECORDING_START_DIST && callDist < BACKGROUND_VOICE_DIST)
                         {
                             modifiedPlayerVoices.Add(background);
-                            ApplyPhoneVoiceEffect(background, callDist, listenDist);
+                            ApplyPhoneVoiceEffect(background, callDist, listenDist, worseConnection);
                         }
                         else
                         {
@@ -978,43 +972,180 @@ namespace Scoops.misc
             }
         }
 
-        [ServerRpc]
-        private void UpdateConnectionQualityServerRpc()
+        public void InfluenceConnectionQuality(float change)
         {
-            float newConnectionQuality = 1f;
+            currentConnectionQuality = Mathf.Clamp01(currentConnectionQuality + change);
+        }
+
+        private void ManageConnectionQuality()
+        {
+            float newTargetConnectionQuality = 1f;
             LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy };
             LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
             if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
             {
-                newConnectionQuality -= 0.25f;
+                newTargetConnectionQuality -= 0.25f;
             }
             if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
             {
-                newConnectionQuality -= 0.5f;
+                newTargetConnectionQuality -= 0.5f;
             }
 
             if (player.isInsideFactory)
             {
-                newConnectionQuality -= 0.1f;
-                float dist = 300f;
+                newTargetConnectionQuality -= 0.1f;
+                float entranceDist = 300f;
 
-                EntranceTeleport[] array = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>(false);
-                for (int i = 0; i < array.Length; i++)
+                EntranceTeleport[] entranceArray = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>(false);
+                for (int i = 0; i < entranceArray.Length; i++)
                 {
-                    if (array[i].isEntranceToBuilding)
+                    if (!entranceArray[i].isEntranceToBuilding)
                     {
-                        float newDist = Vector3.Distance(array[i].transform.position, player.transform.position);
-                        if (newDist < dist) 
+                        float newDist = Vector3.Distance(entranceArray[i].transform.position, player.transform.position);
+                        if (newDist < entranceDist)
                         {
-                            dist = newDist;
+                            entranceDist = newDist;
                         }
                     }
                 }
 
-                newConnectionQuality -= Mathf.Lerp(0f, 0.4f, Mathf.InverseLerp(0f, 300f, dist));
+                newTargetConnectionQuality -= Mathf.Lerp(0f, 0.4f, Mathf.InverseLerp(0f, 300f, entranceDist));
+
+                float apparatusDist = 300f;
+
+                LungProp[] apparatusArray = UnityEngine.Object.FindObjectsOfType<LungProp>(false);
+                for (int i = 0; i < apparatusArray.Length; i++)
+                {
+                    if (apparatusArray[i].isLungDocked)
+                    {
+                        float newDist = Vector3.Distance(apparatusArray[i].transform.position, player.transform.position);
+                        if (newDist < apparatusDist)
+                        {
+                            apparatusDist = newDist;
+                        }
+                    }
+                }
+
+                if (apparatusDist <= 50f)
+                {
+                    newTargetConnectionQuality -= Mathf.Lerp(0.4f, 0f, Mathf.InverseLerp(0f, 50f, apparatusDist));
+                }
             }
 
-            connectionQuality.Value = newConnectionQuality;
+            targetConnectionQuality = Mathf.Clamp01(newTargetConnectionQuality);
+
+            if (targetConnectionQuality < currentConnectionQuality)
+            {
+                currentConnectionQuality -= 0.005f;
+            } 
+            else if (targetConnectionQuality > currentConnectionQuality)
+            {
+                currentConnectionQuality += 0.005f;
+            }
+
+            UpdateConnectionQualityUI();
+        }
+
+        private void UpdateStatic(float quality, float dist = 0f)
+        {
+            if (quality <= 0.5f)
+            {
+                // we are in the static zone
+                float staticChance = Mathf.InverseLerp(0.5f, 0f, quality);
+
+                staticMode = UnityEngine.Random.Range(0f, 1f) < staticChance;
+                hardStatic = UnityEngine.Random.Range(0f, 1f) < staticChance;
+
+                if (staticMode)
+                {
+                    float listenerMod = 1f;
+                    if (dist != 0f)
+                    {
+                        listenerMod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, dist);
+                    }
+                    if (hardStatic)
+                    {
+                        Plugin.Log.LogInfo("Hard Static");
+                        target.GetComponent<AudioLowPassFilter>().cutoffFrequency = 2899f;
+                        target.volume = 1f * listenerMod;
+                    }
+                    else
+                    {
+                        Plugin.Log.LogInfo("Soft Static");
+                        target.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(1000f, 2800f, staticChance);
+                        target.volume = Mathf.Clamp01(staticChance + 0.1f) * listenerMod;
+                    }
+
+                    if (!target.isPlaying)
+                    {
+                        switch (UnityEngine.Random.Range(1, 4))
+                        {
+                            case (1):
+                                target.clip = PhoneAssetManager.phoneStaticOne;
+                                break;
+
+                            case (2):
+                                target.clip = PhoneAssetManager.phoneStaticTwo;
+                                break;
+
+                            case (3):
+                                target.clip = PhoneAssetManager.phoneStaticThree;
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        target.Play();
+                    }
+                }
+                else
+                {
+                    if (target.isPlaying) target.Stop();
+                }
+            } 
+            else
+            {
+                if (target.isPlaying) target.Stop();
+            }
+        }
+
+        private void UpdateConnectionQualityUI()
+        {
+            if (connectionQuality.Value <= 0.25f)
+            {
+                connectionQualityNoUI.enabled = true;
+                connectionQualityLowUI.enabled = false;
+                connectionQualityMedUI.enabled = false;
+                connectionQualityHighUI.enabled = false;
+            }
+            else if (connectionQuality.Value <= 0.5f)
+            {
+                connectionQualityNoUI.enabled = false;
+                connectionQualityLowUI.enabled = true;
+                connectionQualityMedUI.enabled = false;
+                connectionQualityHighUI.enabled = false;
+            }
+            else if (connectionQuality.Value <= 0.75f)
+            {
+                connectionQualityNoUI.enabled = false;
+                connectionQualityLowUI.enabled = false;
+                connectionQualityMedUI.enabled = true;
+                connectionQualityHighUI.enabled = false;
+            }
+            else
+            {
+                connectionQualityNoUI.enabled = false;
+                connectionQualityLowUI.enabled = false;
+                connectionQualityMedUI.enabled = false;
+                connectionQualityHighUI.enabled = true;
+            }
+        }
+
+        [ServerRpc]
+        private void UpdateConnectionQualityServerRpc(float currentConnectionQuality)
+        {
+            connectionQuality.Value = currentConnectionQuality;
         }
 
         [ClientRpc]
@@ -1250,14 +1381,13 @@ namespace Scoops.misc
             }
         }
 
-        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f)
+        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f, float connectionQuality = 1f)
         {
             PlayerPhone callerPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
 
-            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
             if (playerController.voiceMuffledByEnemy)
             {
-                worseConnection = 0f;
+                connectionQuality = 0f;
             }
 
             if (playerController.currentVoiceChatAudioSource == null)
@@ -1281,20 +1411,20 @@ namespace Scoops.misc
             currentVoiceChatAudioSource.bypassListenerEffects = false;
             currentVoiceChatAudioSource.bypassEffects = false;
             currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : -0.4f;
-            occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, worseConnection);
-            lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, worseConnection);
-            highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, worseConnection);
+            occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, connectionQuality);
+            lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, connectionQuality);
+            highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, connectionQuality);
 
             if (distance != 0f)
             {
-                float mod = Mathf.Clamp01(Mathf.InverseLerp(BACKGROUND_VOICE_DIST, 0f, distance));
+                float mod = Mathf.InverseLerp(BACKGROUND_VOICE_DIST, 0f, distance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
                 occludeAudio.lowPassOverride = 1500f;
             }
 
             if (listeningDistance != 0f)
             {
-                float mod = Mathf.Clamp01(Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance));
+                float mod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
                 occludeAudio.lowPassOverride = 500f;
             }
