@@ -733,6 +733,15 @@ namespace Scoops.misc
             UpdateCallingUI();
 
             PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number);
+            StartCoroutine(CallTimeoutCoroutine(number));
+        }
+
+        public void StopLocalSound()
+        {
+            if (isLocalPhone)
+            {
+                thisAudio.Stop();
+            }
         }
 
         public void PlayHangupSound()
@@ -750,6 +759,15 @@ namespace Scoops.misc
             {
                 thisAudio.Stop();
                 thisAudio.PlayOneShot(PhoneAssetManager.phonePickup);
+            }
+        }
+
+        public void PlayBusySound()
+        {
+            if (isLocalPhone)
+            {
+                thisAudio.Stop();
+                thisAudio.PlayOneShot(PhoneAssetManager.phoneBusy);
             }
         }
 
@@ -932,18 +950,16 @@ namespace Scoops.misc
         {
             Plugin.Log.LogInfo("Invalid number.");
 
-            PlayHangupSound();
-            outgoingCall = null;
-            UpdateCallingUI();
+            StartCoroutine(PhoneBusyCoroutine("Invalid #"));
         }
 
         [ClientRpc]
         public void RecieveCallClientRpc(int callerId, string callerNumber)
         {
-            StartRinging();
-
             if (incomingCall == null)
             {
+                StartRinging();
+
                 incomingCall = callerNumber;
                 incomingCaller = callerId;
                 dialedNumbers.Clear();
@@ -990,10 +1006,8 @@ namespace Scoops.misc
             }
             else if (outgoingCall == cancellerNumber)
             {
-                // outgoing call was invalid
-                outgoingCall = null;
-                thisAudio.Stop();
-                UpdateCallingUI();
+                // Line busy
+                StartCoroutine(PhoneBusyCoroutine("Line Busy"));
             }
             else if (incomingCall == cancellerNumber)
             {
@@ -1089,6 +1103,34 @@ namespace Scoops.misc
                 RoundManager.Instance.PlayAudibleNoise(player.serverPlayerPosition, 50f, 0.95f, i, player.isInElevator && StartOfRound.Instance.hangarDoorsClosed, 0);
                 yield return new WaitForSeconds(4f);
             }
+        }
+
+        private IEnumerator CallTimeoutCoroutine(string number)
+        {
+            yield return new WaitForSeconds(14f);
+
+            if (outgoingCall == number)
+            {
+                StopLocalSound();
+                outgoingCall = null;
+                StartCoroutine(TemporaryStatusCoroutine("No Answer"));
+            }
+        }
+
+        private IEnumerator PhoneBusyCoroutine(string status)
+        {
+            yield return new WaitForSeconds(2f);
+
+            outgoingCall = null;
+            PlayBusySound();
+            StartCoroutine(TemporaryStatusCoroutine(status));
+        }
+
+        private IEnumerator TemporaryStatusCoroutine(string status)
+        {
+            phoneStatusUI.text = status;
+            yield return new WaitForSeconds(2f);
+            UpdateCallingUI();
         }
 
         [ServerRpc]
