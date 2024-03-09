@@ -93,14 +93,4 @@
         <!-- Use ping command is a workaround because Windows doesn't have a sleep command -->
         <Exec Command="for /L %%i in (1,1,$(NumberOfClients)) do (start &quot;&quot; &quot;$(GameExePath)&quot; &amp; if %%i lss $(NumberOfClients) (ping 127.0.0.1 -n $(PingDelay) &gt; nul))" />
     </Target>
-
-    <!-- Build the plugin for Thunderstore publication -->
-    <!-- The command will create a zip file in the target directory using the thunderstore.toml file -->
-    <Target Condition="'$(BuildThunderstorePackage)' == 'true'" Name="ThunderstoreBuild" AfterTargets="PostBuildEvent" DependsOnTargets="MinVer;NetcodePatch">
-        <PropertyGroup>
-            <PluginVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</PluginVersion>
-        </PropertyGroup>
-        <!-- https://github.com/thunderstore-io/thunderstore-cli/wiki -->
-        <Exec Command="tcli build --config-path $(SolutionDir)thunderstore.toml --package-version $(PluginVersion)" />
-    </Target>
 </Project>
