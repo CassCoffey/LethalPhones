@@ -82,7 +82,7 @@ namespace Scoops.misc
             this.thisAudio = GetComponent<AudioSource>();
             this.target = transform.Find("Target").gameObject.GetComponent<AudioSource>();
 
-            this.GetAllAudioSourcesToReplay();
+            this.GetAllAudioSourcesToUpdate();
             this.SetupAudiosourceClip();
 
             this.player = transform.parent.GetComponent<PlayerControllerB>();
@@ -221,8 +221,8 @@ namespace Scoops.misc
                 this.audioSourcesInRange.Clear();
             }
 
-            this.TimeAllAudioSources();
-            this.GetAllAudioSourcesToReplay();
+            this.UpdateAllAudioSources();
+            this.GetAllAudioSourcesToUpdate();
 
             previousToggled = toggled;
 
@@ -789,7 +789,7 @@ namespace Scoops.misc
             }
         }
 
-        private void GetAllAudioSourcesToReplay()
+        private void GetAllAudioSourcesToUpdate()
         {
             if (isLocalPhone || PhoneNetworkHandler.Instance.localPhone == null || player == null || activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber)
             {
@@ -807,7 +807,7 @@ namespace Scoops.misc
             }
         }
 
-        private void TimeAllAudioSources()
+        private void UpdateAllAudioSources()
         {
             if (!isLocalPhone || activeCaller == -1) return;
 
@@ -1141,6 +1141,7 @@ namespace Scoops.misc
 
             if (outgoingCall == number)
             {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
                 StopLocalSound();
                 outgoingCall = null;
                 StartCoroutine(TemporaryStatusCoroutine("No Answer"));

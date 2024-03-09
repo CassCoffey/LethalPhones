@@ -3,4 +3,5 @@
 Worse Walkies
 
 ## Credits
-- Lemmy
+- Lemmy: Ideas Guy
+- Myliaa: All Models and Textures
