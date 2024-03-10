@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Animations.Rigging;
 using System.ComponentModel;
 using System.Collections.Generic;
+using Scoops.misc;
 
 namespace Scoops.patch;
 
@@ -66,6 +67,18 @@ public class PlayerPhonePatch
             GameObject playerPhone = GameObject.Instantiate(NetworkObjectManager.phonePrefab, Vector3.zero, Quaternion.identity);
             playerPhone.GetComponent<NetworkObject>().Spawn();
             playerPhone.GetComponent<NetworkObject>().TrySetParent(__instance.transform, false);
+        }
+    }
+
+    [HarmonyPatch("SpectateNextPlayer")]
+    [HarmonyPostfix]
+    private static void SpectatedNextPlayer(ref PlayerControllerB __instance)
+    {
+        PlayerPhone[] allPhones = GameObject.FindObjectsByType<PlayerPhone>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < allPhones.Length; i++)
+        {
+            allPhones[i].spectatorClear = true;
         }
     }
 
@@ -167,7 +180,6 @@ public class PlayerPhonePatch
     {
         if (__instance.IsOwner)
         {
-            Plugin.Log.LogInfo("We died!");
             PhoneManager.localPhone.Death(causeOfDeath);
         }
     }

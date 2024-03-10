@@ -82,7 +82,7 @@ namespace Scoops.service
             ApplyPhone(dist);
         }
 
-        public void ApplyPhone(float dist, float callQuality = 1f)
+        public void ApplyPhone(float dist, float callQuality = 1f, bool staticMode = false)
         {
             if (audioSourceHolder != null && audioSource != null)
             {
@@ -103,6 +103,11 @@ namespace Scoops.service
                 }
 
                 audioSource.volume = origVolume * mod;
+
+                if (staticMode)
+                {
+                    audioSource.volume = 0f;
+                }
 
                 audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2899f, callQuality);
                 audioSourceHolder.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(5f, 3f, callQuality);
@@ -176,7 +181,6 @@ namespace Scoops.service
         public static void Init()
         {
             Plugin.Log.LogInfo($"Loading Assets...");
-            Plugin.Log.LogInfo(String.Join(", ", Plugin.LethalPhoneAssets.GetAllAssetNames()));
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
             phonePickup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhonePickup");
