@@ -1442,6 +1442,11 @@ namespace Scoops.misc
             {
                 StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
             }
+            if (playerController.currentVoiceChatAudioSource == null)
+            {
+                Plugin.Log.LogInfo("Player " + playerController.name + " Voice Chat Audio Source still null after refresh? Something has gone wrong.");
+                return;
+            }
 
             AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
