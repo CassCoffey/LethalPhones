@@ -5,6 +5,8 @@ Upon clocking in to your next shift, you will find that pressing '~' will produc
 
 ###### *The provided Mobile Phones are property of The Company. Employee owns no stake in the phone they are provided.
 
+[![Phone Example Video](https://img.youtube.com/vi/-7jAa6_wDb4/0.jpg)](https://www.youtube.com/watch?v=-7jAa6_wDb4)
+
 # Features
 
 * Mobile Phones for all players!
@@ -24,7 +26,8 @@ Upon clocking in to your next shift, you will find that pressing '~' will produc
 * Still hunting down various edge-cases through playtesting.
 
 ## Credits
-- Lemmy: Ideas Guy
+- **The Killer**: Ideas Guy
 - Myliaa: All Models and Textures
 - Soap: Rubber duck and testing help
 - Rune580: creator of LethalCompany InputUtils
+- Scoops (me): code

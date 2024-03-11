@@ -1,6 +1,6 @@
 {
     "name": "LethalPhones",
-    "version_number": "1.0.0",
+    "version_number": "1.0.3",
     "website_url": "https://github.com/CassCoffey/LethalPhones",
     "description": "Company Owned Personal Phones. A more interactive alternative to walkie talkies.",
     "dependencies": [

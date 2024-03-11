@@ -95,7 +95,10 @@ namespace Scoops.service
                 else if (audioSource.rolloffMode == AudioRolloffMode.Custom)
                 {
                     AnimationCurve audioRolloffCurve = audioSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
-                    mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(dist / audioSource.maxDistance) + GLOBAL_SOUND_MOD);
+                    if (audioRolloffCurve != null)
+                    {
+                        mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(dist / audioSource.maxDistance) + GLOBAL_SOUND_MOD);
+                    }
                 }
                 else
                 {
@@ -109,9 +112,15 @@ namespace Scoops.service
                     audioSource.volume = 0f;
                 }
 
-                audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2899f, callQuality);
-                audioSourceHolder.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(5f, 3f, callQuality);
-                audioSourceHolder.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(2f, 1f, callQuality);
+                if (audioSourceHolder.GetComponent<AudioLowPassFilter>())
+                {
+                    audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2899f, callQuality);
+                    audioSourceHolder.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(5f, 3f, callQuality);
+                }
+                if (audioSourceHolder.GetComponent<AudioHighPassFilter>())
+                {
+                    audioSourceHolder.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(2f, 1f, callQuality);
+                }
             }
         }
 

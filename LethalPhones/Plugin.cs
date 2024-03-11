@@ -69,6 +69,7 @@ public class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(PlayerPhonePatch));
         _harmony.PatchAll(typeof(StartOfRoundPhonePatch));
         _harmony.PatchAll(typeof(NetworkObjectManager));
+        _harmony.PatchAll(typeof(ShipTeleporterPhonePatch));
     }
 
     private static void NetcodePatcher()

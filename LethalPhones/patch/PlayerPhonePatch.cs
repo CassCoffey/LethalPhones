@@ -116,6 +116,10 @@ public class PlayerPhonePatch
 
     private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)
     {
+        if (PhoneManager == null || PhoneManager.localPhone == null)
+        {
+            return;
+        }
         PlayerControllerB localPlayer = PhoneManager.localPhone.player;
         if (localPlayer == null)
         {
@@ -131,6 +135,10 @@ public class PlayerPhonePatch
 
     private static void OnPickupPhoneKeyPressed(InputAction.CallbackContext context)
     {
+        if (PhoneManager == null || PhoneManager.localPhone == null)
+        {
+            return;
+        }
         PlayerControllerB localPlayer = PhoneManager.localPhone.player;
         if (localPlayer == null)
         {
@@ -146,6 +154,10 @@ public class PlayerPhonePatch
 
     private static void OnHangupPhoneKeyPressed(InputAction.CallbackContext context)
     {
+        if (PhoneManager == null || PhoneManager.localPhone == null)
+        {
+            return;
+        }
         PlayerControllerB localPlayer = PhoneManager.localPhone.player;
         if (localPlayer == null)
         {
