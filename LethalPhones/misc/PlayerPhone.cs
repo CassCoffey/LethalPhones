@@ -149,7 +149,16 @@ namespace Scoops.misc
                 
                 if (player.twoHanded || player.isHoldingObject)
                 {
-                    player.DiscardHeldObject();
+                    int emptySlot = player.FirstEmptyItemSlot();
+                    if (!player.twoHanded && emptySlot != -1)
+                    {
+                        player.SwitchToItemSlot(emptySlot, null);
+                        ChangeItemSlotServerRpc(emptySlot);
+                    } 
+                    else
+                    {
+                        player.DiscardHeldObject();
+                    }
                 }
 
                 HUDManager.Instance.ChangeControlTip(0, "Call Phone : [" + Plugin.InputActionInstance.PickupPhoneKey.bindings[0].ToDisplayString() + "]", true);
@@ -1428,6 +1437,23 @@ namespace Scoops.misc
             }
         }
 
+        [ServerRpc]
+        public void ChangeItemSlotServerRpc(int slot)
+        {
+            ChangeItemSlotClientRpc(slot);
+        }
+
+        [ClientRpc]
+        public void ChangeItemSlotClientRpc(int slot)
+        {
+            if (isLocalPhone)
+            {
+                return;
+            }
+
+            player.SwitchToItemSlot(slot, null);
+        }
+
         private void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f, float connectionQuality = 1f)
         {
             if (playerController == null)
@@ -1479,7 +1505,8 @@ namespace Scoops.misc
             {
                 float mod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
-                occludeAudio.lowPassOverride = 500f;
+                occludeAudio.lowPassOverride = 750f;
+                currentVoiceChatAudioSource.panStereo = 0f;
             }
 
             if (playerController.voiceMuffledByEnemy)
