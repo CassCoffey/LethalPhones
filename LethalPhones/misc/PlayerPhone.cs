@@ -675,6 +675,17 @@ namespace Scoops.misc
                 PlayPickupSound();
 
                 UpdateCallingUI();
+
+                PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
+                Plugin.Log.LogInfo("Accepted call from " + caller.name);
+                if (caller.currentVoiceChatAudioSource != null)
+                {
+                    Plugin.Log.LogInfo("With voice chat audio source " + caller.currentVoiceChatAudioSource.name);
+                }
+                else
+                {
+                    Plugin.Log.LogInfo("With no voice chat audio source?");
+                }
             }
             else
             {
@@ -1232,6 +1243,17 @@ namespace Scoops.misc
             activeCall = accepterNumber;
             activeCaller = accepterId;
             UpdateCallingUI();
+
+            PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[accepterId];
+            Plugin.Log.LogInfo("Accepted call from " + caller.name);
+            if (caller.currentVoiceChatAudioSource != null)
+            {
+                Plugin.Log.LogInfo("With voice chat audio source " + caller.currentVoiceChatAudioSource.name);
+            } 
+            else
+            {
+                Plugin.Log.LogInfo("With no voice chat audio source?");
+            }
         }
 
         [ClientRpc]
