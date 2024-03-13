@@ -24,8 +24,8 @@ namespace Scoops.misc
 
         public bool spectatorClear = false;
 
-        public int activeCaller = -1;
-        public int incomingCaller = -1;
+        public ushort activeCaller = 0;
+        public ushort incomingCaller = 0;
 
         protected AudioSource ringAudio;
         protected AudioSource thisAudio;
@@ -66,7 +66,7 @@ namespace Scoops.misc
         {
             if (this.activeCall == null || spectatorClear)
             {
-                if (!spectatorClear) activeCaller = -1;
+                if (!spectatorClear) activeCaller = 0;
 
                 staticChance = 0f;
 
@@ -273,7 +273,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void RecieveCallClientRpc(int callerId, string callerNumber)
+        public void RecieveCallClientRpc(ushort callerId, string callerNumber)
         {
             if (incomingCall == null)
             {
@@ -291,7 +291,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void CallAcceptedClientRpc(int accepterId, string accepterNumber)
+        public void CallAcceptedClientRpc(ushort accepterId, string accepterNumber)
         {
             if (outgoingCall != accepterNumber)
             {
@@ -309,7 +309,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void HangupCallClientRpc(int cancellerId, string cancellerNumber)
+        public void HangupCallClientRpc(ushort cancellerId, string cancellerNumber)
         {
             if (activeCall == cancellerNumber)
             {

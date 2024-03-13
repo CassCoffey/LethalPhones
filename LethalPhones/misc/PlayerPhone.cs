@@ -468,18 +468,18 @@ namespace Scoops.misc
         {
             if (activeCall != null)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkBehaviourId);
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
             }
             if (outgoingCall != null)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkBehaviourId);
                 outgoingCall = null;
             }
             if (incomingCall != null)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkBehaviourId);
                 incomingCall = null;
             }
 
@@ -528,7 +528,7 @@ namespace Scoops.misc
             if (activeCall != null)
             {
                 // We're on a call, hang up
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkBehaviourId);
                 PlayHangupSound();
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
@@ -537,7 +537,7 @@ namespace Scoops.misc
             else if (outgoingCall != null)
             {
                 // We're calling, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkBehaviourId);
                 PlayHangupSound();
                 outgoingCall = null;
                 UpdateCallingUI();
@@ -545,7 +545,7 @@ namespace Scoops.misc
             else if (incomingCall != null) 
             {
                 // We're being called, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkBehaviourId);
                 StopRingingServerRpc();
                 PlayHangupSound();
                 incomingCall = null;
@@ -577,13 +577,13 @@ namespace Scoops.misc
                 if (activeCall != null)
                 {
                     //hang up our active first!
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall);
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkBehaviourId);
                     RemovePhoneVoiceEffect(activeCaller);
                 }
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
                 incomingCall = null;
-                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall);
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkBehaviourId);
                 StopRingingServerRpc();
                 PlayPickupSound();
 
@@ -677,7 +677,7 @@ namespace Scoops.misc
 
             UpdateCallingUI();
 
-            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number);
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkBehaviourId);
             StartCoroutine(CallTimeoutCoroutine(number));
         }
 
@@ -1032,13 +1032,13 @@ namespace Scoops.misc
         }
 
         [ServerRpc]
-        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate, int volumeUpdate)
+        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ushort incomingCallerUpdate, ushort activeCallerUpdate, int volumeUpdate)
         {
             UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate, volumeUpdate);
         }
 
         [ClientRpc]
-        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, int incomingCallerUpdate, int activeCallerUpdate, int volumeUpdate)
+        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ushort incomingCallerUpdate, ushort activeCallerUpdate, int volumeUpdate)
         {
             // A little messy? I don't like this.
             outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
@@ -1090,7 +1090,7 @@ namespace Scoops.misc
 
             if (outgoingCall == number)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkBehaviourId);
                 StopLocalSound();
                 outgoingCall = null;
                 StartCoroutine(TemporaryStatusCoroutine("No Answer"));

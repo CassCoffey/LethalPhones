@@ -15,8 +15,8 @@ namespace Scoops.service
     {
         public static PhoneNetworkHandler Instance { get; private set; }
 
-        private Dictionary<string, ulong> phoneNumberDict;
-        private Dictionary<string, PlayerPhone> phoneObjectDict;
+        private Dictionary<string, ushort> phoneNumberDict;
+        private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
 
@@ -32,24 +32,21 @@ namespace Scoops.service
 
             Instance = this;
 
-            phoneNumberDict = new Dictionary<string, ulong>();
-            phoneObjectDict = new Dictionary<string, PlayerPhone>();
+            phoneNumberDict = new Dictionary<string, ushort>();
+            phoneObjectDict = new Dictionary<string, PhoneBehavior>();
 
             base.OnNetworkSpawn();
         }
 
-        public void CreateNewPhone()
+        public void CreateNewPlayerPhone()
         {
-            CreateNewPhoneNumberServerRpc();
+            CreateNewPhoneNumberServerRpc(true);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void CreateNewPhoneNumberServerRpc(ServerRpcParams serverRpcParams = default)
+        public void CreateNewPhoneNumberServerRpc(bool player, ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
-            int playerId = StartOfRound.Instance.ClientPlayerList[clientId];
-            Plugin.Log.LogInfo($"New phone for player: " + playerId);
-            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
             int phoneNumber = Random.Range(0, 10000); ;
             string phoneString = phoneNumber.ToString("D4");
             while (phoneNumberDict.ContainsKey(phoneNumber.ToString()))
@@ -58,9 +55,17 @@ namespace Scoops.service
                 phoneString = phoneNumber.ToString("D4");
             }
 
-            phoneNumberDict.Add(phoneString, clientId);
+            PhoneBehavior phone = null;
+            if (player)
+            {
+                int playerId = StartOfRound.Instance.ClientPlayerList[clientId];
+                Plugin.Log.LogInfo($"New phone for player: " + playerId);
+                PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
+                phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            }
 
-            PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            phoneNumberDict.Add(phoneString, phone.NetworkBehaviourId);
+
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
 
             phoneObjectDict.Add(phoneString, phone);
@@ -68,7 +73,7 @@ namespace Scoops.service
             phone.SetNewPhoneNumberClientRpc(phoneString);
         }
 
-        public void DeletePhone(int playerId, ulong clientId)
+        public void DeletePlayerPhone(int playerId, ulong clientId)
         {
             PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
             Plugin.Log.LogInfo("Deleting phone for player: " + playerController.name);
@@ -85,16 +90,14 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void MakeOutgoingCallServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        public void MakeOutgoingCallServerRpc(string number, ushort senderId, ServerRpcParams serverRpcParams = default)
         {
-            ulong senderClientId = serverRpcParams.Receive.SenderClientId;
-            int senderPlayerId = StartOfRound.Instance.ClientPlayerList[senderClientId];
-            string senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderClientId).Key;
+            string senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderId).Key;
 
             if (phoneNumberDict.ContainsKey(number))
             {
                 // Successful call
-                phoneObjectDict[number].RecieveCallClientRpc(senderPlayerId, senderPhoneNumber);
+                phoneObjectDict[number].RecieveCallClientRpc(senderId, senderPhoneNumber);
             }
             else
             {
@@ -104,25 +107,21 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void AcceptIncomingCallServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        public void AcceptIncomingCallServerRpc(string number, ushort accepterId, ServerRpcParams serverRpcParams = default)
         {
-            ulong accepterClientId = serverRpcParams.Receive.SenderClientId;
-            int accepterPlayerId = StartOfRound.Instance.ClientPlayerList[accepterClientId];
-            string accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterClientId).Key;
+            string accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterId).Key;
 
-            phoneObjectDict[number].CallAcceptedClientRpc(accepterPlayerId, accepterPhoneNumber);
+            phoneObjectDict[number].CallAcceptedClientRpc(accepterId, accepterPhoneNumber);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void HangUpCallServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        public void HangUpCallServerRpc(string number, ushort cancellerId, ServerRpcParams serverRpcParams = default)
         {
             if (phoneNumberDict.ContainsKey(number))
             {
-                ulong cancellerClientId = serverRpcParams.Receive.SenderClientId;
-                int cancellerPlayerId = StartOfRound.Instance.ClientPlayerList[cancellerClientId];
-                string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerClientId).Key;
+                string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerId).Key;
 
-                phoneObjectDict[number].HangupCallClientRpc(cancellerPlayerId, cancellerPhoneNumber);
+                phoneObjectDict[number].HangupCallClientRpc(cancellerId, cancellerPhoneNumber);
             }
         }
 
