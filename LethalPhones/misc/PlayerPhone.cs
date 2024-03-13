@@ -229,6 +229,8 @@ namespace Scoops.misc
             {
                 if (!spectatorClear) activeCaller = -1;
 
+                staticChance = 0f;
+
                 if (target.isPlaying)
                 {
                     target.Stop();

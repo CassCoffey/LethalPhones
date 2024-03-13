@@ -57,13 +57,10 @@ namespace Scoops.service
                 phoneNumber = Random.Range(0, 10000);
                 phoneString = phoneNumber.ToString("D4");
             }
-            Plugin.Log.LogInfo($"New phone number: " + phoneString);
 
             phoneNumberDict.Add(phoneString, clientId);
-            Plugin.Log.LogInfo($"Phone numbner added to dict.");
 
             PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-            Plugin.Log.LogInfo($"Phone object created: " + phone);
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
 
             phoneObjectDict.Add(phoneString, phone);
