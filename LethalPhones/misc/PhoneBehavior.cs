@@ -6,11 +6,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
+using System.Numerics;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Animations.Rigging;
-using UnityEngine.UI;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Scoops.misc
 {
@@ -38,7 +37,7 @@ namespace Scoops.misc
         protected List<AudioSource> untrackedAudioSources = new List<AudioSource>();
         protected List<AudioSourceStorage> audioSourcesInRange = new List<AudioSourceStorage>();
 
-        protected HashSet<PlayerControllerB> modifiedPlayerVoices = new HashSet<PlayerControllerB>();
+        protected HashSet<PhoneBehavior> modifiedVoices = new HashSet<PhoneBehavior>();
 
         protected Queue<int> dialedNumbers = new Queue<int>(4);
 
@@ -84,14 +83,14 @@ namespace Scoops.misc
 
                     this.audioSourcesInRange.Clear();
                 }
-                if (modifiedPlayerVoices.Count > 0)
+                if (modifiedVoices.Count > 0)
                 {
-                    foreach (PlayerControllerB player in modifiedPlayerVoices)
+                    foreach (PhoneBehavior modifiedPhone in modifiedVoices)
                     {
-                        RemovePhoneVoiceEffect(player);
+                        modifiedPhone.RemovePhoneVoiceEffect();
                     }
 
-                    this.modifiedPlayerVoices.Clear();
+                    this.modifiedVoices.Clear();
                 }
 
                 spectatorClear = false;
@@ -160,23 +159,148 @@ namespace Scoops.misc
         }
 
         protected virtual void GetAllAudioSourcesToUpdate()
-        { 
+        {
+            if (IsOwner || PhoneNetworkHandler.Instance.localPhone == null)
+            {
+                return;
+            }
+            if (activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !IsBeingSpectated())
+            {
+                return;
+            }
 
+            untrackedAudioSources = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(transform.position);
+            foreach (AudioSource source in untrackedAudioSources)
+            {
+                if (source != null && source.spatialBlend != 0f)
+                {
+                    AudioSourceStorage storage = new AudioSourceStorage(source);
+                    storage.InitAudio();
+                    audioSourcesInRange.Add(storage);
+                }
+            }
         }
 
         protected virtual void UpdateAllAudioSources()
         {
+            if (IsOwner || PhoneNetworkHandler.Instance.localPhone == null)
+            {
+                return;
+            }
+            if (activeCaller == 0 || activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !IsBeingSpectated())
+            {
+                return;
+            }
 
+            PhoneBehavior callerPhone = PhoneNetworkHandler.Instance.localPhone;
+            if (callerPhone == null)
+            {
+                return;
+            }
+
+            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+
+            for (int j = audioSourcesInRange.Count - 1; j >= 0; j--)
+            {
+                AudioSourceStorage storage = audioSourcesInRange[j];
+                AudioSource source = storage.audioSource;
+                if (source != null)
+                {
+                    float callerDist = Vector3.Distance(source.transform.position, callerPhone.transform.position);
+                    float ownerDist = (source.transform.position - this.transform.position).sqrMagnitude;
+                    float ownerToCallerDist = (callerPhone.transform.position - this.transform.position).sqrMagnitude;
+
+                    if (ownerToCallerDist <= (RECORDING_START_DIST * RECORDING_START_DIST) || (callerDist * callerDist) < ownerDist || ownerDist > (source.maxDistance * source.maxDistance))
+                    {
+                        storage.Reset();
+                        audioSourcesInRange.RemoveAt(j);
+                    }
+                    else
+                    {
+                        storage.ApplyPhone(callerDist, worseConnection, staticMode && hardStatic);
+                    }
+                }
+                else
+                {
+                    audioSourcesInRange.RemoveAt(j);
+                }
+            }
+        }
+
+        protected virtual bool IsBeingSpectated()
+        {
+            return false;
         }
 
         protected virtual void UpdatePlayerVoices()
         {
+            if (GameNetworkManager.Instance == null || GameNetworkManager.Instance.localPlayerController == null)
+            {
+                return;
+            }
 
+            if (activeCaller != 0)
+            {
+                if (activeCall != null)
+                {
+                    float listenDist = 0f;
+                    float listenAngle = 0f;
+                    if (!IsOwner)
+                    {
+                        if (!IsBeingSpectated())
+                        {
+                            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                            listenDist = Vector3.Distance(localPlayer.transform.position, transform.position);
+                            if (listenDist > EAVESDROP_DIST)
+                            {
+                                return;
+                            }
+                            Vector3 directionTo = transform.position - localPlayer.transform.position;
+                            directionTo = directionTo / listenDist;
+                            listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
+                        }
+                    }
+
+                    PhoneBehavior callerPhone = (PhoneBehavior)GetNetworkBehaviour(activeCaller);
+                    if (callerPhone == PhoneNetworkHandler.Instance.localPhone)
+                    {
+                        return;
+                    }
+
+                    float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+
+                    if (IsOwner || listenDist > 0f)
+                    {
+                        UpdateStatic(worseConnection, listenDist);
+                    }
+
+                    float dist = Vector3.Distance(callerPhone.transform.position, transform.position);
+
+                    if (dist > RECORDING_START_DIST)
+                    {
+                        modifiedVoices.Add(callerPhone);
+                        callerPhone.ApplyPhoneVoiceEffect(0f, listenDist, listenAngle, worseConnection);
+                    }
+                    else
+                    {
+                        if (modifiedVoices.Contains(callerPhone))
+                        {
+                            modifiedVoices.Remove(callerPhone);
+                            callerPhone.RemovePhoneVoiceEffect();
+                        }
+                    }
+                }
+            }
         }
 
         protected virtual void UpdateCallingUI()
         {
-            
+            // Nothing by default
+        }
+
+        public virtual bool PhoneInsideFactory()
+        {
+            return true;
         }
 
         public void InfluenceConnectionQuality(float change)
@@ -186,7 +310,83 @@ namespace Scoops.misc
 
         protected virtual void ManageConnectionQuality()
         {
-            
+            targetConnectionQuality = 1f;
+            LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy };
+            LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
+            if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+            {
+                targetConnectionQuality -= 0.25f;
+            }
+            if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+            {
+                targetConnectionQuality -= 0.5f;
+            }
+
+            if (PhoneInsideFactory())
+            {
+                targetConnectionQuality -= 0.1f;
+                float entranceDist = 300f;
+
+                EntranceTeleport[] entranceArray = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>(false);
+                for (int i = 0; i < entranceArray.Length; i++)
+                {
+                    if (!entranceArray[i].isEntranceToBuilding)
+                    {
+                        float newDist = Vector3.Distance(entranceArray[i].transform.position, transform.position);
+                        if (newDist < entranceDist)
+                        {
+                            entranceDist = newDist;
+                        }
+                    }
+                }
+
+                targetConnectionQuality -= Mathf.Lerp(0f, 0.4f, Mathf.InverseLerp(0f, 300f, entranceDist));
+
+                float apparatusDist = 300f;
+
+                LungProp[] apparatusArray = UnityEngine.Object.FindObjectsOfType<LungProp>(false);
+                for (int i = 0; i < apparatusArray.Length; i++)
+                {
+                    if (apparatusArray[i].isLungDocked)
+                    {
+                        float newDist = Vector3.Distance(apparatusArray[i].transform.position, transform.position);
+                        if (newDist < apparatusDist)
+                        {
+                            apparatusDist = newDist;
+                        }
+                    }
+                }
+
+                if (apparatusDist <= 50f)
+                {
+                    targetConnectionQuality -= Mathf.Lerp(0.4f, 0f, Mathf.InverseLerp(0f, 50f, apparatusDist));
+                }
+            }
+
+            targetConnectionQuality = Mathf.Clamp01(targetConnectionQuality);
+
+            if (targetConnectionQuality < currentConnectionQuality)
+            {
+                currentConnectionQuality = targetConnectionQuality;
+            }
+            else if (targetConnectionQuality > currentConnectionQuality)
+            {
+                currentConnectionQuality += 0.005f;
+            }
+
+            if (staticChance > 0f)
+            {
+                // we are in the static zone
+                float staticChanceMod = Mathf.Lerp(0.15f, 0.85f, staticChance);
+
+                staticMode = UnityEngine.Random.Range(0f, 1f) < staticChanceMod;
+                hardStatic = UnityEngine.Random.Range(0f, 1f) < staticChanceMod;
+            }
+            else
+            {
+                staticMode = false;
+                hardStatic = false;
+            }
         }
 
         protected void UpdateStatic(float quality, float dist = 0f)
@@ -365,69 +565,21 @@ namespace Scoops.misc
             ringAudio.Stop();
         }
 
-        protected void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
+        public virtual void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
+        {
+            // Does nothing
+        }
+
+        public virtual void RemovePhoneVoiceEffect(PlayerControllerB playerController)
         {
             if (playerController == null)
             {
                 return;
             }
-            if (playerController.voiceMuffledByEnemy)
+            PlayerPhone otherPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            if (otherPhone != null)
             {
-                connectionQuality = 0f;
-            }
-            if (playerController.currentVoiceChatAudioSource == null)
-            {
-                StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-            }
-            if (playerController.currentVoiceChatAudioSource == null)
-            {
-                Plugin.Log.LogInfo("Player " + playerController.name + " Voice Chat Audio Source still null after refresh? Something has gone wrong.");
-                return;
-            }
-
-            AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
-            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
-            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
-            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
-
-            highPass.enabled = true;
-            lowPass.enabled = true;
-            occludeAudio.overridingLowPass = true;
-
-            currentVoiceChatAudioSource.volume = 1f;
-            currentVoiceChatAudioSource.spatialBlend = 0f;
-            playerController.currentVoiceChatIngameSettings.set2D = true;
-            currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
-            currentVoiceChatAudioSource.bypassListenerEffects = false;
-            currentVoiceChatAudioSource.bypassEffects = false;
-            currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : -0.4f;
-            occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, connectionQuality);
-            lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, connectionQuality);
-            highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, connectionQuality);
-
-            if (distance != 0f)
-            {
-                float mod = Mathf.InverseLerp(BACKGROUND_VOICE_DIST, 0f, distance);
-                currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
-                occludeAudio.lowPassOverride = 1500f;
-            }
-
-            if (listeningDistance != 0f)
-            {
-                float mod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance);
-                currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
-                occludeAudio.lowPassOverride = 750f;
-                currentVoiceChatAudioSource.panStereo = listeningAngle;
-            }
-
-            if (playerController.voiceMuffledByEnemy)
-            {
-                occludeAudio.lowPassOverride = 500f;
-            }
-
-            if (staticMode && hardStatic)
-            {
-                currentVoiceChatAudioSource.volume = 0f;
+                otherPhone.RemovePhoneVoiceEffect();
             }
         }
 
@@ -442,7 +594,7 @@ namespace Scoops.misc
 
         public virtual void RemovePhoneVoiceEffect()
         {
-            
+            // Nothing by default
         }
 
         public override void OnDestroy()
@@ -468,16 +620,16 @@ namespace Scoops.misc
                 }
             }
 
-            if (modifiedPlayerVoices != null)
+            if (modifiedVoices != null)
             {
-                if (modifiedPlayerVoices.Count > 0)
+                if (modifiedVoices.Count > 0)
                 {
-                    foreach (PlayerControllerB player in modifiedPlayerVoices)
+                    foreach (PhoneBehavior modifiedPhone in modifiedVoices)
                     {
-                        RemovePhoneVoiceEffect(player);
+                        modifiedPhone.RemovePhoneVoiceEffect();
                     }
 
-                    this.modifiedPlayerVoices.Clear();
+                    this.modifiedVoices.Clear();
                 }
             }
 
