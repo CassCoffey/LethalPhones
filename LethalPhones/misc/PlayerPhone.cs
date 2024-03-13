@@ -338,6 +338,7 @@ namespace Scoops.misc
                 }
                 vector *= 0.0005f;
 
+                Plugin.Log.LogInfo("MovementVector: " + vector);
 
                 if (!Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
                 {
@@ -906,15 +907,20 @@ namespace Scoops.misc
                 if (activeCall != null)
                 {
                     float listenDist = 0f;
+                    float listenAngle = 0f;
                     if (!isLocalPhone)
                     {
                         if (!(GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == player))
                         {
-                            listenDist = Vector3.Distance(GameNetworkManager.Instance.localPlayerController.transform.position, player.transform.position);
+                            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                            listenDist = Vector3.Distance(localPlayer.transform.position, player.transform.position);
                             if (listenDist > EAVESDROP_DIST)
                             {
                                 return;
                             }
+                            Vector3 directionTo = player.transform.position - localPlayer.transform.position;
+                            directionTo = directionTo / listenDist;
+                            listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
                         }
                     }
                     PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
@@ -937,7 +943,7 @@ namespace Scoops.misc
                     if (dist > RECORDING_START_DIST)
                     {
                         modifiedPlayerVoices.Add(caller);
-                        ApplyPhoneVoiceEffect(caller, 0f, listenDist, worseConnection);
+                        ApplyPhoneVoiceEffect(caller, 0f, listenDist, listenAngle, worseConnection);
                     }
                     else
                     {
@@ -960,7 +966,7 @@ namespace Scoops.misc
                                 if (localDist > RECORDING_START_DIST && callDist < BACKGROUND_VOICE_DIST)
                                 {
                                     modifiedPlayerVoices.Add(background);
-                                    ApplyPhoneVoiceEffect(background, callDist, listenDist, worseConnection);
+                                    ApplyPhoneVoiceEffect(background, callDist, listenDist, listenAngle, worseConnection);
                                 }
                                 else
                                 {
@@ -1080,13 +1086,18 @@ namespace Scoops.misc
                 currentConnectionQuality += 0.005f;
             }
 
-            if (currentConnectionQuality <= 0.5f)
+            if (staticChance > 0f)
             {
                 // we are in the static zone
                 float staticChanceMod = Mathf.Lerp(0.15f, 0.85f, staticChance);
 
                 staticMode = UnityEngine.Random.Range(0f, 1f) < staticChanceMod;
                 hardStatic = UnityEngine.Random.Range(0f, 1f) < staticChanceMod;
+            } 
+            else
+            {
+                staticMode = false;
+                hardStatic = false;
             }
 
             UpdateConnectionQualityUI();
@@ -1152,6 +1163,7 @@ namespace Scoops.misc
             } 
             else
             {
+                staticChance = 0f;
                 if (target.isPlaying) target.Stop();
             }
         }
@@ -1454,7 +1466,7 @@ namespace Scoops.misc
             player.SwitchToItemSlot(slot, null);
         }
 
-        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f, float connectionQuality = 1f)
+        private void ApplyPhoneVoiceEffect(PlayerControllerB playerController, float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
         {
             if (playerController == null)
             {
@@ -1506,7 +1518,7 @@ namespace Scoops.misc
                 float mod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
                 occludeAudio.lowPassOverride = 750f;
-                currentVoiceChatAudioSource.panStereo = 0f;
+                currentVoiceChatAudioSource.panStereo = listeningAngle;
             }
 
             if (playerController.voiceMuffledByEnemy)
@@ -1555,6 +1567,50 @@ namespace Scoops.misc
             currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
             lowPass.lowpassResonanceQ = 1f;
             highPass.highpassResonanceQ = 1f;
+        }
+
+        public static void UpdatePhoneSanity(PlayerControllerB playerController)
+        {
+            PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            if (phone)
+            {
+                if (phone.activeCall != null)
+                {
+                    playerController.insanitySpeedMultiplier = -3f * phone.connectionQuality.Value;
+                    playerController.isPlayerAlone = false;
+                }
+            }
+        }
+
+        public override void OnDestroy()
+        {
+            Plugin.Log.LogInfo("AAAAAAAA");
+
+            if (target.isPlaying)
+            {
+                target.Stop();
+            }
+
+            if (audioSourcesInRange.Count > 0)
+            {
+                foreach (AudioSourceStorage storage in this.audioSourcesInRange)
+                {
+                    storage.Reset();
+                }
+
+                this.audioSourcesInRange.Clear();
+            }
+            if (modifiedPlayerVoices.Count > 0)
+            {
+                foreach (PlayerControllerB player in modifiedPlayerVoices)
+                {
+                    RemovePhoneVoiceEffect(player);
+                }
+
+                this.modifiedPlayerVoices.Clear();
+            }
+
+            StartOfRound.Instance.UpdatePlayerVoiceEffects();
         }
     }
 }

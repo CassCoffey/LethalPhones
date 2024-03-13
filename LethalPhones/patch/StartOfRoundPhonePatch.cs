@@ -30,6 +30,13 @@ namespace Scoops.patch
             PhoneNetworkHandler.Instance.localPhone.ToggleActive(false);
         }
 
+        [HarmonyPatch("OnPlayerDC")]
+        [HarmonyPrefix]
+        private static void CleanupPlayerPhone(ref StartOfRound __instance, int playerObjectNumber, ulong clientId)
+        {
+            PhoneNetworkHandler.Instance.DeletePhone(playerObjectNumber, clientId);
+        }
+
         [HarmonyPatch("Update")]
         [HarmonyPostfix]
         private static void Update(ref StartOfRound __instance)
@@ -68,10 +75,10 @@ namespace Scoops.patch
                 {
                     if (sortedSources[i])
                     {
-                        float dist = Vector3.Distance(position, sortedSources[i].transform.position);
-                        float localDist = Vector3.Distance(localPlayer.transform.position, sortedSources[i].transform.position);
-                        float localToOtherDist = Vector3.Distance(localPlayer.transform.position, position);
-                        if (localToOtherDist > PlayerPhone.RECORDING_START_DIST && dist < sortedSources[i].maxDistance && dist < localDist)
+                        float dist = (position - sortedSources[i].transform.position).sqrMagnitude;
+                        float localDist = (localPlayer.transform.position - sortedSources[i].transform.position).sqrMagnitude;
+                        float localToOtherDist = (localPlayer.transform.position - position).sqrMagnitude;
+                        if (localToOtherDist > (PlayerPhone.RECORDING_START_DIST * PlayerPhone.RECORDING_START_DIST) && dist < (sortedSources[i].maxDistance * sortedSources[i].maxDistance) && dist < localDist)
                         {
                             closeSources.Add(sortedSources[i]);
                         }

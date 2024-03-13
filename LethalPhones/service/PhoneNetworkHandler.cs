@@ -2,6 +2,7 @@
 using GameNetcodeStuff;
 using Scoops.misc;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -16,8 +17,6 @@ namespace Scoops.service
 
         private Dictionary<string, ulong> phoneNumberDict;
         private Dictionary<string, PlayerPhone> phoneObjectDict;
-
-        private List<PlayerPhone> phoneList;
 
         public PlayerPhone localPhone;
 
@@ -35,7 +34,6 @@ namespace Scoops.service
 
             phoneNumberDict = new Dictionary<string, ulong>();
             phoneObjectDict = new Dictionary<string, PlayerPhone>();
-            phoneList = new List<PlayerPhone>();
 
             base.OnNetworkSpawn();
         }
@@ -59,15 +57,34 @@ namespace Scoops.service
                 phoneNumber = Random.Range(0, 10000);
                 phoneString = phoneNumber.ToString("D4");
             }
+            Plugin.Log.LogInfo($"New phone number: " + phoneString);
 
             phoneNumberDict.Add(phoneString, clientId);
+            Plugin.Log.LogInfo($"Phone numbner added to dict.");
 
             PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            Plugin.Log.LogInfo($"Phone object created: " + phone);
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
 
             phoneObjectDict.Add(phoneString, phone);
 
             phone.SetNewPhoneNumberClientRpc(phoneString);
+        }
+
+        public void DeletePhone(int playerId, ulong clientId)
+        {
+            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
+            Plugin.Log.LogInfo("Deleting phone for player: " + playerController.name);
+            PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            phone.GetComponent<NetworkObject>().RemoveOwnership();
+            string number = phoneNumberDict.FirstOrDefault(x => x.Value == clientId).Key;
+            if (number != null)
+            {
+                Plugin.Log.LogInfo("Removing number: " + number);
+
+                phoneObjectDict.Remove(number);
+                phoneNumberDict.Remove(number);
+            }
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -102,11 +119,14 @@ namespace Scoops.service
         [ServerRpc(RequireOwnership = false)]
         public void HangUpCallServerRpc(string number, ServerRpcParams serverRpcParams = default)
         {
-            ulong cancellerClientId = serverRpcParams.Receive.SenderClientId;
-            int cancellerPlayerId = StartOfRound.Instance.ClientPlayerList[cancellerClientId];
-            string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerClientId).Key;
+            if (phoneNumberDict.ContainsKey(number))
+            {
+                ulong cancellerClientId = serverRpcParams.Receive.SenderClientId;
+                int cancellerPlayerId = StartOfRound.Instance.ClientPlayerList[cancellerClientId];
+                string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerClientId).Key;
 
-            phoneObjectDict[number].HangupCallClientRpc(cancellerPlayerId, cancellerPhoneNumber);
+                phoneObjectDict[number].HangupCallClientRpc(cancellerPlayerId, cancellerPhoneNumber);
+            }
         }
 
         [ServerRpc(RequireOwnership = false)]

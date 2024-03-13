@@ -9,12 +9,47 @@ using UnityEngine.Animations.Rigging;
 using System.ComponentModel;
 using System.Collections.Generic;
 using Scoops.misc;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace Scoops.patch;
 
-/// <summary>
-/// Patch to modify the behavior of a player.
-/// </summary>
+[HarmonyPatch(typeof(PlayerControllerB))]
+[HarmonyPatch("SetPlayerSanityLevel")]
+public static class PlayerControllerB_SetPlayerSanityLevel_Patch
+{
+    static FieldInfo f_isPlayerAlone = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.isPlayerAlone));
+    static MethodInfo m_UpdatePhoneSanity = AccessTools.Method(typeof(PlayerPhone), nameof(PlayerPhone.UpdatePhoneSanity), new Type[] { typeof(PlayerControllerB) });
+
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    {
+        var code = new List<CodeInstruction>(instructions);
+
+        int insertionIndex = -1;
+        for (int i = 0; i < code.Count - 3; i++)
+        {
+            if (code[i].opcode == OpCodes.Ldarg_0 && code[i + 1].opcode == OpCodes.Ldfld && code[i + 2].opcode == OpCodes.Ldc_R4 && code[i + 3].opcode == OpCodes.Bge_Un)
+            {
+                insertionIndex = i + 1;
+                break;
+            }
+        }
+
+        var instructionsToInsert = new List<CodeInstruction>
+        {
+            new CodeInstruction(OpCodes.Call, m_UpdatePhoneSanity),
+            new CodeInstruction(OpCodes.Ldarg_0)
+        };
+
+        if (insertionIndex != -1)
+        {
+            code.InsertRange(insertionIndex, instructionsToInsert);
+        }
+
+        return code;
+    }
+}
+
 [HarmonyPatch(typeof(PlayerControllerB))]
 public class PlayerPhonePatch
 {
@@ -95,6 +130,16 @@ public class PlayerPhonePatch
         Plugin.InputActionInstance.VolumePhoneKey.performed += OnVolumePhoneKeyPressed;
     }
 
+    [HarmonyPatch("OnDestroy")]
+    [HarmonyPrefix]
+    private static void CleanupPhone(ref PlayerControllerB __instance)
+    {
+        Plugin.InputActionInstance.TogglePhoneKey.performed -= OnTogglePhoneKeyPressed;
+        Plugin.InputActionInstance.PickupPhoneKey.performed -= OnPickupPhoneKeyPressed;
+        Plugin.InputActionInstance.HangupPhoneKey.performed -= OnHangupPhoneKeyPressed;
+        Plugin.InputActionInstance.VolumePhoneKey.performed -= OnVolumePhoneKeyPressed;
+    }
+
     [HarmonyPatch("DamagePlayer")]
     [HarmonyPostfix]
     private static void PlayerDamaged(ref PlayerControllerB __instance, int damageNumber, bool hasDamageSFX = true, bool callRPC = true, CauseOfDeath causeOfDeath = CauseOfDeath.Unknown, int deathAnimation = 0, bool fallDamage = false, Vector3 force = default(Vector3))
@@ -104,14 +149,7 @@ public class PlayerPhonePatch
             return;
         }
 
-        if (damageNumber < 25f)
-        {
-            PhoneManager.localPhone.InfluenceConnectionQuality(-0.25f);
-        } 
-        else
-        {
-            PhoneManager.localPhone.InfluenceConnectionQuality(-0.5f);
-        }
+        PhoneManager.localPhone.InfluenceConnectionQuality(Mathf.Clamp01(damageNumber / 100f));
     }
 
     private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)

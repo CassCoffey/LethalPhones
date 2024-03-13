@@ -12,19 +12,19 @@ namespace Scoops;
 
 public class LethalPhonesInputClass : LcInputActions
 {
-    [InputAction("<Keyboard>/backquote", Name = "Toggle Phone")]
+    [InputAction("<Keyboard>/backquote", Name = "Toggle Phone", GamepadPath = "<Gamepad>/leftStickPress")]
     public InputAction TogglePhoneKey { get; set; }
 
-    [InputAction("<Keyboard>/q", Name = "Hangup Phone")]
+    [InputAction("<Keyboard>/q", Name = "Hangup Phone", GamepadPath = "<Gamepad>/dpad/down")]
     public InputAction HangupPhoneKey { get; set; }
 
-    [InputAction("<Mouse>/leftButton", Name = "Pickup Phone")]
+    [InputAction("<Mouse>/leftButton", Name = "Pickup Phone", GamepadPath = "<Gamepad>/rightTrigger")]
     public InputAction PickupPhoneKey { get; set; }
 
-    [InputAction("<Keyboard>/z", Name = "Dial Phone")]
+    [InputAction("<Keyboard>/z", Name = "Dial Phone", GamepadPath = "<Gamepad>/leftShoulder")]
     public InputAction DialPhoneKey { get; set; }
 
-    [InputAction("<Keyboard>/g", Name = "Toggle Phone Volume")]
+    [InputAction("<Keyboard>/g", Name = "Toggle Phone Volume", GamepadPath = "<Gamepad>/buttonEast")]
     public InputAction VolumePhoneKey { get; set; }
 }
 
@@ -67,6 +67,7 @@ public class Plugin : BaseUnityPlugin
     private void ApplyPluginPatch()
     {
         _harmony.PatchAll(typeof(PlayerPhonePatch));
+        _harmony.PatchAll(typeof(PlayerControllerB_SetPlayerSanityLevel_Patch));
         _harmony.PatchAll(typeof(StartOfRoundPhonePatch));
         _harmony.PatchAll(typeof(NetworkObjectManager));
         _harmony.PatchAll(typeof(ShipTeleporterPhonePatch));
