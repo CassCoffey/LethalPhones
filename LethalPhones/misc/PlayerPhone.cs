@@ -1584,31 +1584,44 @@ namespace Scoops.misc
 
         public override void OnDestroy()
         {
-            if (target.isPlaying)
+            if (target != null)
             {
-                target.Stop();
-            }
-
-            if (audioSourcesInRange.Count > 0)
-            {
-                foreach (AudioSourceStorage storage in this.audioSourcesInRange)
+                if (target.isPlaying)
                 {
-                    storage.Reset();
+                    target.Stop();
                 }
-
-                this.audioSourcesInRange.Clear();
             }
-            if (modifiedPlayerVoices.Count > 0)
+
+            if (audioSourcesInRange != null)
             {
-                foreach (PlayerControllerB player in modifiedPlayerVoices)
+                if (audioSourcesInRange.Count > 0)
                 {
-                    RemovePhoneVoiceEffect(player);
-                }
+                    foreach (AudioSourceStorage storage in this.audioSourcesInRange)
+                    {
+                        storage.Reset();
+                    }
 
-                this.modifiedPlayerVoices.Clear();
+                    this.audioSourcesInRange.Clear();
+                }
             }
 
-            StartOfRound.Instance.UpdatePlayerVoiceEffects();
+            if (modifiedPlayerVoices != null)
+            {
+                if (modifiedPlayerVoices.Count > 0)
+                {
+                    foreach (PlayerControllerB player in modifiedPlayerVoices)
+                    {
+                        RemovePhoneVoiceEffect(player);
+                    }
+
+                    this.modifiedPlayerVoices.Clear();
+                }
+            }
+
+            if (StartOfRound.Instance != null)
+            {
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
+            }
         }
     }
 }

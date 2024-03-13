@@ -134,6 +134,10 @@ public class PlayerPhonePatch
     [HarmonyPrefix]
     private static void CleanupPhone(ref PlayerControllerB __instance)
     {
+        if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
+        {
+            return;
+        }
         Plugin.InputActionInstance.TogglePhoneKey.performed -= OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed -= OnPickupPhoneKeyPressed;
         Plugin.InputActionInstance.HangupPhoneKey.performed -= OnHangupPhoneKeyPressed;
