@@ -122,7 +122,7 @@ public class PlayerPhonePatch
     private static void InitPhone(ref PlayerControllerB __instance)
     {
         PhoneManager = PhoneNetworkHandler.Instance;
-        PhoneManager.CreateNewPhone();
+        PhoneManager.CreateNewPlayerPhone();
 
         Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;

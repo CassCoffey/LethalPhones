@@ -588,17 +588,6 @@ namespace Scoops.misc
                 PlayPickupSound();
 
                 UpdateCallingUI();
-
-                PlayerControllerB caller = StartOfRound.Instance.allPlayerScripts[activeCaller];
-                Plugin.Log.LogInfo("Accepted call from " + caller.name);
-                if (caller.currentVoiceChatAudioSource != null)
-                {
-                    Plugin.Log.LogInfo("With voice chat audio source " + caller.currentVoiceChatAudioSource.name);
-                }
-                else
-                {
-                    Plugin.Log.LogInfo("With no voice chat audio source?");
-                }
             }
             else
             {
@@ -705,7 +694,7 @@ namespace Scoops.misc
 
         protected override void UpdateAllAudioSources()
         {
-            if (activeCaller == -1) return;
+            if (activeCaller == 0) return;
             if (!IsOwner)
             {
                 return;
@@ -770,7 +759,7 @@ namespace Scoops.misc
                 return;
             }
             
-            if (activeCaller != -1)
+            if (activeCaller != 0)
             {
                 if (activeCall != null)
                 {
@@ -818,7 +807,7 @@ namespace Scoops.misc
                         if (modifiedPlayerVoices.Contains(caller))
                         {
                             modifiedPlayerVoices.Remove(caller);
-                            RemovePhoneVoiceEffect(caller);
+                            RemovePhoneVoiceEffect(activeCaller);
                         }
                     }
 
@@ -1158,6 +1147,50 @@ namespace Scoops.misc
             }
 
             player.SwitchToItemSlot(slot, null);
+        }
+
+        public void RemovePhoneVoiceEffect(PlayerControllerB playerController)
+        {
+            if (playerController == null)
+            {
+                return;
+            }
+            PlayerPhone otherPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            if (otherPhone != null)
+            {
+                otherPhone.RemovePhoneVoiceEffect();
+            }
+        }
+
+        public override void RemovePhoneVoiceEffect()
+        {
+            if (player == null)
+            {
+                return;
+            }
+            if (player.currentVoiceChatAudioSource == null)
+            {
+                StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
+            }
+
+            AudioSource currentVoiceChatAudioSource = player.currentVoiceChatAudioSource;
+            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
+            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
+            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+
+            highPass.enabled = false;
+            lowPass.enabled = true;
+            occludeAudio.overridingLowPass = player.voiceMuffledByEnemy;
+
+            currentVoiceChatAudioSource.volume = 1f;
+            currentVoiceChatAudioSource.spatialBlend = 1f;
+            player.currentVoiceChatIngameSettings.set2D = false;
+            currentVoiceChatAudioSource.bypassListenerEffects = false;
+            currentVoiceChatAudioSource.bypassEffects = false;
+            currentVoiceChatAudioSource.panStereo = 0f;
+            currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[player.playerClientId];
+            lowPass.lowpassResonanceQ = 1f;
+            highPass.highpassResonanceQ = 1f;
         }
 
         public static void UpdatePhoneSanity(PlayerControllerB playerController)

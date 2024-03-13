@@ -269,7 +269,7 @@ namespace Scoops.misc
         [ClientRpc]
         public virtual void InvalidCallClientRpc(string reason)
         {
-            
+            outgoingCall = null;
         }
 
         [ClientRpc]
@@ -431,41 +431,18 @@ namespace Scoops.misc
             }
         }
 
-        protected void RemovePhoneVoiceEffect(int playerId)
+        public virtual void RemovePhoneVoiceEffect(ushort phoneId)
         {
-            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
-            RemovePhoneVoiceEffect(playerController);
+            PhoneBehavior otherPhone = (PhoneBehavior)GetNetworkBehaviour(phoneId);
+            if (otherPhone != null)
+            {
+                otherPhone.RemovePhoneVoiceEffect();
+            }
         }
 
-        protected void RemovePhoneVoiceEffect(PlayerControllerB playerController)
+        public virtual void RemovePhoneVoiceEffect()
         {
-            if (playerController == null)
-            {
-                return;
-            }
-            if (playerController.currentVoiceChatAudioSource == null)
-            {
-                StartOfRound.Instance.RefreshPlayerVoicePlaybackObjects();
-            }
-
-            AudioSource currentVoiceChatAudioSource = playerController.currentVoiceChatAudioSource;
-            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
-            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
-            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
-
-            highPass.enabled = false;
-            lowPass.enabled = true;
-            occludeAudio.overridingLowPass = playerController.voiceMuffledByEnemy;
-
-            currentVoiceChatAudioSource.volume = 1f;
-            currentVoiceChatAudioSource.spatialBlend = 1f;
-            playerController.currentVoiceChatIngameSettings.set2D = false;
-            currentVoiceChatAudioSource.bypassListenerEffects = false;
-            currentVoiceChatAudioSource.bypassEffects = false;
-            currentVoiceChatAudioSource.panStereo = 0f;
-            currentVoiceChatAudioSource.outputAudioMixerGroup = SoundManager.Instance.playerVoiceMixers[playerController.playerClientId];
-            lowPass.lowpassResonanceQ = 1f;
-            highPass.highpassResonanceQ = 1f;
+            
         }
 
         public override void OnDestroy()
