@@ -338,8 +338,6 @@ namespace Scoops.misc
                 }
                 vector *= 0.0005f;
 
-                Plugin.Log.LogInfo("MovementVector: " + vector);
-
                 if (!Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
                 {
                     Vector3 localPosition = localPhoneInteractionNode.localPosition;
@@ -1584,8 +1582,6 @@ namespace Scoops.misc
 
         public override void OnDestroy()
         {
-            Plugin.Log.LogInfo("AAAAAAAA");
-
             if (target.isPlaying)
             {
                 target.Stop();
