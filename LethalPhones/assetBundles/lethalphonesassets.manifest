@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3977727834
+CRC: 3909727985
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: fcfc65dd4dc4fcb22a1fad9e627586bf
+    Hash: 8a3c8b96c0830751cfa24146b7120781
   TypeTreeHash:
     serializedVersion: 2
     Hash: 178e66849b36bc22758efb2fae370fc1
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: fcfc65dd4dc4fcb22a1fad9e627586bf
+    Hash: 8a3c8b96c0830751cfa24146b7120781
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -128,7 +128,7 @@ Assets:
 - Assets/Textures/icons8-medium-connection-96.png
 - Assets/Sounds/RotaryDialForwardOptionOne.wav
 - Assets/Sounds/RotaryDialBackOptionOne.wav
-- Assets/LocalPhoneModel.prefab
+- Assets/BugPhonePrefab.prefab
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhonePrefab.prefab
 - Assets/Textures/icons8-signal-96.png
@@ -142,6 +142,7 @@ Assets:
 - Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/Sounds/RotaryFinishOptionTwo.wav
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav
+- Assets/LocalPhoneModel.prefab
 - Assets/Sounds/RotaryFinishOptionOne.wav
 - Assets/Sounds/PhoneSwitch.wav
 - Assets/ServerLeftArmPhone.prefab

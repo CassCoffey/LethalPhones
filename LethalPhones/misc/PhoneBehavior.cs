@@ -123,6 +123,42 @@ namespace Scoops.misc
             }
         }
 
+        public void CallRandomNumber()
+        {
+            string number = GetRandomExistingPhoneNumber();
+            if (number == null || number == "")
+            {
+                return;
+            }
+
+            outgoingCall = number;
+
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
+        }
+
+        public string GetRandomExistingPhoneNumber()
+        {
+            PhoneBehavior[] allPhones = GameObject.FindObjectsByType<PhoneBehavior>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            List<PhoneBehavior> allValidPhones = new List<PhoneBehavior>();
+
+            for (int i = 0; i < allPhones.Length; i++)
+            {
+                if (allPhones[i] != this && allPhones[i].phoneNumber != null && allPhones[i].phoneNumber != "")
+                {
+                    allValidPhones.Add(allPhones[i]);
+                }
+            }
+
+            if (allValidPhones.Count > 0)
+            {
+                PhoneBehavior randPhone = allValidPhones[UnityEngine.Random.Range(0, allValidPhones.Count)];
+
+                return randPhone.phoneNumber;
+            }
+
+            return null;
+        }
+
         public void StopLocalSound()
         {
             if (IsOwner)
@@ -160,7 +196,7 @@ namespace Scoops.misc
 
         protected virtual void GetAllAudioSourcesToUpdate()
         {
-            if (IsOwner || PhoneNetworkHandler.Instance.localPhone == null)
+            if (PhoneNetworkHandler.Instance.localPhone == null)
             {
                 return;
             }
@@ -183,7 +219,7 @@ namespace Scoops.misc
 
         protected virtual void UpdateAllAudioSources()
         {
-            if (IsOwner || PhoneNetworkHandler.Instance.localPhone == null)
+            if (PhoneNetworkHandler.Instance.localPhone == null)
             {
                 return;
             }

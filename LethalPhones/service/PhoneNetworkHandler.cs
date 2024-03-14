@@ -38,13 +38,13 @@ namespace Scoops.service
             base.OnNetworkSpawn();
         }
 
-        public void CreateNewPlayerPhone()
+        public void CreateNewPhone(ulong phoneId)
         {
-            CreateNewPhoneNumberServerRpc(true);
+            CreateNewPhoneNumberServerRpc(phoneId);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void CreateNewPhoneNumberServerRpc(bool player, ServerRpcParams serverRpcParams = default)
+        public void CreateNewPhoneNumberServerRpc(ulong phoneId, ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
             int phoneNumber = Random.Range(0, 10000); ;
@@ -55,14 +55,8 @@ namespace Scoops.service
                 phoneString = phoneNumber.ToString("D4");
             }
 
-            PhoneBehavior phone = null;
-            if (player)
-            {
-                int playerId = StartOfRound.Instance.ClientPlayerList[clientId];
-                Plugin.Log.LogInfo($"New phone for player: " + playerId);
-                PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
-                phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-            }
+            PhoneBehavior phone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
+            Plugin.Log.LogInfo($"New phone for object: " + phoneId);
 
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
             phoneNumberDict.Add(phoneString, phone.NetworkObjectId);

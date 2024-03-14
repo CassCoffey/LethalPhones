@@ -11,6 +11,7 @@ namespace Scoops.patch
     {
         static GameObject networkPrefab = null;
         public static GameObject phonePrefab = null;
+        public static GameObject bugPhonePrefab = null;
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
         public static void Init()
@@ -29,6 +30,14 @@ namespace Scoops.patch
                 phonePrefab.AddComponent<PlayerPhone>();
 
                 NetworkManager.Singleton.AddNetworkPrefab(phonePrefab);
+            }
+
+            if (bugPhonePrefab == null)
+            {
+                bugPhonePrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugPhonePrefab");
+                bugPhonePrefab.AddComponent<HoardingPhone>();
+
+                NetworkManager.Singleton.AddNetworkPrefab(bugPhonePrefab);
             }
         }
 

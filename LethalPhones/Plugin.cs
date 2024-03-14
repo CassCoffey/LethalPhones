@@ -68,6 +68,7 @@ public class Plugin : BaseUnityPlugin
     {
         _harmony.PatchAll(typeof(PlayerPhonePatch));
         _harmony.PatchAll(typeof(PlayerControllerB_SetPlayerSanityLevel_Patch));
+        _harmony.PatchAll(typeof(HoardingBugPhonePatch));
         _harmony.PatchAll(typeof(StartOfRoundPhonePatch));
         _harmony.PatchAll(typeof(NetworkObjectManager));
         _harmony.PatchAll(typeof(ShipTeleporterPhonePatch));

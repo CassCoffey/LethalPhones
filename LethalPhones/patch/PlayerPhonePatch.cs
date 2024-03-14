@@ -122,7 +122,8 @@ public class PlayerPhonePatch
     private static void InitPhone(ref PlayerControllerB __instance)
     {
         PhoneManager = PhoneNetworkHandler.Instance;
-        PhoneManager.CreateNewPlayerPhone();
+        NetworkObject phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<NetworkObject>();
+        PhoneManager.CreateNewPhone(phone.NetworkObjectId);
 
         Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;
