@@ -34,7 +34,7 @@ namespace Scoops.patch
         [HarmonyPrefix]
         private static void CleanupPlayerPhone(ref StartOfRound __instance, int playerObjectNumber, ulong clientId)
         {
-            PhoneNetworkHandler.Instance.DeletePlayerPhone(playerObjectNumber, clientId);
+            PhoneNetworkHandler.Instance.DeletePlayerPhone(playerObjectNumber);
         }
 
         [HarmonyPatch("Update")]

@@ -15,7 +15,7 @@ namespace Scoops.service
     {
         public static PhoneNetworkHandler Instance { get; private set; }
 
-        private Dictionary<string, ushort> phoneNumberDict;
+        private Dictionary<string, ulong> phoneNumberDict;
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
@@ -32,7 +32,7 @@ namespace Scoops.service
 
             Instance = this;
 
-            phoneNumberDict = new Dictionary<string, ushort>();
+            phoneNumberDict = new Dictionary<string, ulong>();
             phoneObjectDict = new Dictionary<string, PhoneBehavior>();
 
             base.OnNetworkSpawn();
@@ -64,22 +64,20 @@ namespace Scoops.service
                 phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
             }
 
-            phoneNumberDict.Add(phoneString, phone.NetworkBehaviourId);
-
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
-
+            phoneNumberDict.Add(phoneString, phone.NetworkObjectId);
             phoneObjectDict.Add(phoneString, phone);
 
             phone.SetNewPhoneNumberClientRpc(phoneString);
         }
 
-        public void DeletePlayerPhone(int playerId, ulong clientId)
+        public void DeletePlayerPhone(int playerId)
         {
             PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
             Plugin.Log.LogInfo("Deleting phone for player: " + playerController.name);
             PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+            string number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
             phone.GetComponent<NetworkObject>().RemoveOwnership();
-            string number = phoneNumberDict.FirstOrDefault(x => x.Value == clientId).Key;
             if (number != null)
             {
                 Plugin.Log.LogInfo("Removing number: " + number);
@@ -90,7 +88,7 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void MakeOutgoingCallServerRpc(string number, ushort senderId, ServerRpcParams serverRpcParams = default)
+        public void MakeOutgoingCallServerRpc(string number, ulong senderId, ServerRpcParams serverRpcParams = default)
         {
             string senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderId).Key;
 
@@ -107,15 +105,17 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void AcceptIncomingCallServerRpc(string number, ushort accepterId, ServerRpcParams serverRpcParams = default)
+        public void AcceptIncomingCallServerRpc(string number, ulong accepterId, ServerRpcParams serverRpcParams = default)
         {
             string accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterId).Key;
+            Plugin.Log.LogInfo("Accepter with number: " + accepterPhoneNumber);
+            Plugin.Log.LogInfo("Accepting number: " + number);
 
             phoneObjectDict[number].CallAcceptedClientRpc(accepterId, accepterPhoneNumber);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void HangUpCallServerRpc(string number, ushort cancellerId, ServerRpcParams serverRpcParams = default)
+        public void HangUpCallServerRpc(string number, ulong cancellerId, ServerRpcParams serverRpcParams = default)
         {
             if (phoneNumberDict.ContainsKey(number))
             {

@@ -23,8 +23,8 @@ namespace Scoops.misc
 
         public bool spectatorClear = false;
 
-        public ushort activeCaller = 0;
-        public ushort incomingCaller = 0;
+        public ulong activeCaller = 0;
+        public ulong incomingCaller = 0;
 
         protected AudioSource ringAudio;
         protected AudioSource thisAudio;
@@ -261,7 +261,7 @@ namespace Scoops.misc
                         }
                     }
 
-                    PhoneBehavior callerPhone = (PhoneBehavior)GetNetworkBehaviour(activeCaller);
+                    PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
                     if (callerPhone == PhoneNetworkHandler.Instance.localPhone)
                     {
                         return;
@@ -473,7 +473,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void RecieveCallClientRpc(ushort callerId, string callerNumber)
+        public void RecieveCallClientRpc(ulong callerId, string callerNumber)
         {
             if (incomingCall == null)
             {
@@ -491,7 +491,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void CallAcceptedClientRpc(ushort accepterId, string accepterNumber)
+        public void CallAcceptedClientRpc(ulong accepterId, string accepterNumber)
         {
             if (outgoingCall != accepterNumber)
             {
@@ -509,7 +509,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void HangupCallClientRpc(ushort cancellerId, string cancellerNumber)
+        public void HangupCallClientRpc(ulong cancellerId, string cancellerNumber)
         {
             if (activeCall == cancellerNumber)
             {
@@ -570,22 +570,9 @@ namespace Scoops.misc
             // Does nothing
         }
 
-        public virtual void RemovePhoneVoiceEffect(PlayerControllerB playerController)
+        public virtual void RemovePhoneVoiceEffect(ulong phoneId)
         {
-            if (playerController == null)
-            {
-                return;
-            }
-            PlayerPhone otherPhone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-            if (otherPhone != null)
-            {
-                otherPhone.RemovePhoneVoiceEffect();
-            }
-        }
-
-        public virtual void RemovePhoneVoiceEffect(ushort phoneId)
-        {
-            PhoneBehavior otherPhone = (PhoneBehavior)GetNetworkBehaviour(phoneId);
+            PhoneBehavior otherPhone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
             if (otherPhone != null)
             {
                 otherPhone.RemovePhoneVoiceEffect();
