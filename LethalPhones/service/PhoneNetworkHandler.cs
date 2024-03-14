@@ -108,8 +108,6 @@ namespace Scoops.service
         public void AcceptIncomingCallServerRpc(string number, ulong accepterId, ServerRpcParams serverRpcParams = default)
         {
             string accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterId).Key;
-            Plugin.Log.LogInfo("Accepter with number: " + accepterPhoneNumber);
-            Plugin.Log.LogInfo("Accepting number: " + number);
 
             phoneObjectDict[number].CallAcceptedClientRpc(accepterId, accepterPhoneNumber);
         }

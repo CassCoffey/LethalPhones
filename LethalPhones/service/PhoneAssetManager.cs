@@ -76,12 +76,6 @@ namespace Scoops.service
             }
         }
 
-        public void ApplyPhone(Vector3 position)
-        {
-            float dist = Vector3.Distance(position, audioSource.transform.position);
-            ApplyPhone(dist);
-        }
-
         public void ApplyPhone(float dist, float callQuality = 1f, bool staticMode = false)
         {
             if (audioSourceHolder != null && audioSource != null)

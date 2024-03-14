@@ -583,8 +583,6 @@ namespace Scoops.misc
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
                 incomingCall = null;
-                Plugin.Log.LogInfo("We accepted a call from: " + activeCall);
-                Plugin.Log.LogInfo("We are " + NetworkObjectId + " with number " + phoneNumber);
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayPickupSound();
@@ -668,7 +666,6 @@ namespace Scoops.misc
 
             UpdateCallingUI();
 
-            Plugin.Log.LogInfo("Calling: " + outgoingCall);
             PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
             StartCoroutine(CallTimeoutCoroutine(number));
         }

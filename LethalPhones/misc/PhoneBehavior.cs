@@ -96,9 +96,9 @@ namespace Scoops.misc
                 spectatorClear = false;
             }
 
-            this.UpdatePlayerVoices();
-            this.UpdateAllAudioSources();
             this.GetAllAudioSourcesToUpdate();
+            this.UpdateAllAudioSources();
+            this.UpdatePlayerVoices();
 
             if (IsOwner)
             {
@@ -217,7 +217,7 @@ namespace Scoops.misc
                     }
                     else
                     {
-                        storage.ApplyPhone(callerDist, worseConnection, staticMode && hardStatic);
+                        storage.ApplyPhone(ownerDist, worseConnection, staticMode && hardStatic);
                     }
                 }
                 else
@@ -311,7 +311,7 @@ namespace Scoops.misc
         protected virtual void ManageConnectionQuality()
         {
             targetConnectionQuality = 1f;
-            LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy };
+            LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
             LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
             if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
             {

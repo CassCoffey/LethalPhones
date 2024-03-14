@@ -153,7 +153,8 @@ public class PlayerPhonePatch
             return;
         }
 
-        PhoneManager.localPhone.InfluenceConnectionQuality(Mathf.Clamp01(damageNumber / 100f));
+        float changeAmount = 0f - Mathf.Clamp01(damageNumber / 100f);
+        PhoneManager.localPhone.InfluenceConnectionQuality(changeAmount);
     }
 
     private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)
