@@ -730,7 +730,7 @@ namespace Scoops.misc
         {
             for (int i = 0; i < repeats; i++)
             {
-                RoundManager.Instance.PlayAudibleNoise(transform.position, 50f, 0.95f, i, PhoneInsideShip(), 0);
+                RoundManager.Instance.PlayAudibleNoise(ringAudio.transform.position, 50f, 0.95f, i, PhoneInsideShip(), 0);
                 yield return new WaitForSeconds(4f);
             }
         }

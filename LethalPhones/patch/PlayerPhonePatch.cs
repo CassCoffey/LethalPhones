@@ -235,8 +235,15 @@ public class PlayerPhonePatch
     private static void PlayerDeath(ref PlayerControllerB __instance, int playerId, bool spawnBody, Vector3 bodyVelocity, int causeOfDeath, int deathAnimation)
     {
         PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-        Plugin.Log.LogInfo("Player " + __instance.name + " died, calling Death on their phone.");
-        phone.Death(causeOfDeath, spawnBody);
+        phone.Death(causeOfDeath);
+    }
+
+    [HarmonyPatch("SpawnDeadBody")]
+    [HarmonyPostfix]
+    private static void PlayerSpawnBody(ref PlayerControllerB __instance, int playerId, Vector3 bodyVelocity, int causeOfDeath, PlayerControllerB deadPlayerController, int deathAnimation = 0, Transform overridePosition = null)
+    {
+        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+        phone.ApplyCorpse();
     }
 
     [HarmonyPatch("ActivateItem_performed")]

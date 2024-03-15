@@ -42,6 +42,8 @@ namespace Scoops.misc
 
         private AudioSource rotaryAudio;
 
+        private AudioSource nonCorpseRingAudio;
+
         private Transform currentDialingNumber;
 
         private float timeSinceRotaryMoved = 0f;
@@ -52,12 +54,15 @@ namespace Scoops.misc
         public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
         private phoneVolume currentVolume = phoneVolume.Ring;
 
+        protected IEnumerator activeCallTimeoutCoroutine;
+
         public override void Start()
         {
             base.Start();
 
             this.player = transform.parent.GetComponent<PlayerControllerB>();
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+            this.nonCorpseRingAudio = ringAudio;
 
             this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
             SetPhoneLocalModelActive(false);
@@ -351,41 +356,46 @@ namespace Scoops.misc
                 }
             }
 
-            if (!reversingRotary && localPhoneDial.localEulerAngles.z != 0f && (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || Plugin.InputActionInstance.PickupPhoneKey.WasReleasedThisFrame()))
+            if (!reversingRotary && (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || Plugin.InputActionInstance.PickupPhoneKey.WasReleasedThisFrame()))
             {
-                if (stoppered)
-                {
-                    DialNumber(int.Parse(currentDialingNumber.gameObject.name));
-                }
-                else
-                {
-                    float closestDist = 100f;
-                    GameObject closestNum = null;
+                rotaryAudio.Stop();
 
-                    foreach (GameObject number in localPhoneDialNumbers)
+                if (localPhoneDial.localEulerAngles.z != 0f)
+                {
+                    if (stoppered)
                     {
-                        float dist = Vector3.Distance(number.transform.position, localPhoneStopperNode.transform.position);
-                        Vector3 localNumPos = localPhoneStopperNode.parent.InverseTransformPoint(number.transform.position);
-                        if (dist < closestDist && localNumPos.y <= localPhoneStopperNode.localPosition.y)
+                        DialNumber(int.Parse(currentDialingNumber.gameObject.name));
+                    }
+                    else
+                    {
+                        float closestDist = 100f;
+                        GameObject closestNum = null;
+
+                        foreach (GameObject number in localPhoneDialNumbers)
                         {
-                            closestDist = dist;
-                            closestNum = number;
+                            float dist = Vector3.Distance(number.transform.position, localPhoneStopperNode.transform.position);
+                            Vector3 localNumPos = localPhoneStopperNode.parent.InverseTransformPoint(number.transform.position);
+                            if (dist < closestDist && localNumPos.y <= localPhoneStopperNode.localPosition.y)
+                            {
+                                closestDist = dist;
+                                closestNum = number;
+                            }
+                        }
+
+                        if (closestDist <= 0.05f)
+                        {
+                            DialNumber(int.Parse(closestNum.name));
                         }
                     }
 
-                    if (closestDist <= 0.05f)
-                    {
-                        DialNumber(int.Parse(closestNum.name));
-                    }
+                    reversingRotary = true;
+
+                    rotaryAudio.clip = PhoneAssetManager.phoneRotaryBackward;
+                    rotaryAudio.Play();
                 }
 
                 currentDialingNumber = null;
-                reversingRotary = true;
                 stoppered = false;
-
-                rotaryAudio.Stop();
-                rotaryAudio.clip = PhoneAssetManager.phoneRotaryBackward;
-                rotaryAudio.Play();
             }
 
             if (reversingRotary)
@@ -469,39 +479,39 @@ namespace Scoops.misc
             SetPhoneLocalModelActive(false);
             SetPhoneServerModelActive(false);
 
-            ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+            ringAudio = nonCorpseRingAudio;
         }
 
-        public void Death(int causeOfDeath, bool spawnBody)
+        public void Death(int causeOfDeath)
         {
             this.enabled = true;
 
             toggled = false;
             SetPhoneLocalModelActive(false);
-
-            Plugin.Log.LogInfo("Player deadbody: " + player.deadBody);
-
-            if (spawnBody && player.deadBody != null)
-            {
-                GameObject corpsePhoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
-                GameObject tempCorpseAudio = GameObject.Instantiate(corpsePhoneAudioPrefab, player.deadBody.transform);
-                Plugin.Log.LogInfo("Setting temp ring audio on corpse for " + phoneNumber);
-                ringAudio = tempCorpseAudio.GetComponent<AudioSource>();
-            }
+            SetPhoneServerModelActive(false);
 
             if (IsOwner)
             {
-                ToggleServerPhoneModelServerRpc(false);
                 dialedNumbers.Clear();
-                UpdateCallingUI();
                 StartCoroutine(DelayDeathHangup());
+                UpdateCallingUI();
                 UpdateCallValues();
+            }
+        }
+
+        public void ApplyCorpse()
+        {
+            if (player.deadBody != null)
+            {
+                GameObject corpsePhoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
+                GameObject tempCorpseAudio = GameObject.Instantiate(corpsePhoneAudioPrefab, player.deadBody.transform);
+                ringAudio = tempCorpseAudio.GetComponent<AudioSource>();
             }
         }
 
         private IEnumerator DelayDeathHangup()
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(Config.deathHangupTime.Value);
 
             if (activeCall != null)
             {
@@ -519,6 +529,9 @@ namespace Scoops.misc
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
                 incomingCall = null;
             }
+
+            UpdateCallingUI();
+            UpdateCallValues();
         }
 
         public string GetFullDialNumber()
@@ -692,7 +705,10 @@ namespace Scoops.misc
             UpdateCallingUI();
 
             PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
-            StartCoroutine(CallTimeoutCoroutine(number));
+
+            if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
+            activeCallTimeoutCoroutine = CallTimeoutCoroutine(number);
+            StartCoroutine(activeCallTimeoutCoroutine);
         }
 
         protected override void UpdateCallingUI()
@@ -991,6 +1007,8 @@ namespace Scoops.misc
             {
                 occludeAudio.lowPassOverride = 500f;
             }
+
+            currentVoiceChatAudioSource.volume += Config.voiceSoundMod.Value;
 
             if (staticMode && hardStatic)
             {

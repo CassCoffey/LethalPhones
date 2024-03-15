@@ -8,6 +8,8 @@ namespace Scoops
         public static ConfigEntry<float> backgroundVoiceDist;
         public static ConfigEntry<float> eavesdropDist;
         public static ConfigEntry<float> backgroundSoundMod;
+        public static ConfigEntry<float> voiceSoundMod;
+        public static ConfigEntry<float> deathHangupTime;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -16,6 +18,12 @@ namespace Scoops
 
         public Config(ConfigFile cfg)
         {
+            voiceSoundMod = cfg.Bind(
+                    "General",
+                    "voiceSoundMod",
+                    0f,
+                    "All voices on calls have their volume adjusted by this value."
+            );
             backgroundSoundMod = cfg.Bind(
                     "General",
                     "backgroundSoundMod",
@@ -39,6 +47,12 @@ namespace Scoops
                     "eavesdropDist",
                     5f,
                     "The distance at which you can listen in on someone else's call."
+            );
+            deathHangupTime = cfg.Bind(
+                    "General",
+                    "deathHangupTime",
+                    0.5f,
+                    "The time it takes (in seconds) for a call to auto-hangup after death."
             );
 
             maxPhoneBugs = cfg.Bind(
