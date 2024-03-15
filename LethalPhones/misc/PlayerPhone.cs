@@ -819,11 +819,9 @@ namespace Scoops.misc
                     ringAudio.Play();
                     break;
                 case phoneVolume.Vibrate:
-                    if (IsOwner)
-                    {
-                        ringAudio.clip = PhoneAssetManager.phoneRingVibrate;
-                        ringAudio.Play();
-                    }
+                    thisAudio.Stop();
+                    thisAudio.clip = PhoneAssetManager.phoneRingVibrate;
+                    thisAudio.Play();
                     break;
                 case phoneVolume.Silent:
                     // Nothing
