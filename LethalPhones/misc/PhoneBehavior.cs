@@ -15,10 +15,6 @@ namespace Scoops.misc
 {
     public class PhoneBehavior : NetworkBehaviour
     {
-        public static float RECORDING_START_DIST = 15f;
-        public static float BACKGROUND_VOICE_DIST = 20f;
-        public static float EAVESDROP_DIST = 5f;
-
         public string phoneNumber;
 
         public bool spectatorClear = false;
@@ -159,50 +155,25 @@ namespace Scoops.misc
             return null;
         }
 
-        public void StopLocalSound()
-        {
-            if (IsOwner)
-            {
-                thisAudio.Stop();
-            }
-        }
-
-        public void PlayHangupSound()
-        {
-            if (IsOwner)
-            {
-                thisAudio.Stop();
-                thisAudio.PlayOneShot(PhoneAssetManager.phoneHangup);
-            }
-        }
-
-        public void PlayPickupSound()
-        {
-            if (IsOwner)
-            {
-                thisAudio.Stop();
-                thisAudio.PlayOneShot(PhoneAssetManager.phonePickup);
-            }
-        }
-
-        public void PlayBusySound()
-        {
-            if (IsOwner)
-            {
-                thisAudio.Stop();
-                thisAudio.PlayOneShot(PhoneAssetManager.phoneBusy);
-            }
-        }
-
         protected virtual void GetAllAudioSourcesToUpdate()
         {
             if (PhoneNetworkHandler.Instance.localPhone == null)
             {
                 return;
             }
-            if (activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !IsBeingSpectated())
+            if (activeCall == null || activeCaller == 0)
             {
                 return;
+            }
+            if (activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !IsBeingSpectated())
+            {
+                NetworkObject callerPhone = GetNetworkObject(activeCaller);
+                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                float listenDist = (localPlayer.transform.position - callerPhone.transform.position).sqrMagnitude;
+                if (listenDist > (Config.eavesdropDist.Value * Config.eavesdropDist.Value))
+                {
+                    return;
+                }
             }
 
             untrackedAudioSources = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(transform.position);
@@ -219,19 +190,34 @@ namespace Scoops.misc
 
         protected virtual void UpdateAllAudioSources()
         {
-            if (PhoneNetworkHandler.Instance.localPhone == null)
+            if (PhoneNetworkHandler.Instance.localPhone == null || GameNetworkManager.Instance.localPlayerController == null)
             {
                 return;
             }
-            if (activeCaller == 0 || activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !IsBeingSpectated())
+            if (activeCall == null || activeCaller == 0)
             {
                 return;
             }
 
-            PhoneBehavior callerPhone = PhoneNetworkHandler.Instance.localPhone;
+            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
             if (callerPhone == null)
             {
                 return;
+            }
+
+            float listenDist = 0f;
+            float listenAngle = 0f;
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !IsBeingSpectated())
+            {
+                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                listenDist = Vector3.Distance(localPlayer.transform.position, callerPhone.transform.position);
+                if (listenDist > Config.eavesdropDist.Value)
+                {
+                    return;
+                }
+                Vector3 directionTo = callerPhone.transform.position - localPlayer.transform.position;
+                directionTo = directionTo / listenDist;
+                listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
             }
 
             float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
@@ -246,14 +232,14 @@ namespace Scoops.misc
                     float ownerDist = (source.transform.position - this.transform.position).sqrMagnitude;
                     float ownerToCallerDist = (callerPhone.transform.position - this.transform.position).sqrMagnitude;
 
-                    if (ownerToCallerDist <= (RECORDING_START_DIST * RECORDING_START_DIST) || (callerDist * callerDist) < ownerDist || ownerDist > (source.maxDistance * source.maxDistance))
+                    if (ownerToCallerDist <= (Config.recordingStartDist.Value * Config.recordingStartDist.Value) || (callerDist * callerDist) < ownerDist || ownerDist > (source.maxDistance * source.maxDistance))
                     {
                         storage.Reset();
                         audioSourcesInRange.RemoveAt(j);
                     }
                     else
                     {
-                        storage.ApplyPhone(ownerDist, worseConnection, staticMode && hardStatic);
+                        storage.ApplyPhone(ownerDist, worseConnection, listenDist, listenAngle, staticMode && hardStatic);
                     }
                 }
                 else
@@ -274,55 +260,85 @@ namespace Scoops.misc
             {
                 return;
             }
-
-            if (activeCaller != 0)
+            if (activeCaller == 0 || activeCall == null)
             {
-                if (activeCall != null)
-                {
-                    float listenDist = 0f;
-                    float listenAngle = 0f;
-                    if (!IsOwner)
-                    {
-                        if (!IsBeingSpectated())
-                        {
-                            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-                            listenDist = Vector3.Distance(localPlayer.transform.position, transform.position);
-                            if (listenDist > EAVESDROP_DIST)
-                            {
-                                return;
-                            }
-                            Vector3 directionTo = transform.position - localPlayer.transform.position;
-                            directionTo = directionTo / listenDist;
-                            listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
-                        }
-                    }
+                return;
+            }
+            if (IsOwner && this != PhoneNetworkHandler.Instance.localPhone)
+            {
+                // Some server owned garbage
+                return;
+            }
 
-                    PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
-                    if (callerPhone == PhoneNetworkHandler.Instance.localPhone)
+            float listenDist = 0f;
+            float listenAngle = 0f;
+            if (!IsOwner)
+            {
+                if (!IsBeingSpectated())
+                {
+                    PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                    listenDist = Vector3.Distance(localPlayer.transform.position, transform.position);
+                    if (listenDist > Config.eavesdropDist.Value)
                     {
                         return;
                     }
+                    Vector3 directionTo = transform.position - localPlayer.transform.position;
+                    directionTo = directionTo / listenDist;
+                    listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
+                }
+            }
 
-                    float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
+            if (callerPhone == PhoneNetworkHandler.Instance.localPhone)
+            {
+                return;
+            }
 
-                    if (IsOwner || listenDist > 0f)
+            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+
+            if (IsOwner || listenDist > 0f)
+            {
+                UpdateStatic(worseConnection, listenDist);
+            }
+
+            float dist = Vector3.Distance(callerPhone.transform.position, transform.position);
+
+            if (dist > Config.recordingStartDist.Value)
+            {
+                modifiedVoices.Add(callerPhone);
+                callerPhone.ApplyPhoneVoiceEffect(0f, listenDist, listenAngle, worseConnection);
+            }
+            else
+            {
+                if (modifiedVoices.Contains(callerPhone))
+                {
+                    modifiedVoices.Remove(callerPhone);
+                    callerPhone.RemovePhoneVoiceEffect();
+                }
+            }
+
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            {
+                PlayerControllerB background = StartOfRound.Instance.allPlayerScripts[i];
+                PlayerPhone backgroundPhone = background.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+                if (background != null && backgroundPhone != null && background.isPlayerControlled && !background.isPlayerDead && !background.IsLocalPlayer)
+                {
+                    if (background != GameNetworkManager.Instance.localPlayerController && backgroundPhone != this && backgroundPhone != callerPhone)
                     {
-                        UpdateStatic(worseConnection, listenDist);
-                    }
-
-                    float dist = Vector3.Distance(callerPhone.transform.position, transform.position);
-
-                    if (dist > RECORDING_START_DIST)
-                    {
-                        modifiedVoices.Add(callerPhone);
-                        callerPhone.ApplyPhoneVoiceEffect(0f, listenDist, listenAngle, worseConnection);
-                    }
-                    else
-                    {
-                        if (modifiedVoices.Contains(callerPhone))
+                        float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
+                        float localDist = (backgroundPhone.transform.position - GameNetworkManager.Instance.localPlayerController.transform.position).sqrMagnitude;
+                        if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
                         {
-                            modifiedVoices.Remove(callerPhone);
-                            callerPhone.RemovePhoneVoiceEffect();
+                            modifiedVoices.Add(backgroundPhone);
+                            backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
+                        }
+                        else
+                        {
+                            if (modifiedVoices.Contains(backgroundPhone))
+                            {
+                                modifiedVoices.Remove(backgroundPhone);
+                                backgroundPhone.RemovePhoneVoiceEffect();
+                            }
                         }
                     }
                 }
@@ -337,6 +353,11 @@ namespace Scoops.misc
         public virtual bool PhoneInsideFactory()
         {
             return true;
+        }
+
+        public virtual bool PhoneInsideShip()
+        {
+            return false;
         }
 
         public void InfluenceConnectionQuality(float change)
@@ -436,7 +457,7 @@ namespace Scoops.misc
                     float listenerMod = 1f;
                     if (dist != 0f)
                     {
-                        listenerMod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, dist);
+                        listenerMod = Mathf.InverseLerp(Config.eavesdropDist.Value, 0f, dist);
                         target.panStereo = 0f;
                     } 
                     else
@@ -535,7 +556,7 @@ namespace Scoops.misc
                 return;
             }
 
-            StopRinging();
+            StopOutgoingRinging();
             PlayPickupSound();
 
             outgoingCall = null;
@@ -576,6 +597,48 @@ namespace Scoops.misc
         }
 
         [ServerRpc]
+        public void PlayHangupSoundServerRpc()
+        {
+            PlayHangupSoundClientRpc();
+        }
+
+        [ClientRpc]
+        public void PlayHangupSoundClientRpc()
+        {
+            PlayHangupSound();
+        }
+
+        public void PlayHangupSound()
+        {
+            thisAudio.Stop();
+            thisAudio.PlayOneShot(PhoneAssetManager.phoneHangup);
+        }
+
+        [ServerRpc]
+        public void PlayPickupSoundServerRpc()
+        {
+            PlayPickupSoundClientRpc();
+        }
+
+        [ClientRpc]
+        public void PlayPickupSoundClientRpc()
+        {
+            PlayPickupSound();
+        }
+
+        public void PlayPickupSound()
+        {
+            thisAudio.Stop();
+            thisAudio.PlayOneShot(PhoneAssetManager.phonePickup);
+        }
+
+        public void PlayBusySound()
+        {
+            thisAudio.Stop();
+            thisAudio.PlayOneShot(PhoneAssetManager.phoneBusy);
+        }
+
+        [ServerRpc]
         public void StopRingingServerRpc()
         {
             StopRingingClientRpc();
@@ -587,9 +650,34 @@ namespace Scoops.misc
             StopRinging();
         }
 
+        [ServerRpc]
+        public void StartOutgoingRingingServerRpc()
+        {
+            StartOutgoingRingingClientRpc();
+        }
+
+        [ClientRpc]
+        public void StartOutgoingRingingClientRpc()
+        {
+            StartOutgoingRinging();
+        }
+
+        [ServerRpc]
+        public void StopOutgoingRingingServerRpc()
+        {
+            StopOutgoingRingingClientRpc();
+        }
+
+        [ClientRpc]
+        public void StopOutgoingRingingClientRpc()
+        {
+            StopOutgoingRinging();
+        }
+
         protected virtual void StartRinging()
         {
             ringAudio.Stop();
+            activePhoneRingCoroutine = PhoneRingCoroutine(4);
             StartCoroutine(activePhoneRingCoroutine);
             ringAudio.clip = PhoneAssetManager.phoneRingReciever;
             ringAudio.Play();
@@ -599,6 +687,18 @@ namespace Scoops.misc
         {
             if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
             ringAudio.Stop();
+        }
+
+        protected virtual void StartOutgoingRinging()
+        {
+            thisAudio.Stop();
+            thisAudio.clip = PhoneAssetManager.phoneRingCaller;
+            thisAudio.Play();
+        }
+
+        protected void StopOutgoingRinging()
+        {
+            thisAudio.Stop();
         }
 
         public virtual void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
@@ -618,6 +718,15 @@ namespace Scoops.misc
         public virtual void RemovePhoneVoiceEffect()
         {
             // Nothing by default
+        }
+
+        protected IEnumerator PhoneRingCoroutine(int repeats)
+        {
+            for (int i = 0; i < repeats; i++)
+            {
+                RoundManager.Instance.PlayAudibleNoise(transform.position, 50f, 0.95f, i, PhoneInsideShip(), 0);
+                yield return new WaitForSeconds(4f);
+            }
         }
 
         public override void OnDestroy()

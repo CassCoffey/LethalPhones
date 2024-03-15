@@ -34,6 +34,8 @@ public class Plugin : BaseUnityPlugin
 {
     public static Plugin Instance { get; set; }
 
+    public static Config PhoneConfig { get; internal set; }
+
     public static ManualLogSource Log => Instance.Logger;
     public static AssetBundle LethalPhoneAssets;
 
@@ -55,6 +57,8 @@ public class Plugin : BaseUnityPlugin
         LethalPhoneAssets = AssetBundle.LoadFromFile(assetBundleFilePath);
 
         PhoneAssetManager.Init();
+
+        PhoneConfig = new(base.Config);
 
         Log.LogInfo($"Applying patches...");
         ApplyPluginPatch();

@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3909727985
+CRC: 3937408901
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 8a3c8b96c0830751cfa24146b7120781
+    Hash: a14f15ad679bda0e1164e8b2378c5c99
   TypeTreeHash:
     serializedVersion: 2
     Hash: 178e66849b36bc22758efb2fae370fc1
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 8a3c8b96c0830751cfa24146b7120781
+    Hash: a14f15ad679bda0e1164e8b2378c5c99
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -139,6 +139,7 @@ Assets:
 - Assets/Sounds/PhoneStaticThree.wav
 - Assets/Textures/icons8-silent-96.png
 - Assets/Sounds/PhoneHangup.wav
+- Assets/BugServerPhoneModel.prefab
 - Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/Sounds/RotaryFinishOptionTwo.wav
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav

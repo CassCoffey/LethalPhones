@@ -72,6 +72,21 @@ namespace Scoops.service
             PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
             string number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
             phone.GetComponent<NetworkObject>().RemoveOwnership();
+            RemoveNumber(number);
+        }
+
+        public void DeletePhone(ulong phoneId)
+        {
+            Plugin.Log.LogInfo("Deleting phone with ID: " + phoneId);
+            PhoneBehavior phone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
+
+            string number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
+            phone.GetComponent<NetworkObject>().RemoveOwnership();
+            RemoveNumber(number);
+        }
+
+        public void RemoveNumber(string number)
+        {
             if (number != null)
             {
                 Plugin.Log.LogInfo("Removing number: " + number);

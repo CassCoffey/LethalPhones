@@ -78,7 +78,7 @@ namespace Scoops.patch
                         float dist = (position - sortedSources[i].transform.position).sqrMagnitude;
                         float localDist = (localPlayer.transform.position - sortedSources[i].transform.position).sqrMagnitude;
                         float localToOtherDist = (localPlayer.transform.position - position).sqrMagnitude;
-                        if (localToOtherDist > (PlayerPhone.RECORDING_START_DIST * PlayerPhone.RECORDING_START_DIST) && dist < (sortedSources[i].maxDistance * sortedSources[i].maxDistance) && dist < localDist)
+                        if (localToOtherDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && dist < (sortedSources[i].maxDistance * sortedSources[i].maxDistance) && dist < localDist)
                         {
                             closeSources.Add(sortedSources[i]);
                         }

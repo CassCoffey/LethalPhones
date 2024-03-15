@@ -1,4 +1,5 @@
 ﻿
+using Scoops.misc;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -76,7 +77,7 @@ namespace Scoops.service
             }
         }
 
-        public void ApplyPhone(float dist, float callQuality = 1f, bool staticMode = false)
+        public void ApplyPhone(float dist, float callQuality = 1f, float listenDist = 0f, float listenAngle = 0f, bool staticMode = false)
         {
             if (audioSourceHolder != null && audioSource != null)
             {
@@ -114,6 +115,14 @@ namespace Scoops.service
                 if (audioSourceHolder.GetComponent<AudioHighPassFilter>())
                 {
                     audioSourceHolder.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(2f, 1f, callQuality);
+                }
+
+                if (listenDist != 0f)
+                {
+                    float listenMod = Mathf.InverseLerp(Config.eavesdropDist.Value, 0f, listenDist);
+                    audioSource.volume = audioSource.volume * listenMod;
+                    if (audioSourceHolder.GetComponent<AudioLowPassFilter>()) audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = 750f;
+                    audioSource.panStereo = listenAngle;
                 }
             }
         }

@@ -12,6 +12,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.UI;
+using static Scoops.misc.PlayerPhone;
 
 namespace Scoops.misc
 {
@@ -24,6 +25,11 @@ namespace Scoops.misc
         private float randomChitterTime = 3f;
 
         private bool preppingCall = false;
+        private bool preppingPickup = false;
+
+        private IEnumerator activePickupDelayCoroutine;
+        private IEnumerator activeCallDelayCoroutine;
+        private IEnumerator activeCallTimeoutCoroutine;
 
         public override void Start()
         {
@@ -31,65 +37,62 @@ namespace Scoops.misc
 
             this.bug = transform.parent.GetComponent<HoarderBugAI>();
             this.ringAudio = this.GetComponent<AudioSource>();
+
+            GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugServerPhoneModel");
+            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature").Find("Abdomen").Find("Chest").Find("Head").Find("Bone.03").Find("Bone.04").Find("Bone.04_end"), false);
         }
 
-        public void SetPhoneServerModelActive(bool enabled = false)
+        public void Death()
         {
-            if (serverPhoneModel != null)
-            {
-                SkinnedMeshRenderer mainRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").GetComponent<SkinnedMeshRenderer>();
-                if (mainRenderer != null)
-                {
-                    mainRenderer.enabled = enabled;
-                }
-                SkinnedMeshRenderer antennaRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
-                if (antennaRenderer != null)
-                {
-                    antennaRenderer.enabled = enabled;
-                }
-                MeshRenderer topRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
-                if (topRenderer != null)
-                {
-                    topRenderer.enabled = enabled;
-                }
-                MeshRenderer dialRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
-                if (dialRenderer != null)
-                {
-                    dialRenderer.enabled = enabled;
-                }
-            }
-        }
+            HoardingBugPhonePatch.phoneBugs--;
 
-        public void Death(int causeOfDeath)
-        {
-            if (activeCall != null)
+            if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
+            if (activePickupDelayCoroutine != null) StopCoroutine(activePickupDelayCoroutine);
+            if (activeCallDelayCoroutine != null) StopCoroutine(activeCallDelayCoroutine);
+            if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
+
+            if (IsOwner)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                activeCall = null;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
-            }
-            if (outgoingCall != null)
-            {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                outgoingCall = null;
-            }
-            if (incomingCall != null)
-            {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
-                incomingCall = null;
+                if (activeCall != null)
+                {
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                    activeCall = null;
+                    StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                }
+                if (outgoingCall != null)
+                {
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                    outgoingCall = null;
+                }
+                if (incomingCall != null)
+                {
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                    incomingCall = null;
+                }
+
+                PhoneNetworkHandler.Instance.RemoveNumber(phoneNumber);
             }
         }
 
         public override void Update()
         {
-            if (IsOwner)
+            if (IsOwner && !bug.isEnemyDead)
             {
                 if (outgoingCall == null && activeCall == null)
                 {
-                    // we NEED to be on a call or we'll DIE
-                    if (!preppingCall)
+                    if (incomingCall == null)
                     {
-                        StartCoroutine(CallDelayCoroutine(10f));
+                        // we NEED to be on a call or we'll DIE
+                        if (!preppingCall)
+                        {
+                            activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneBugInterval.Value, Config.maxPhoneBugInterval.Value));
+                            StartCoroutine(activeCallDelayCoroutine);
+                        }
+                    } 
+                    else if (!preppingPickup)
+                    {
+                        activePickupDelayCoroutine = PickupDelayCoroutine(2f);
+                        StartCoroutine(activePickupDelayCoroutine);
                     }
                 }
             }
@@ -112,16 +115,41 @@ namespace Scoops.misc
             base.Update();
         }
 
+        private IEnumerator PickupDelayCoroutine(float time)
+        {
+            preppingPickup = true;
+            yield return new WaitForSeconds(time);
+
+            if (incomingCall != null && outgoingCall == null && activeCall == null && !bug.isEnemyDead)
+            {
+                activeCall = incomingCall;
+                activeCaller = incomingCaller;
+                incomingCall = null;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
+                StopRingingServerRpc();
+                PlayPickupSoundServerRpc();
+                UpdateCallValues();
+            }
+
+            preppingPickup = false;
+        }
+
         private IEnumerator CallDelayCoroutine(float time)
         {
             preppingCall = true;
             yield return new WaitForSeconds(time);
 
-            CallRandomNumber();
-            if (outgoingCall != null)
+            if (incomingCall == null && outgoingCall == null && activeCall == null && !bug.isEnemyDead)
             {
-                StartCoroutine(CallTimeoutCoroutine(outgoingCall));
+                CallRandomNumber();
+                if (outgoingCall != null)
+                {
+                    activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall);
+                    StartCoroutine(activeCallTimeoutCoroutine);
+                    UpdateCallValues();
+                }
             }
+            
             preppingCall = false;
         }
 
@@ -133,7 +161,34 @@ namespace Scoops.misc
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
                 outgoingCall = null;
+                UpdateCallValues();
             }
+        }
+
+        public void UpdateCallValues()
+        {
+            UpdateCallValuesServerRpc(
+                   outgoingCall == null ? -1 : int.Parse(outgoingCall),
+                   incomingCall == null ? -1 : int.Parse(incomingCall),
+                   activeCall == null ? -1 : int.Parse(activeCall),
+                   incomingCaller,
+                   activeCaller);
+        }
+
+        [ServerRpc]
+        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong activeCallerUpdate)
+        {
+            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate);
+        }
+
+        [ClientRpc]
+        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong activeCallerUpdate)
+        {
+            outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
+            incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
+            activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
+            incomingCaller = incomingCallerUpdate;
+            activeCaller = activeCallerUpdate;
         }
     }
 }

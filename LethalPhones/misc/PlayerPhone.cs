@@ -529,7 +529,7 @@ namespace Scoops.misc
             {
                 // We're on a call, hang up
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                PlayHangupSound();
+                PlayHangupSoundServerRpc();
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
@@ -538,7 +538,7 @@ namespace Scoops.misc
             {
                 // We're calling, cancel
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                PlayHangupSound();
+                PlayHangupSoundServerRpc();
                 outgoingCall = null;
                 UpdateCallingUI();
             } 
@@ -585,7 +585,7 @@ namespace Scoops.misc
                 incomingCall = null;
                 PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
                 StopRingingServerRpc();
-                PlayPickupSound();
+                PlayPickupSoundServerRpc();
 
                 UpdateCallingUI();
             }
@@ -660,7 +660,7 @@ namespace Scoops.misc
                 return;
             }
 
-            thisAudio.Play();
+            StartOutgoingRingingServerRpc();
             outgoingCall = number;
             dialedNumbers.Clear();
 
@@ -705,6 +705,11 @@ namespace Scoops.misc
         public override bool PhoneInsideFactory()
         {
             return player.isInsideFactory;
+        }
+
+        public override bool PhoneInsideShip()
+        {
+            return player.isInElevator && StartOfRound.Instance.hangarDoorsClosed;
         }
 
         protected override bool IsBeingSpectated()
@@ -828,15 +833,6 @@ namespace Scoops.misc
             }
         }
 
-        private IEnumerator PhoneRingCoroutine(int repeats)
-        {
-            for (int i = 0; i < repeats; i++)
-            {
-                RoundManager.Instance.PlayAudibleNoise(player.serverPlayerPosition, 50f, 0.95f, i, player.isInElevator && StartOfRound.Instance.hangarDoorsClosed, 0);
-                yield return new WaitForSeconds(4f);
-            }
-        }
-
         private IEnumerator CallTimeoutCoroutine(string number)
         {
             yield return new WaitForSeconds(14f);
@@ -844,7 +840,7 @@ namespace Scoops.misc
             if (outgoingCall == number)
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                StopLocalSound();
+                StopOutgoingRingingServerRpc();
                 outgoingCall = null;
                 StartCoroutine(TemporaryStatusCoroutine("No Answer"));
             }
@@ -955,14 +951,14 @@ namespace Scoops.misc
 
             if (distance != 0f)
             {
-                float mod = Mathf.InverseLerp(BACKGROUND_VOICE_DIST, 0f, distance);
+                float mod = Mathf.InverseLerp(Config.backgroundVoiceDist.Value, 0f, distance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
                 occludeAudio.lowPassOverride = 1500f;
             }
 
             if (listeningDistance != 0f)
             {
-                float mod = Mathf.InverseLerp(EAVESDROP_DIST, 0f, listeningDistance);
+                float mod = Mathf.InverseLerp(Config.eavesdropDist.Value, 0f, listeningDistance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
                 occludeAudio.lowPassOverride = 750f;
                 currentVoiceChatAudioSource.panStereo = listeningAngle;
