@@ -7,6 +7,7 @@ namespace Scoops
         public static ConfigEntry<float> recordingStartDist;
         public static ConfigEntry<float> backgroundVoiceDist;
         public static ConfigEntry<float> eavesdropDist;
+        public static ConfigEntry<float> backgroundSoundMod;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -15,6 +16,12 @@ namespace Scoops
 
         public Config(ConfigFile cfg)
         {
+            backgroundSoundMod = cfg.Bind(
+                    "General",
+                    "backgroundSoundMod",
+                    -0.1f,
+                    "All background noises on calls have their volume adjusted by this value."
+            );
             recordingStartDist = cfg.Bind(
                     "General",
                     "recordingStartDist",
