@@ -190,5 +190,100 @@ namespace Scoops.misc
             incomingCaller = incomingCallerUpdate;
             activeCaller = activeCallerUpdate;
         }
+
+        public override void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
+        {
+            if (bug == null)
+            {
+                return;
+            }
+            if (bug.creatureVoice == null)
+            {
+                return;
+            }
+
+            AudioSource currentVoiceChatAudioSource = bug.creatureVoice;
+            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
+            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
+            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+
+            occludeAudio.overridingLowPass = true;
+
+            currentVoiceChatAudioSource.volume = 1f;
+            currentVoiceChatAudioSource.spatialBlend = 0f;
+            currentVoiceChatAudioSource.bypassListenerEffects = false;
+            currentVoiceChatAudioSource.bypassEffects = false;
+            currentVoiceChatAudioSource.panStereo = GameNetworkManager.Instance.localPlayerController.isPlayerDead ? 0f : -0.4f;
+            occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, connectionQuality);
+            if (lowPass != null)
+            {
+                lowPass.enabled = true;
+                lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, connectionQuality);
+            }
+            if (highPass != null)
+            {
+                highPass.enabled = true;
+                highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, connectionQuality);
+            }
+            
+
+            if (distance != 0f)
+            {
+                float mod = Mathf.InverseLerp(Config.backgroundVoiceDist.Value, 0f, distance);
+                currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
+                occludeAudio.lowPassOverride = 1500f;
+            }
+
+            if (listeningDistance != 0f)
+            {
+                float mod = Mathf.InverseLerp(Config.eavesdropDist.Value, 0f, listeningDistance);
+                currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
+                occludeAudio.lowPassOverride = 750f;
+                currentVoiceChatAudioSource.panStereo = listeningAngle;
+            }
+
+            currentVoiceChatAudioSource.volume += Config.voiceSoundMod.Value;
+
+            if ((staticMode && hardStatic) || bug.isEnemyDead)
+            {
+                currentVoiceChatAudioSource.volume = 0f;
+            }
+        }
+
+        public override void RemovePhoneVoiceEffect()
+        {
+            if (bug == null)
+            {
+                return;
+            }
+            if (bug.creatureVoice == null)
+            {
+                return;
+            }
+
+            AudioSource currentVoiceChatAudioSource = bug.creatureVoice;
+            AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
+            AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
+            OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
+
+            occludeAudio.overridingLowPass = false;
+
+            currentVoiceChatAudioSource.volume = 1f;
+            currentVoiceChatAudioSource.spatialBlend = 1f;
+            currentVoiceChatAudioSource.bypassListenerEffects = false;
+            currentVoiceChatAudioSource.bypassEffects = false;
+            currentVoiceChatAudioSource.panStereo = 0f;
+
+            if (lowPass != null)
+            {
+                lowPass.enabled = true;
+                lowPass.lowpassResonanceQ = 1f;
+            }
+            if (highPass != null)
+            {
+                highPass.enabled = false;
+                highPass.highpassResonanceQ = 1f;
+            }
+        }
     }
 }

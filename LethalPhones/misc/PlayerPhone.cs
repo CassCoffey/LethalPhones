@@ -1010,7 +1010,7 @@ namespace Scoops.misc
 
             currentVoiceChatAudioSource.volume += Config.voiceSoundMod.Value;
 
-            if (staticMode && hardStatic)
+            if ((staticMode && hardStatic) || player.isPlayerDead)
             {
                 currentVoiceChatAudioSource.volume = 0f;
             }
