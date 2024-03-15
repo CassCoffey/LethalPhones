@@ -234,10 +234,9 @@ public class PlayerPhonePatch
     [HarmonyPostfix]
     private static void PlayerDeath(ref PlayerControllerB __instance, int playerId, bool spawnBody, Vector3 bodyVelocity, int causeOfDeath, int deathAnimation)
     {
-        if (__instance.IsOwner)
-        {
-            PhoneManager.localPhone.Death(causeOfDeath);
-        }
+        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+        Plugin.Log.LogInfo("Player " + __instance.name + " died, calling Death on their phone.");
+        phone.Death(causeOfDeath, spawnBody);
     }
 
     [HarmonyPatch("ActivateItem_performed")]

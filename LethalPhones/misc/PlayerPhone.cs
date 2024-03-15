@@ -464,8 +464,45 @@ namespace Scoops.misc
             }
         }
 
-        public void Death(int causeOfDeath)
+        public void Revive()
         {
+            SetPhoneLocalModelActive(false);
+            SetPhoneServerModelActive(false);
+
+            ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+        }
+
+        public void Death(int causeOfDeath, bool spawnBody)
+        {
+            this.enabled = true;
+
+            toggled = false;
+            SetPhoneLocalModelActive(false);
+
+            Plugin.Log.LogInfo("Player deadbody: " + player.deadBody);
+
+            if (spawnBody && player.deadBody != null)
+            {
+                GameObject corpsePhoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
+                GameObject tempCorpseAudio = GameObject.Instantiate(corpsePhoneAudioPrefab, player.deadBody.transform);
+                Plugin.Log.LogInfo("Setting temp ring audio on corpse for " + phoneNumber);
+                ringAudio = tempCorpseAudio.GetComponent<AudioSource>();
+            }
+
+            if (IsOwner)
+            {
+                ToggleServerPhoneModelServerRpc(false);
+                dialedNumbers.Clear();
+                UpdateCallingUI();
+                StartCoroutine(DelayDeathHangup());
+                UpdateCallValues();
+            }
+        }
+
+        private IEnumerator DelayDeathHangup()
+        {
+            yield return new WaitForSeconds(0.5f);
+
             if (activeCall != null)
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
@@ -481,18 +518,6 @@ namespace Scoops.misc
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
                 incomingCall = null;
-            }
-
-            dialedNumbers.Clear();
-            UpdateCallingUI();
-
-            toggled = false;
-            SetPhoneLocalModelActive(false);
-            ToggleServerPhoneModelServerRpc(false);
-
-            if (IsOwner)
-            {
-                UpdateCallValues();
             }
         }
 

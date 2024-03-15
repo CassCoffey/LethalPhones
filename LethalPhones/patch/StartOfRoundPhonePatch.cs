@@ -23,8 +23,7 @@ namespace Scoops.patch
 
             for (int i = 0; i < allPhones.Length; i++)
             {
-                allPhones[i].SetPhoneLocalModelActive(false);
-                allPhones[i].SetPhoneServerModelActive(false);
+                allPhones[i].Revive();
             }
 
             PhoneNetworkHandler.Instance.localPhone.ToggleActive(false);
