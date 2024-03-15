@@ -165,9 +165,15 @@ namespace Scoops.misc
             {
                 return;
             }
-            if (activeCall != PhoneNetworkHandler.Instance.localPhone.phoneNumber && !IsBeingSpectated())
+
+            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
+            if (callerPhone == null)
             {
-                NetworkObject callerPhone = GetNetworkObject(activeCaller);
+                return;
+            }
+
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated())
+            {
                 PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                 float listenDist = (localPlayer.transform.position - callerPhone.transform.position).sqrMagnitude;
                 if (listenDist > (Config.eavesdropDist.Value * Config.eavesdropDist.Value))
@@ -207,7 +213,7 @@ namespace Scoops.misc
 
             float listenDist = 0f;
             float listenAngle = 0f;
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !IsBeingSpectated())
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated())
             {
                 PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                 listenDist = Vector3.Distance(localPlayer.transform.position, callerPhone.transform.position);
