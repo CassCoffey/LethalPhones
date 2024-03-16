@@ -158,6 +158,31 @@ public class PlayerPhonePatch
         PhoneManager.localPhone.InfluenceConnectionQuality(changeAmount);
     }
 
+    [HarmonyPatch("DisablePlayerModel")]
+    [HarmonyPostfix]
+    private static void PlayerModelDisabled(ref PlayerControllerB __instance, GameObject playerObject, bool enable = false, bool disableLocalArms = false)
+    {
+        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+        phone.SetPhoneLocalModelActive(false);
+        phone.SetPhoneServerModelActive(false);
+    }
+
+    [HarmonyPatch("KillPlayerClientRpc")]
+    [HarmonyPostfix]
+    private static void PlayerDeath(ref PlayerControllerB __instance, int playerId, bool spawnBody, Vector3 bodyVelocity, int causeOfDeath, int deathAnimation)
+    {
+        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+        phone.Death(causeOfDeath);
+    }
+
+    [HarmonyPatch("SpawnDeadBody")]
+    [HarmonyPostfix]
+    private static void PlayerSpawnBody(ref PlayerControllerB __instance, int playerId, Vector3 bodyVelocity, int causeOfDeath, PlayerControllerB deadPlayerController, int deathAnimation = 0, Transform overridePosition = null)
+    {
+        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+        phone.ApplyCorpse();
+    }
+
     private static void OnTogglePhoneKeyPressed(InputAction.CallbackContext context)
     {
         if (PhoneManager == null || PhoneManager.localPhone == null)
@@ -228,22 +253,6 @@ public class PlayerPhonePatch
         }
 
         PhoneManager.localPhone.VolumeButtonPressed();
-    }
-
-    [HarmonyPatch("KillPlayerClientRpc")]
-    [HarmonyPostfix]
-    private static void PlayerDeath(ref PlayerControllerB __instance, int playerId, bool spawnBody, Vector3 bodyVelocity, int causeOfDeath, int deathAnimation)
-    {
-        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-        phone.Death(causeOfDeath);
-    }
-
-    [HarmonyPatch("SpawnDeadBody")]
-    [HarmonyPostfix]
-    private static void PlayerSpawnBody(ref PlayerControllerB __instance, int playerId, Vector3 bodyVelocity, int causeOfDeath, PlayerControllerB deadPlayerController, int deathAnimation = 0, Transform overridePosition = null)
-    {
-        PlayerPhone phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-        phone.ApplyCorpse();
     }
 
     [HarmonyPatch("ActivateItem_performed")]
