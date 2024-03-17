@@ -1,4 +1,6 @@
 ﻿
+using LethalLib.Extras;
+using LethalLib.Modules;
 using Scoops.misc;
 using System;
 using System.Collections.Generic;
@@ -191,6 +193,20 @@ namespace Scoops.service
         public static void Init()
         {
             Plugin.Log.LogInfo($"Loading Assets...");
+            UnlockableItemDef SwitchboardDef = ScriptableObject.CreateInstance<UnlockableItemDef>();
+            UnlockableItem Switchboard = new UnlockableItem();
+            Switchboard.prefabObject = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer");
+            Switchboard.unlockableName = "Switchboard";
+            Switchboard.IsPlaceable = true;
+            Switchboard.spawnPrefab = true;
+            Switchboard.alwaysInStock = true;
+            Switchboard.canBeStored = true;
+            Switchboard.unlockableType = 1;
+            Switchboard.maxNumber = 1;
+
+            SwitchboardDef.unlockable = Switchboard;
+            Unlockables.RegisterUnlockable(SwitchboardDef, 10, LethalLib.Modules.StoreType.ShipUpgrade);
+
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
             phonePickup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhonePickup");
