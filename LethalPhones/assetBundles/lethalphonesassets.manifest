@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1023186746
+CRC: 1322678449
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 62de34adc69c764bcd4c5382ab563547
+    Hash: 59797b39540239884b723eb9c2d148c4
   TypeTreeHash:
     serializedVersion: 2
-    Hash: e216766d9f1128b64476efbc2b5894dc
+    Hash: 9277dcfc4846b45f3861b714945e26b9
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 62de34adc69c764bcd4c5382ab563547
+    Hash: 59797b39540239884b723eb9c2d148c4
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -41,6 +41,8 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 8650dbf8a4fad0c4dac487ffaddec400, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 773f7d311dac6ea48a6660a316fcdb29, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 26085457c2706684082a2ba980b980e2, type: 3}
@@ -54,6 +56,8 @@ ClassTypes:
   Script: {fileID: 11500000, guid: 9d91310fbb248e04e8944628d1e8dbe6, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 796b75e345bd64d47a31edd757bd2670, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: ea46ac7caa5d3fc43a5c5ff12475134a, type: 3}
 - Class: 115
   Script: {instanceID: 0}
 - Class: 128
@@ -83,6 +87,12 @@ ClassTypes:
 - Class: 245
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers:
+- AssemblyName: Assembly-CSharp
+  ClassName: BooleanEvent
+- AssemblyName: Assembly-CSharp
+  ClassName: InteractEvent
+- AssemblyName: Assembly-CSharp
+  ClassName: InteractEventFloat
 - AssemblyName: Unity.Animation.Rigging
   ClassName: UnityEngine.Animations.Rigging.ChainIKConstraintData
 - AssemblyName: Unity.TextMeshPro
@@ -128,6 +138,7 @@ Assets:
 - Assets/Textures/icons8-voicemail-96.png
 - Assets/Sounds/PhoneStaticOne.wav
 - Assets/Sounds/RotaryStopperOptionOne.wav
+- Assets/SwitchboardContainer.prefab
 - Assets/Textures/icons8-incoming-call-96.png
 - Assets/Textures/icons8-medium-connection-96.png
 - Assets/Sounds/RotaryDialForwardOptionOne.wav
@@ -137,11 +148,10 @@ Assets:
 - Assets/PhonePrefab.prefab
 - Assets/Textures/icons8-signal-96.png
 - Assets/ServerPhoneModel.prefab
-- Assets/SwitchboardContainer.prefab
 - Assets/RightArmPhone.prefab
+- Assets/PhoneAudioInternal.prefab
 - Assets/PhoneNetworkHandler.prefab
 - Assets/Sounds/PhoneStaticThree.wav
-- Assets/PhoneAudioInternal.prefab
 - Assets/Textures/icons8-silent-96.png
 - Assets/Sounds/PhoneHangup.wav
 - Assets/BugServerPhoneModel.prefab

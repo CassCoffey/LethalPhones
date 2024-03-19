@@ -15,6 +15,18 @@ namespace Scoops.patch
 
         private static List<AudioSource> sortedSources = new List<AudioSource>();
 
+        [HarmonyPatch(typeof(ShipBuildModeManager), nameof(ShipBuildModeManager.CreateGhostObjectAndHighlight))]
+        [HarmonyPostfix]
+        private static void CreateGhostObjectAndHighlight(ref ShipBuildModeManager __instance)
+        {
+            Plugin.Log.LogInfo("Ghost Rendering: " + __instance.ghostObjectRenderer.enabled);
+            Plugin.Log.LogInfo("Ghost Object mesh: " + __instance.ghostObjectMesh.mesh);
+            Plugin.Log.LogInfo("Selection Outline mesh: " + __instance.selectionOutlineMesh.mesh);
+            Plugin.Log.LogInfo("mainMesh Euler: " + __instance.placingObject.mainMesh.transform.eulerAngles);
+            Plugin.Log.LogInfo("mainMesh Scale: " + __instance.placingObject.mainMesh.transform.localScale);
+            Plugin.Log.LogInfo("mainMesh Position: " + __instance.placingObject.mainMesh.transform.position);
+        }
+
         [HarmonyPatch("ReviveDeadPlayers")]
         [HarmonyPostfix]
         private static void ResetPhones(ref StartOfRound __instance)

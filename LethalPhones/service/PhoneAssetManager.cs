@@ -175,6 +175,9 @@ namespace Scoops.service
 
     public class PhoneAssetManager
     {
+        public static GameObject switchboardPrefab;
+        public static Mesh switchboardMesh;
+
         public static AudioClip phoneRingCaller;
         public static AudioClip phoneRingReciever;
         public static AudioClip phonePickup;
@@ -193,9 +196,13 @@ namespace Scoops.service
         public static void Init()
         {
             Plugin.Log.LogInfo($"Loading Assets...");
-            UnlockableItemDef SwitchboardDef = ScriptableObject.CreateInstance<UnlockableItemDef>();
+
+            switchboardPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer");
+
+            NetworkPrefabs.RegisterNetworkPrefab((GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer"));
+
             UnlockableItem Switchboard = new UnlockableItem();
-            Switchboard.prefabObject = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer");
+            Switchboard.prefabObject = switchboardPrefab;
             Switchboard.unlockableName = "Switchboard";
             Switchboard.IsPlaceable = true;
             Switchboard.spawnPrefab = true;
@@ -204,8 +211,7 @@ namespace Scoops.service
             Switchboard.unlockableType = 1;
             Switchboard.maxNumber = 1;
 
-            SwitchboardDef.unlockable = Switchboard;
-            Unlockables.RegisterUnlockable(SwitchboardDef, 10, LethalLib.Modules.StoreType.ShipUpgrade);
+            Unlockables.RegisterUnlockable(Switchboard, -100, LethalLib.Modules.StoreType.ShipUpgrade);
 
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
