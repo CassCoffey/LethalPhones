@@ -47,7 +47,7 @@
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\DissonanceVoip.dll</HintPath>
       </Reference>
       <Reference Include="LethalCompanyInputUtils">
-        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Rune580-LethalCompany_InputUtils-0.6.3\plugins\LethalCompanyInputUtils\LethalCompanyInputUtils.dll</HintPath>
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\LethalCompanyInputUtils\LethalCompanyInputUtils.dll</HintPath>
       </Reference>
       <Reference Include="Unity.Animation.Rigging">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
@@ -77,7 +77,7 @@
     <!-- Move the plugin to the game's plugin directory and start the game to test it -->
     <Target Condition="'$(CI)' != 'true' And $(StartGame)" Name="StartGame" AfterTargets="PostBuildEvent">
         <PropertyGroup>
-          <PluginVersion>1.0.9</PluginVersion>
+          <PluginVersion>1.0.10</PluginVersion>
         </PropertyGroup>
         <!-- Create a temporary copy of the plugin in the target directory -->
         <!-- This is a workaround because if we copy it directly to the game's plugin directory, an error is thrown because the game is using the plugin -->
