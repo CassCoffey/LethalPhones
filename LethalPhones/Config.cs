@@ -10,6 +10,7 @@ namespace Scoops
         public static ConfigEntry<float> backgroundSoundMod;
         public static ConfigEntry<float> voiceSoundMod;
         public static ConfigEntry<float> deathHangupTime;
+        public static ConfigEntry<bool> hideHands;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -53,6 +54,12 @@ namespace Scoops
                     "deathHangupTime",
                     0.5f,
                     "The time it takes (in seconds) for a call to auto-hangup after death."
+            );
+            hideHands = cfg.Bind(
+                    "General",
+                    "hideHands",
+                    false,
+                    "If true, the model's right hand will not be used for dialing. (useful if using a custom model with hands too big/small for the phone)"
             );
 
             maxPhoneBugs = cfg.Bind(

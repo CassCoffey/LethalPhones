@@ -142,7 +142,7 @@ namespace Scoops.misc
         // Here's where we break some bones
         public void LateUpdate()
         {
-            if (IsOwner && toggled)
+            if (IsOwner && toggled && !Config.hideHands.Value)
             {
                 Transform handL = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
                 Transform fingerL1 = handL.Find("finger1.L");
@@ -224,6 +224,11 @@ namespace Scoops.misc
 
             if (toggled && Plugin.InputActionInstance.DialPhoneKey.IsPressed())
             {
+                if (Config.hideHands.Value)
+                {
+                    localPhoneInteractionNode.Find("SphereHelper").gameObject.SetActive(true);
+                }
+
                 HUDManager.Instance.SetNearDepthOfFieldEnabled(!Plugin.InputActionInstance.DialPhoneKey.IsPressed());
 
                 LeftArmRig.transform.Find("ArmsLeftArm_target").position = Vector3.Lerp(LeftArmRig.transform.Find("ArmsLeftArm_target").position, LeftArmRig.transform.Find("PhoneDialPos").position, 25f * Time.deltaTime);
@@ -335,13 +340,17 @@ namespace Scoops.misc
                     }
                 }
 
-                RightArmRig.transform.Find("ArmsRightArm_target").position = localPhoneInteractionNode.Find("HandLoc").position;
-                RightArmRig.transform.Find("ArmsRightArm_target").rotation = localPhoneInteractionNode.Find("HandLoc").rotation;
+                if (!Config.hideHands.Value)
+                {
+                    RightArmRig.transform.Find("ArmsRightArm_target").position = localPhoneInteractionNode.Find("HandLoc").position;
+                    RightArmRig.transform.Find("ArmsRightArm_target").rotation = localPhoneInteractionNode.Find("HandLoc").rotation;
+                }
             } 
             else if (Plugin.InputActionInstance.DialPhoneKey.WasReleasedThisFrame() || (previousToggled && !toggled))
             {
                 HUDManager.Instance.SetNearDepthOfFieldEnabled(!Plugin.InputActionInstance.DialPhoneKey.IsPressed());
                 player.disableLookInput = false;
+                localPhoneInteractionNode.Find("SphereHelper").gameObject.SetActive(false);
             } 
             else
             {
