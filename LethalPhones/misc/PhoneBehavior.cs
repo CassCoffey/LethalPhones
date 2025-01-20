@@ -54,8 +54,7 @@ namespace Scoops.misc
         protected static LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
 
         protected static String[] registryBadWeathers = { "flooded", "rainy", "foggy", "dust clouds", "heatwave", "snowfall" };
-        protected static String[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog" };
-        protected static String[] registryTerribleWeathers = { "solar flare" };
+        protected static String[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog", "solar flare" };
 
         public virtual void Start()
         {
@@ -384,7 +383,7 @@ namespace Scoops.misc
             targetConnectionQuality = 1f;
             if (WeatherRegistryCompat.Enabled)
             {
-                string currWeather = WeatherRegistryCompat.CurrentWeather.name.ToLower());
+                string currWeather = WeatherRegistryCompat.CurrentWeather.name.ToLower();
                 if (registryBadWeathers.Contains(currWeather))
                 {
                     targetConnectionQuality -= 0.25f;
@@ -392,10 +391,6 @@ namespace Scoops.misc
                 if (registryWorseWeathers.Contains(currWeather))
                 {
                     targetConnectionQuality -= 0.5f;
-                }
-                if (registryTerribleWeathers.Contains(currWeather))
-                {
-                    targetConnectionQuality -= 0.65f;
                 }
             } 
             else
