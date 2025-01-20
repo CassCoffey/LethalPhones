@@ -189,6 +189,8 @@ namespace Scoops.service
         public static AudioClip phoneStaticTwo;
         public static AudioClip phoneStaticThree;
 
+        public static GameObject customizationGUI;
+
         public static UnlockableItem PersonalPhones;
 
         public static void Init()
@@ -213,6 +215,8 @@ namespace Scoops.service
             {
                 Unlockables.RegisterUnlockable(PersonalPhones, Config.phonePrice.Value, StoreType.ShipUpgrade);
             }
+
+            customizationGUI = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneCustomization_GUI");
 
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");

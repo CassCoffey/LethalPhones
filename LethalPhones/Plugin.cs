@@ -72,6 +72,7 @@ public class Plugin : BaseUnityPlugin
     /// </summary>
     private void ApplyPluginPatch()
     {
+        _harmony.PatchAll(typeof(MainMenuPatch));
         _harmony.PatchAll(typeof(PlayerPhonePatch));
         _harmony.PatchAll(typeof(PlayerControllerB_SetPlayerSanityLevel_Patch));
         _harmony.PatchAll(typeof(HoardingBugPhonePatch));

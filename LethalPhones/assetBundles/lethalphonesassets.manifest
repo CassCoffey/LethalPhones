@@ -1,20 +1,22 @@
 ManifestFileVersion: 0
-CRC: 1378246285
+CRC: 2527989656
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 63267ff43efa08dceed410f07be21835
+    Hash: 90a66f5650a02f6d5bc2718ffc9b71d1
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 9277dcfc4846b45f3861b714945e26b9
+    Hash: 357b88f08b6d442ec51fb8d24eec9fb3
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 63267ff43efa08dceed410f07be21835
+    Hash: 90a66f5650a02f6d5bc2718ffc9b71d1
 HashAppended: 0
 ClassTypes:
 - Class: 1
   Script: {instanceID: 0}
 - Class: 4
+  Script: {instanceID: 0}
+- Class: 20
   Script: {instanceID: 0}
 - Class: 21
   Script: {instanceID: 0}
@@ -30,14 +32,28 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
 - Class: 82
   Script: {instanceID: 0}
 - Class: 83
   Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
 - Class: 114
   Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 23c1ce4fb46143f46bc5cb5224c934f6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa234b5eeaa98012, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 8650dbf8a4fad0c4dac487ffaddec400, type: 3}
 - Class: 114
@@ -95,6 +111,22 @@ SerializeReferenceClassIdentifiers:
   ClassName: InteractEventFloat
 - AssemblyName: Unity.Animation.Rigging
   ClassName: UnityEngine.Animations.Rigging.ChainIKConstraintData
+- AssemblyName: Unity.RenderPipelines.Core.Runtime
+  ClassName: UnityEngine.Rendering.BitArray128
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.BoolScalableSettingValue
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.FrameSettings
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.FrameSettingsOverrideMask
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.HDPhysicalCamera
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.IntScalableSettingValue
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.ObsoleteFrameSettings
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.ObsoleteLightLoopSettings
 - AssemblyName: Unity.TextMeshPro
   ClassName: TMPro.FaceInfo_Legacy
 - AssemblyName: Unity.TextMeshPro
@@ -116,7 +148,11 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: Unity.TextMeshPro
   ClassName: TMPro.VertexGradient
 - AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.ArgumentCache
+- AssemblyName: UnityEngine.CoreModule
   ClassName: UnityEngine.Events.PersistentCallGroup
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.PersistentListenerMode
 - AssemblyName: UnityEngine.TextCoreFontEngineModule
   ClassName: UnityEngine.TextCore.FaceInfo
 - AssemblyName: UnityEngine.TextCoreFontEngineModule
@@ -126,7 +162,17 @@ SerializeReferenceClassIdentifiers:
 - AssemblyName: UnityEngine.TextCoreFontEngineModule
   ClassName: UnityEngine.TextCore.GlyphRect
 - AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.AnimationTriggers
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Button/ButtonClickedEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.ColorBlock
+- AssemblyName: UnityEngine.UI
   ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.Navigation
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.SpriteState
 Assets:
 - Assets/Textures/icons8-no-connection-96.png
 - Assets/Textures/icons8-low-connection-96.png
@@ -155,12 +201,13 @@ Assets:
 - Assets/Textures/icons8-silent-96.png
 - Assets/Sounds/PhoneHangup.wav
 - Assets/BugServerPhoneModel.prefab
-- Assets/Sounds/PhoneRing_Vibrate.wav
+- Assets/PhoneCustomization_GUI.prefab
 - Assets/Sounds/RotaryFinishOptionTwo.wav
+- Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav
-- Assets/LocalPhoneModel.prefab
 - Assets/Sounds/RotaryFinishOptionOne.wav
 - Assets/Sounds/PhoneSwitch.wav
+- Assets/LocalPhoneModel.prefab
 - Assets/ServerLeftArmPhone.prefab
 - Assets/Sounds/RotaryDialBackOptionTwo.wav
 - Assets/PhoneAudioExternal.prefab

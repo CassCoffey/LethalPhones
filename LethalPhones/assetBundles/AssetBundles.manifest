@@ -1,7 +1,10 @@
 ManifestFileVersion: 0
-CRC: 4174643503
+CRC: 3646201038
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
       Name: lethalphonesassets
+      Dependencies: {}
+    Info_1:
+      Name: lethalphonecustomizations
       Dependencies: {}

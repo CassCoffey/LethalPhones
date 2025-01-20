@@ -1,0 +1,40 @@
+ManifestFileVersion: 0
+CRC: 67744911
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 7e4ed429e75f21f4ce8707b22489c7e8
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 85b5652ef26aaeeeaa8fa92241b2a86b
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 7e4ed429e75f21f4ce8707b22489c7e8
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 948662691de6bb5499dbc79de3c80092, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 137
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Customizations/PhoneDisplayModel.prefab
+Dependencies: []
