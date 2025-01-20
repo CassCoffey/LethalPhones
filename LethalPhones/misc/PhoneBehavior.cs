@@ -1,5 +1,6 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
+using Scoops.compatability;
 using Scoops.patch;
 using Scoops.service;
 using System;
@@ -48,6 +49,13 @@ namespace Scoops.misc
         public NetworkVariable<float> connectionQuality = new NetworkVariable<float>(1f);
 
         protected IEnumerator activePhoneRingCoroutine;
+
+        protected static LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
+        protected static LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
+
+        protected static String[] registryBadWeathers = { "flooded", "rainy", "foggy", "dust clouds", "heatwave", "snowfall" };
+        protected static String[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog" };
+        protected static String[] registryTerribleWeathers = { "solar flare" };
 
         public virtual void Start()
         {
@@ -374,15 +382,32 @@ namespace Scoops.misc
         protected virtual void ManageConnectionQuality()
         {
             targetConnectionQuality = 1f;
-            LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
-            LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
-            if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+            if (WeatherRegistryCompat.Enabled)
             {
-                targetConnectionQuality -= 0.25f;
-            }
-            if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+                string currWeather = WeatherRegistryCompat.CurrentWeather.name.ToLower());
+                if (registryBadWeathers.Contains(currWeather))
+                {
+                    targetConnectionQuality -= 0.25f;
+                }
+                if (registryWorseWeathers.Contains(currWeather))
+                {
+                    targetConnectionQuality -= 0.5f;
+                }
+                if (registryTerribleWeathers.Contains(currWeather))
+                {
+                    targetConnectionQuality -= 0.65f;
+                }
+            } 
+            else
             {
-                targetConnectionQuality -= 0.5f;
+                if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+                {
+                    targetConnectionQuality -= 0.25f;
+                }
+                if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+                {
+                    targetConnectionQuality -= 0.5f;
+                }
             }
 
             if (PhoneInsideFactory())
