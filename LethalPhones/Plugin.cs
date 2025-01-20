@@ -2,8 +2,10 @@
 using BepInEx.Logging;
 using HarmonyLib;
 using LethalCompanyInputUtils.Api;
+using Scoops.customization;
 using Scoops.patch;
 using Scoops.service;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -40,6 +42,9 @@ public class Plugin : BaseUnityPlugin
 
     public static ManualLogSource Log => Instance.Logger;
     public static AssetBundle LethalPhoneAssets;
+    public static AssetBundle LethalPhoneCustomization;
+
+    public static string customizationSavePath;
 
     private readonly Harmony _harmony = new(PluginInfo.PLUGIN_GUID);
 
@@ -58,9 +63,20 @@ public class Plugin : BaseUnityPlugin
         var assetBundleFilePath = System.IO.Path.Combine(dllFolderPath, "lethalphonesassets");
         LethalPhoneAssets = AssetBundle.LoadFromFile(assetBundleFilePath);
 
+        var customizationBundleFilePath = System.IO.Path.Combine(dllFolderPath, "lethalphonecustomizations");
+        LethalPhoneCustomization = AssetBundle.LoadFromFile(customizationBundleFilePath);
+
+        customizationSavePath = $"{Application.persistentDataPath}/lethalphonescustomization.txt";
+
         PhoneConfig = new(base.Config);
 
         PhoneAssetManager.Init();
+
+        Log.LogInfo("Loading default phone customization...");
+        CustomizationManager.LoadSkinCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
+        LethalPhoneCustomization.Unload(false);
+
+        ReadCustomizationFromFile();
 
         Log.LogInfo($"Applying patches...");
         ApplyPluginPatch();
@@ -96,5 +112,23 @@ public class Plugin : BaseUnityPlugin
                 }
             }
         }
+    }
+
+    private void ReadCustomizationFromFile()
+    {
+        if (System.IO.File.Exists(customizationSavePath))
+        {
+            string[] lines = System.IO.File.ReadAllLines(customizationSavePath);
+
+            CustomizationManager.SelectedSkin = lines[0];
+        }
+    }
+
+    public static void WriteCustomizationToFile()
+    {
+        string built = "";
+        built += CustomizationManager.SelectedSkin + "\n";
+
+        System.IO.File.WriteAllText(customizationSavePath, built);
     }
 }

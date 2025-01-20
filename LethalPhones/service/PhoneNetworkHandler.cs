@@ -38,9 +38,9 @@ namespace Scoops.service
             base.OnNetworkSpawn();
         }
 
-        public void CreateNewPhone(ulong phoneId)
+        public void CreateNewPhone(ulong phoneId, string skinId)
         {
-            CreateNewPhoneNumberServerRpc(phoneId);
+            CreateNewPhoneNumberServerRpc(phoneId, skinId);
         }
 
         public void RequestClientUpdates()
@@ -49,7 +49,7 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void CreateNewPhoneNumberServerRpc(ulong phoneId, ServerRpcParams serverRpcParams = default)
+        public void CreateNewPhoneNumberServerRpc(ulong phoneId, string skinId, ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
             int phoneNumber = Random.Range(0, 10000); ;
@@ -66,6 +66,8 @@ namespace Scoops.service
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
             phoneNumberDict.Add(phoneString, phone.NetworkObjectId);
             phoneObjectDict.Add(phoneString, phone);
+
+            phone.phoneSkinId = skinId;
 
             phone.SetNewPhoneNumberClientRpc(phoneString);
         }

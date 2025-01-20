@@ -1,6 +1,7 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
 using Scoops.compatability;
+using Scoops.customization;
 using Scoops.patch;
 using Scoops.service;
 using System;
@@ -17,6 +18,7 @@ namespace Scoops.misc
     public class PhoneBehavior : NetworkBehaviour
     {
         public string phoneNumber;
+        public string phoneSkinId;
 
         public bool spectatorClear = false;
 
@@ -358,6 +360,11 @@ namespace Scoops.misc
             }
         }
 
+        protected virtual void ApplySkin(string skinId)
+        {
+            // Nothing by default
+        }
+
         protected virtual void UpdateCallingUI()
         {
             // Nothing by default
@@ -539,7 +546,7 @@ namespace Scoops.misc
 
         public void PropogateInformation()
         {
-            PropogateInformationClientRpc(this.phoneNumber);
+            PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId);
         }
 
         [ServerRpc]
@@ -706,9 +713,12 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void PropogateInformationClientRpc(string number)
+        public void PropogateInformationClientRpc(string number, string skinId)
         {
             this.phoneNumber = number;
+
+            this.phoneSkinId = skinId;
+            ApplySkin(skinId);
         }
 
         protected virtual void StartRinging()

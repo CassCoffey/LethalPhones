@@ -27,6 +27,8 @@
         <AssetBundleDir>AssetBundles\</AssetBundleDir>
         <!-- Name of the Unity Asset Bundle for this mod -->
         <AssetBundleName>lethalphonesassets</AssetBundleName>
+        <!-- Name of the Unity Asset Bundle for customizations -->
+        <CustomizationBundleName>lethalphonecustomizations</CustomizationBundleName>
     </PropertyGroup>
 
     <ItemGroup>

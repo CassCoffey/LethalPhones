@@ -1,5 +1,6 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
+using Scoops.customization;
 using Scoops.patch;
 using Scoops.service;
 using System;
@@ -758,6 +759,39 @@ namespace Scoops.misc
 
                 dialingNumberUI.text = modifiedNumber;
                 phoneStatusUI.text = "";
+            }
+        }
+
+        protected override void ApplySkin(string skinId)
+        {
+            GameObject skinObject = CustomizationManager.skinCustomizations[skinId];
+            if (skinObject == null) return;
+
+            if (IsOwner)
+            {
+                Transform localPhoneDisplay = localPhoneModel.transform.Find("LocalPhoneModel");
+
+                // Main Mat
+                localPhoneDisplay.GetComponent<Renderer>().materials = skinObject.GetComponent<Renderer>().materials;
+                // Antenna Mat
+                localPhoneDisplay.Find("PhoneAntenna").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneAntenna").GetComponent<Renderer>().materials;
+                // Dial Mat
+                localPhoneDisplay.Find("PhoneDial").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneDial").GetComponent<Renderer>().materials;
+                // Top Mat
+                localPhoneDisplay.Find("PhoneTop").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneTop").GetComponent<Renderer>().materials;
+            } 
+            else
+            {
+                Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
+
+                // Main Mat
+                serverPhoneDisplay.GetComponent<Renderer>().materials = skinObject.GetComponent<Renderer>().materials;
+                // Antenna Mat
+                serverPhoneDisplay.Find("PhoneAntenna").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneAntenna").GetComponent<Renderer>().materials;
+                // Dial Mat
+                serverPhoneDisplay.Find("PhoneDial").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneDial").GetComponent<Renderer>().materials;
+                // Top Mat
+                serverPhoneDisplay.Find("PhoneTop").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneTop").GetComponent<Renderer>().materials;
             }
         }
 

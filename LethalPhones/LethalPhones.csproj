@@ -26,10 +26,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="assetBundles\lethalphonecustomizations" />
       <None Remove="assetBundles\lethalphonesassets" />
     </ItemGroup>
 
     <ItemGroup>
+      <Content Include="assetBundles\lethalphonecustomizations">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Include="assetBundles\lethalphonesassets">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
@@ -94,6 +98,7 @@
         <Move SourceFiles="$(TargetDir)$(TargetFileName).tmp" DestinationFiles="$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\$(TargetFileName)" />
         <!-- Move Asset Bundle Files as well -->
         <Exec Command="move /y &quot;$(TargetDir)assetBundles\$(AssetBundleName)&quot; &quot;$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\&quot;" />
+        <Exec Command="move /y &quot;$(TargetDir)assetBundles\$(CustomizationBundleName)&quot; &quot;$(PluginGameDir)$(RootNamespace)-$(ProjectName)-$(PluginVersion)\&quot;" />
         <!-- Kill every instance of the game, ignore errors if none are running -->
         <Exec Command="taskkill /F /IM &quot;$(GameExe)&quot; /T 2&gt;nul 1&gt;nul || exit 0" />
         <!-- Start new instances of the game as many times as specified in NumberOfClients -->

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Scoops.misc;
 using System.Reflection;
 using System.Reflection.Emit;
+using Scoops.customization;
 
 namespace Scoops.patch;
 
@@ -123,7 +124,7 @@ public class PlayerPhonePatch
     {
         PhoneManager = PhoneNetworkHandler.Instance;
         NetworkObject phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<NetworkObject>();
-        PhoneManager.CreateNewPhone(phone.NetworkObjectId);
+        PhoneManager.CreateNewPhone(phone.NetworkObjectId, CustomizationManager.SelectedSkin);
 
         PhoneManager.RequestClientUpdates();
 
