@@ -49,6 +49,9 @@
       <Reference Include="LethalCompanyInputUtils">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\LethalCompanyInputUtils\LethalCompanyInputUtils.dll</HintPath>
       </Reference>
+      <Reference Include="LethalLib">
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\LethalLib\LethalLib.dll</HintPath>
+      </Reference>
       <Reference Include="Unity.Animation.Rigging">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
       </Reference>

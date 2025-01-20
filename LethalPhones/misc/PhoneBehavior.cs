@@ -53,8 +53,8 @@ namespace Scoops.misc
         protected static LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
         protected static LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
 
-        protected static String[] registryBadWeathers = { "flooded", "rainy", "foggy", "dust clouds", "heatwave", "snowfall" };
-        protected static String[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog", "solar flare" };
+        protected static string[] registryBadWeathers = { "flooded", "rainy", "foggy", "dust clouds", "heatwave", "snowfall" };
+        protected static string[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog", "solar flare" };
 
         public virtual void Start()
         {
