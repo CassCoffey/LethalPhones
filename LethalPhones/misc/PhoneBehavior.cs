@@ -517,6 +517,11 @@ namespace Scoops.misc
             }
         }
 
+        public void PropogateInformation()
+        {
+            PropogateInformationClientRpc(this.phoneNumber);
+        }
+
         [ServerRpc]
         protected void UpdateConnectionQualityServerRpc(float currentConnectionQuality)
         {
@@ -678,6 +683,12 @@ namespace Scoops.misc
         public void StopOutgoingRingingClientRpc()
         {
             StopOutgoingRinging();
+        }
+
+        [ClientRpc]
+        public void PropogateInformationClientRpc(string number)
+        {
+            this.phoneNumber = number;
         }
 
         protected virtual void StartRinging()

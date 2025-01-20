@@ -30,6 +30,7 @@ namespace Scoops.misc
         public TextMeshProUGUI dialingNumberUI;
         public TextMeshProUGUI phoneStatusUI;
         public TextMeshProUGUI personalPhoneNumberUI;
+        public TextMeshProUGUI serverPersonalPhoneNumberUI;
 
         public Image incomingCallUI;
         public Image volumeRingUI;
@@ -85,6 +86,9 @@ namespace Scoops.misc
             this.phoneStatusUI = phoneCanvas.Find("PhoneState").GetComponent<TextMeshProUGUI>();
             phoneStatusUI.text = "";
             this.personalPhoneNumberUI = phoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
+
+            Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
+            this.serverPersonalPhoneNumberUI = serverPhoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
 
             this.incomingCallUI = phoneCanvas.Find("IncomingCall").GetComponent<Image>();
             incomingCallUI.enabled = false;
@@ -479,6 +483,11 @@ namespace Scoops.misc
                 if (dialRenderer != null)
                 {
                     dialRenderer.enabled = enabled;
+                }
+
+                if (serverPersonalPhoneNumberUI != null)
+                {
+                    serverPersonalPhoneNumberUI.text = phoneNumber;
                 }
             }
         }

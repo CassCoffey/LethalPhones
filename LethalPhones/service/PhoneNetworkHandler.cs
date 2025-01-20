@@ -43,6 +43,11 @@ namespace Scoops.service
             CreateNewPhoneNumberServerRpc(phoneId);
         }
 
+        public void RequestClientUpdates()
+        {
+            UpdateAllClientsServerRpc();
+        }
+
         [ServerRpc(RequireOwnership = false)]
         public void CreateNewPhoneNumberServerRpc(ulong phoneId, ServerRpcParams serverRpcParams = default)
         {
@@ -136,6 +141,15 @@ namespace Scoops.service
         public void LineBusyServerRpc(string number, ServerRpcParams serverRpcParams = default)
         {
             phoneObjectDict[number].InvalidCallClientRpc("Line Busy");
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void UpdateAllClientsServerRpc()
+        {
+            foreach (PhoneBehavior phoneObj in phoneObjectDict.Values)
+            {
+                phoneObj.PropogateInformation();
+            }
         }
     }
 }
