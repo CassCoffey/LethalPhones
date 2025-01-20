@@ -104,6 +104,12 @@ namespace Scoops.service
         [ServerRpc(RequireOwnership = false)]
         public void MakeOutgoingCallServerRpc(string number, ulong senderId, ServerRpcParams serverRpcParams = default)
         {
+            // No calling until phones are unlocked
+            if (!PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+            {
+                return;
+            }
+
             string senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderId).Key;
 
             if (phoneNumberDict.ContainsKey(number))

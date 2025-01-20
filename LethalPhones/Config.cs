@@ -17,8 +17,12 @@ namespace Scoops
         public static ConfigEntry<float> minPhoneBugInterval;
         public static ConfigEntry<float> maxPhoneBugInterval;
 
+        public static ConfigEntry<bool> phonePurchase;
+        public static ConfigEntry<int> phonePrice;
+
         public Config(ConfigFile cfg)
         {
+            // General
             voiceSoundMod = cfg.Bind(
                     "General",
                     "voiceSoundMod",
@@ -62,6 +66,7 @@ namespace Scoops
                     "If true, the model's right hand will not be used for dialing. (useful if using a custom model with hands too big/small for the phone)"
             );
 
+            // Enemies
             maxPhoneBugs = cfg.Bind(
                     "Enemies.HoardingBugs",                                             // Config section
                     "maxPhoneBugs",                                                     // Key of this config
@@ -85,6 +90,20 @@ namespace Scoops
                     "maxPhoneBugInterval",
                     100f,
                     "The longest time (in seconds) between calls from each Hoarding Bug."
+            );
+
+            // Unlockables
+            phonePurchase = cfg.Bind(
+                    "Unlockables",
+                    "phonePurchase",
+                    false,
+                    "Do phones need to be unlocked at the Shop to be used?"
+            );
+            phonePrice = cfg.Bind(
+                    "Unlockables",
+                    "phonePrice",
+                    200,
+                    "The cost of unlocking Phones."
             );
         }
     }

@@ -191,6 +191,10 @@ public class PlayerPhonePatch
         {
             return;
         }
+        if (!PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+        {
+            return;
+        }
         PlayerControllerB localPlayer = PhoneManager.localPhone.player;
         if (localPlayer == null)
         {

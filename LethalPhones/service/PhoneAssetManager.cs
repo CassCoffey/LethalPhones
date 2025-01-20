@@ -1,4 +1,5 @@
 ﻿
+using LethalLib.Modules;
 using Scoops.misc;
 using System;
 using System.Collections.Generic;
@@ -188,9 +189,31 @@ namespace Scoops.service
         public static AudioClip phoneStaticTwo;
         public static AudioClip phoneStaticThree;
 
+        public static UnlockableItem PersonalPhones;
+
         public static void Init()
         {
             Plugin.Log.LogInfo($"Loading Assets...");
+
+            PersonalPhones = new UnlockableItem();
+            PersonalPhones.unlockableName = "Personal Phones";
+            PersonalPhones.IsPlaceable = false;
+            PersonalPhones.spawnPrefab = false;
+            PersonalPhones.alwaysInStock = true;
+            PersonalPhones.canBeStored = false;
+            PersonalPhones.unlockableType = 1;
+            PersonalPhones.maxNumber = 1;
+
+            if (!Config.phonePurchase.Value)
+            {
+                PersonalPhones.hasBeenUnlockedByPlayer = true;
+                PersonalPhones.alreadyUnlocked = true;
+            } 
+            else
+            {
+                Unlockables.RegisterUnlockable(PersonalPhones, Config.phonePrice.Value, StoreType.ShipUpgrade);
+            }
+
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
             phonePickup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhonePickup");
