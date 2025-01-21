@@ -1,11 +1,14 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
+using LethalLib.Modules;
 using Scoops.misc;
+using Scoops.patch;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -15,10 +18,23 @@ namespace Scoops.service
     {
         public static PhoneNetworkHandler Instance { get; private set; }
 
+        public static Clipboard PhonebookClipboard;
+
         private Dictionary<string, ulong> phoneNumberDict;
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
+
+
+        public void Start()
+        {
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+            {
+                var phonebookClipboard = Object.Instantiate(NetworkObjectManager.clipboardPrefab);
+                phonebookClipboard.GetComponent<NetworkObject>().Spawn();
+                PhonebookClipboard = phonebookClipboard.GetComponent<Clipboard>();
+            }
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -46,6 +62,22 @@ namespace Scoops.service
         public void RequestClientUpdates()
         {
             UpdateAllClientsServerRpc();
+        }
+
+        public void UpdateClipboardText()
+        {
+            string newClipboardText = "";
+
+            foreach (PhoneBehavior phone in phoneObjectDict.Values)
+            {
+                if (phone is PlayerPhone)
+                {
+                    PlayerPhone playerPhone = (PlayerPhone)phone;
+                    newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.player.playerUsername + "\n";
+                }
+            }
+
+            PhonebookClipboard.UpdateTextClientRpc(newClipboardText);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -160,6 +192,8 @@ namespace Scoops.service
             {
                 phoneObj.PropogateInformation();
             }
+
+            UpdateClipboardText();
         }
     }
 }

@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3367985404
+CRC: 2417109936
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: dee2a3e8ced210f46bc2c50f3785f00f
+    Hash: 24bd159bd83adfbc6ae7ee4c599b75f9
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 357b88f08b6d442ec51fb8d24eec9fb3
+    Hash: 49ba54ed60ab6e212df9265fd38cc2e5
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: dee2a3e8ced210f46bc2c50f3785f00f
+    Hash: 24bd159bd83adfbc6ae7ee4c599b75f9
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -29,6 +29,8 @@ ClassTypes:
 - Class: 43
   Script: {instanceID: 0}
 - Class: 48
+  Script: {instanceID: 0}
+- Class: 64
   Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
@@ -53,9 +55,13 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: 23c1ce4fb46143f46bc5cb5224c934f6, type: 3}
 - Class: 114
+  Script: {fileID: 11500000, guid: 5c8c1d4a8868159459dd3409db1ac7e1, type: 3}
+- Class: 114
   Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa234b5eeaa98012, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 8650dbf8a4fad0c4dac487ffaddec400, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: efbf4b64e15a55c4db50c5c943ba1aff, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 773f7d311dac6ea48a6660a316fcdb29, type: 3}
 - Class: 114
@@ -103,6 +109,8 @@ ClassTypes:
 - Class: 245
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers:
+- AssemblyName: Assembly-CSharp
+  ClassName: Battery
 - AssemblyName: Assembly-CSharp
   ClassName: BooleanEvent
 - AssemblyName: Assembly-CSharp
@@ -179,6 +187,7 @@ Assets:
 - Assets/Textures/icons8-shake-phone-96.png
 - Assets/Sounds/PhoneStaticTwo.wav
 - Assets/Sounds/PhoneBusy.wav
+- Assets/ClipboardPhoneBook.prefab
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
 - Assets/Textures/icons8-voicemail-96.png
