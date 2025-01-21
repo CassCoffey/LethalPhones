@@ -66,18 +66,18 @@ namespace Scoops.service
 
         public void UpdateClipboardText()
         {
-            string newClipboardText = "";
+            List<ulong> phones = new List<ulong>();
 
             foreach (PhoneBehavior phone in phoneObjectDict.Values)
             {
                 if (phone is PlayerPhone)
                 {
                     PlayerPhone playerPhone = (PlayerPhone)phone;
-                    newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.player.playerUsername + "\n";
+                    phones.Add(playerPhone.NetworkObjectId);
                 }
             }
 
-            PhonebookClipboard.UpdateTextClientRpc(newClipboardText);
+            PhonebookClipboard.UpdateTextClientRpc(phones.ToArray());
         }
 
         [ServerRpc(RequireOwnership = false)]
