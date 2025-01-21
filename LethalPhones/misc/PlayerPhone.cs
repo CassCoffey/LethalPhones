@@ -908,7 +908,7 @@ namespace Scoops.misc
                 case phoneVolume.Ring:
                     activePhoneRingCoroutine = PhoneRingCoroutine(4);
                     StartCoroutine(activePhoneRingCoroutine);
-                    ringAudio.clip = PhoneAssetManager.phoneRingReciever;
+                    ringAudio.clip = CustomizationManager.ringtoneCustomizations[phoneRingtoneId];
                     ringAudio.Play();
                     break;
                 case phoneVolume.Vibrate:

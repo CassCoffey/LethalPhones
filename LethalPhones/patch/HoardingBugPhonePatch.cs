@@ -32,7 +32,7 @@ public class HoardingBugPhonePatch
                     bugPhone.GetComponent<NetworkObject>().Spawn();
                     bugPhone.GetComponent<NetworkObject>().TrySetParent(__instance.transform, false);
 
-                    PhoneManager.CreateNewPhone(bugPhone.GetComponent<NetworkObject>().NetworkObjectId, CustomizationManager.DEFAULT_SKIN);
+                    PhoneManager.CreateNewPhone(bugPhone.GetComponent<NetworkObject>().NetworkObjectId, CustomizationManager.DEFAULT_SKIN, CustomizationManager.DEFAULT_RINGTONE);
                 }
             }
         }

@@ -74,7 +74,7 @@ public class Plugin : BaseUnityPlugin
 
         Log.LogInfo("Loading default phone customization...");
         CustomizationManager.LoadSkinCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
-        LethalPhoneCustomization.Unload(false);
+        CustomizationManager.LoadRingtoneCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
 
         ReadCustomizationFromFile();
 
@@ -120,7 +120,10 @@ public class Plugin : BaseUnityPlugin
         {
             string[] lines = System.IO.File.ReadAllLines(customizationSavePath);
 
+            if (lines.Length != 2) return;
+
             CustomizationManager.SelectedSkin = lines[0];
+            CustomizationManager.SelectedRingtone = lines[1];
         }
     }
 
@@ -128,6 +131,7 @@ public class Plugin : BaseUnityPlugin
     {
         string built = "";
         built += CustomizationManager.SelectedSkin + "\n";
+        built += CustomizationManager.SelectedRingtone + "\n";
 
         System.IO.File.WriteAllText(customizationSavePath, built);
     }

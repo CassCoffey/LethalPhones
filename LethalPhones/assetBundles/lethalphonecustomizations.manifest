@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1871253719
+CRC: 1714629717
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5b9f63d1427551ad74c6f6126ad70b2d
+    Hash: 11e72dccd177a31ae312032cf94490b3
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 0a897b760ea3d3eb7bc5a0301cc01ed5
+    Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 5b9f63d1427551ad74c6f6126ad70b2d
+    Hash: 11e72dccd177a31ae312032cf94490b3
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -28,11 +28,16 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
+- Class: 83
+  Script: {instanceID: 0}
 - Class: 137
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Customizations/Blue_Skin.prefab
+- Assets/Customizations/Hazard_Skin.prefab
+- Assets/Customizations/Default_Ringtone.wav
 - Assets/Customizations/Pink_Skin.prefab
 - Assets/Customizations/Default_Skin.prefab
+- Assets/Customizations/Schaeffer_Ringtone.mp3
 Dependencies: []

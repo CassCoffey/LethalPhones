@@ -19,6 +19,7 @@ namespace Scoops.misc
     {
         public string phoneNumber;
         public string phoneSkinId;
+        public string phoneRingtoneId;
 
         public bool spectatorClear = false;
 
@@ -546,7 +547,7 @@ namespace Scoops.misc
 
         public void PropogateInformation()
         {
-            PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId);
+            PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId, this.phoneRingtoneId);
         }
 
         [ServerRpc]
@@ -713,12 +714,14 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void PropogateInformationClientRpc(string number, string skinId)
+        public void PropogateInformationClientRpc(string number, string skinId, string ringtoneId)
         {
             this.phoneNumber = number;
 
             this.phoneSkinId = skinId;
             ApplySkin(skinId);
+
+            this.phoneRingtoneId = ringtoneId;
         }
 
         protected virtual void StartRinging()
@@ -726,7 +729,7 @@ namespace Scoops.misc
             ringAudio.Stop();
             activePhoneRingCoroutine = PhoneRingCoroutine(4);
             StartCoroutine(activePhoneRingCoroutine);
-            ringAudio.clip = PhoneAssetManager.phoneRingReciever;
+            ringAudio.clip = CustomizationManager.ringtoneCustomizations[phoneRingtoneId];
             ringAudio.Play();
         }
 
