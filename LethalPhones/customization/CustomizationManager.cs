@@ -1,6 +1,7 @@
 ﻿using Scoops.service;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using TMPro;
@@ -34,10 +35,30 @@ namespace Scoops.customization
         private static GameObject displayRingtone;
         private static GameObject displayRingtoneName;
         private static Transform displayCharmPoint;
+        private static GameObject displayNoCharm;
 
         private static int skinIndex = 0;
         private static int charmIndex = 0;
         private static int ringtoneIndex = 0;
+
+        public static void RecursiveCustomizationLoad(string directory)
+        {
+            foreach (var subDirectory in Directory.GetDirectories(directory))
+            {
+                RecursiveCustomizationLoad(subDirectory);
+            }
+
+            foreach (var file in Directory.GetFiles(directory))
+            {
+                if (file.EndsWith(".phoneCustom"))
+                {
+                    AssetBundle bundle = AssetBundle.LoadFromFile(file);
+                    LoadSkinCustomizations(bundle, file);
+                    LoadCharmCustomizations(bundle, file);
+                    LoadRingtoneCustomizations(bundle, file);
+                }
+            }
+        }
 
         public static void LoadSkinCustomizations(AssetBundle bundle, string bundleName = null)
         {
@@ -123,6 +144,7 @@ namespace Scoops.customization
             displayRingtone = customizationPanel.Find("Panel").Find("AudioDisplay").Find("AudioDisplayIcon").gameObject;
             displayRingtoneName = customizationPanel.Find("Panel").Find("AudioDisplay").Find("RingtoneName").gameObject;
             displayCharmPoint = customizationPanel.Find("Panel").Find("CharmRotatePoint").Find("CharmDisplayModel");
+            displayNoCharm = customizationPanel.Find("Panel").Find("NoCharm").gameObject;
 
             GameObject nextCustomizationButton = customizationPanel.Find("Panel").Find("NextButton").gameObject;
             GameObject prevCustomizationButton = customizationPanel.Find("Panel").Find("PrevButton").gameObject;
@@ -262,7 +284,10 @@ namespace Scoops.customization
             GameObject charmPrefab = charmCustomizations[charmId];
             if (charmPrefab == null) return;
 
-            GameObject.Destroy(displayCharmPoint.GetChild(0).gameObject);
+            if (displayCharmPoint.childCount > 0)
+            {
+                GameObject.Destroy(displayCharmPoint.GetChild(0).gameObject);
+            }
 
             GameObject charm = GameObject.Instantiate(charmPrefab, displayCharmPoint);
 
@@ -273,6 +298,8 @@ namespace Scoops.customization
             {
                 child.gameObject.layer = 31;
             }
+
+            displayNoCharm.SetActive(charmId == DEFAULT_CHARM);
         }
 
         public static void ApplyRingtoneToDisplay(string ringtoneId)

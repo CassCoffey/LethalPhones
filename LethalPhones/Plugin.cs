@@ -30,7 +30,7 @@ public class LethalPhonesInputClass : LcInputActions
     public InputAction VolumePhoneKey { get; set; }
 }
 
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.0.12")]
+[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.1.0")]
 [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("evaisa.lethallib", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
@@ -76,6 +76,9 @@ public class Plugin : BaseUnityPlugin
         CustomizationManager.LoadSkinCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
         CustomizationManager.LoadCharmCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
         CustomizationManager.LoadRingtoneCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
+
+        Log.LogInfo("Loading user phone customization...");
+        CustomizationManager.RecursiveCustomizationLoad(Paths.PluginPath);
 
         ReadCustomizationFromFile();
 
