@@ -12,9 +12,11 @@ namespace Scoops.customization
     public class CustomizationManager
     {
         public const string DEFAULT_SKIN = "lethalphones.customizations.default";
+        public const string DEFAULT_CHARM = "lethalphones.customizations.default";
         public const string DEFAULT_RINGTONE = "lethalphones.customizations.default";
 
         public static string SelectedSkin = "lethalphones.customizations.default";
+        public static string SelectedCharm = "lethalphones.customizations.default";
         public static string SelectedRingtone = "lethalphones.customizations.default";
 
         public static Dictionary<string, GameObject> skinCustomizations = new Dictionary<string, GameObject>();
@@ -33,6 +35,7 @@ namespace Scoops.customization
         private static GameObject displayRingtoneName;
 
         private static int skinIndex = 0;
+        private static int charmIndex = 0;
         private static int ringtoneIndex = 0;
 
         public static void LoadSkinCustomizations(AssetBundle bundle, string bundleName = null)
@@ -56,6 +59,30 @@ namespace Scoops.customization
                 Debug.Log("Loaded skin customization: " + customizationId);
                 skinCustomizations.Add(customizationId, customization);
                 skinIds.Add(customizationId);
+            }
+        }
+
+        public static void LoadCharmCustomizations(AssetBundle bundle, string bundleName = null)
+        {
+            foreach (var potentialPrefab in bundle.GetAllAssetNames())
+            {
+                if (!potentialPrefab.ToLower().EndsWith("_charm.prefab"))
+                {
+                    continue;
+                }
+                GameObject customization = bundle.LoadAsset<GameObject>(potentialPrefab);
+
+                string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_charm", "");
+
+                if (charmCustomizations.ContainsKey(customizationId))
+                {
+                    Debug.Log("Skipped charm customization: " + customizationId + ", reason: duplicate id");
+                    continue;
+                }
+
+                Debug.Log("Loaded charm customization: " + customizationId);
+                charmCustomizations.Add(customizationId, customization);
+                charmIds.Add(customizationId);
             }
         }
 

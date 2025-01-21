@@ -120,10 +120,11 @@ public class Plugin : BaseUnityPlugin
         {
             string[] lines = System.IO.File.ReadAllLines(customizationSavePath);
 
-            if (lines.Length != 2) return;
+            if (lines.Length != 3) return;
 
             CustomizationManager.SelectedSkin = lines[0];
-            CustomizationManager.SelectedRingtone = lines[1];
+            CustomizationManager.SelectedCharm = lines[1];
+            CustomizationManager.SelectedRingtone = lines[2];
         }
     }
 
@@ -131,6 +132,7 @@ public class Plugin : BaseUnityPlugin
     {
         string built = "";
         built += CustomizationManager.SelectedSkin + "\n";
+        built += CustomizationManager.SelectedCharm + "\n";
         built += CustomizationManager.SelectedRingtone + "\n";
 
         System.IO.File.WriteAllText(customizationSavePath, built);

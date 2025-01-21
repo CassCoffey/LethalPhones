@@ -19,6 +19,7 @@ namespace Scoops.misc
     {
         public string phoneNumber;
         public string phoneSkinId;
+        public string phoneCharmId;
         public string phoneRingtoneId;
 
         public bool spectatorClear = false;
@@ -366,6 +367,11 @@ namespace Scoops.misc
             // Nothing by default
         }
 
+        protected virtual void ApplyCharm(string charmId)
+        {
+            // Nothing by default
+        }
+
         protected virtual void UpdateCallingUI()
         {
             // Nothing by default
@@ -547,7 +553,7 @@ namespace Scoops.misc
 
         public void PropogateInformation()
         {
-            PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId, this.phoneRingtoneId);
+            PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId, this.phoneCharmId, this.phoneRingtoneId);
         }
 
         [ServerRpc]
@@ -714,12 +720,15 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void PropogateInformationClientRpc(string number, string skinId, string ringtoneId)
+        public void PropogateInformationClientRpc(string number, string skinId, string charmId, string ringtoneId)
         {
             this.phoneNumber = number;
 
             this.phoneSkinId = skinId;
             ApplySkin(skinId);
+
+            this.phoneCharmId = charmId;
+            ApplyCharm(charmId);
 
             this.phoneRingtoneId = ringtoneId;
         }

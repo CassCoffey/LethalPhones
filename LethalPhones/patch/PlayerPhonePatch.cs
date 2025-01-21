@@ -124,7 +124,7 @@ public class PlayerPhonePatch
     {
         PhoneManager = PhoneNetworkHandler.Instance;
         NetworkObject phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<NetworkObject>();
-        PhoneManager.CreateNewPhone(phone.NetworkObjectId, CustomizationManager.SelectedSkin, CustomizationManager.SelectedRingtone);
+        PhoneManager.CreateNewPhone(phone.NetworkObjectId, CustomizationManager.SelectedSkin, CustomizationManager.SelectedCharm, CustomizationManager.SelectedRingtone);
 
         PhoneManager.RequestClientUpdates();
 

@@ -486,6 +486,12 @@ namespace Scoops.misc
                     dialRenderer.enabled = enabled;
                 }
 
+                Canvas canvasRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas").GetComponent<Canvas>();
+                if (canvasRenderer != null)
+                {
+                    canvasRenderer.enabled = enabled;
+                }
+
                 if (serverPersonalPhoneNumberUI != null)
                 {
                     serverPersonalPhoneNumberUI.text = phoneNumber;
@@ -767,8 +773,14 @@ namespace Scoops.misc
             GameObject skinObject = CustomizationManager.skinCustomizations[skinId];
             if (skinObject == null) return;
 
+            Debug.Log("Skin ID - " + skinId);
+
             if (IsOwner)
             {
+                if (localPhoneModel == null)
+                {
+                    localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
+                }
                 Transform localPhoneDisplay = localPhoneModel.transform.Find("LocalPhoneModel");
 
                 // Main Mat
@@ -782,6 +794,10 @@ namespace Scoops.misc
             } 
             else
             {
+                if (serverPhoneModel == null)
+                {
+                    serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+                }
                 Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
 
                 // Main Mat
