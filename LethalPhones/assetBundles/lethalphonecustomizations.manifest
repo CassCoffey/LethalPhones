@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1312628795
+CRC: 2212495496
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e6b101f2d4bdc5ce0d698837f859f14b
+    Hash: f2520127f1ab4084f65d66fb66691eb4
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: e6b101f2d4bdc5ce0d698837f859f14b
+    Hash: f2520127f1ab4084f65d66fb66691eb4
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -36,11 +36,25 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/Customizations/Default_Charm.prefab
 - Assets/Customizations/Blue_Skin.prefab
+- Assets/Customizations/BabyHotline_Ringtone.wav
+- Assets/Customizations/Caramelldansen_Ringtone.wav
 - Assets/Customizations/Hazard_Skin.prefab
+- Assets/Customizations/Wonderwall_Ringtone.wav
+- Assets/Customizations/Drowning_Ringtone.wav
+- Assets/Customizations/NokiaToreador_Ringtone.wav
 - Assets/Customizations/Default_Ringtone.wav
 - Assets/Customizations/Kitten_Skin.prefab
+- Assets/Customizations/WhatsNewPussycat_Ringtone.wav
+- Assets/Customizations/Darude_Ringtone.wav
 - Assets/Customizations/Reactor_Ringtone.wav
+- Assets/Customizations/NeverGonnaGiveYouUp_Ringtone.wav
 - Assets/Customizations/Killer_Skin.prefab
-- Assets/Customizations/BuggyBuddy_Charm.prefab
+- Assets/Customizations/CrazyFrog_Ringtone.wav
 - Assets/Customizations/Default_Skin.prefab
+- Assets/Customizations/BuggyBuddy_Charm.prefab
+- Assets/Customizations/Skype_Ringtone.wav
+- Assets/Customizations/NokiaMozart_Ringtone.wav
+- Assets/Customizations/Beethoven_Ringtone.wav
+- Assets/Customizations/Wndrwll_Ringtone.wav
+- Assets/Customizations/CallMeMaybe_Ringtone.wav
 Dependencies: []

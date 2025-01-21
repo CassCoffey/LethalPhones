@@ -967,7 +967,14 @@ namespace Scoops.misc
                 case phoneVolume.Ring:
                     activePhoneRingCoroutine = PhoneRingCoroutine(4);
                     StartCoroutine(activePhoneRingCoroutine);
-                    ringAudio.clip = CustomizationManager.ringtoneCustomizations[phoneRingtoneId];
+                    if (Config.disableRingtones.Value)
+                    {
+                        ringAudio.clip = CustomizationManager.ringtoneCustomizations[CustomizationManager.DEFAULT_RINGTONE];
+                    } 
+                    else
+                    {
+                        ringAudio.clip = CustomizationManager.ringtoneCustomizations[phoneRingtoneId];
+                    }
                     ringAudio.Play();
                     break;
                 case phoneVolume.Vibrate:

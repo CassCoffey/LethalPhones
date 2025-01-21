@@ -11,6 +11,7 @@ namespace Scoops
         public static ConfigEntry<float> voiceSoundMod;
         public static ConfigEntry<float> deathHangupTime;
         public static ConfigEntry<bool> hideHands;
+        public static ConfigEntry<bool> disableRingtones;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -64,6 +65,12 @@ namespace Scoops
                     "hideHands",
                     false,
                     "If true, the model's right hand will not be used for dialing. (useful if using a custom model with hands too big/small for the phone)"
+            );
+            disableRingtones = cfg.Bind(
+                    "General",
+                    "disableRingtones",
+                    false,
+                    "If true, ringtone customizations will not be used and phones will always use the default ringtone."
             );
 
             // Enemies

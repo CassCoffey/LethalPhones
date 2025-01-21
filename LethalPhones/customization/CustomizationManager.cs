@@ -148,7 +148,7 @@ namespace Scoops.customization
             charmIndex = charmIds.IndexOf(SelectedCharm);
 
             ApplyRingtoneToDisplay(SelectedRingtone);
-            skinIndex = skinIds.IndexOf(SelectedSkin);
+            ringtoneIndex = ringtoneIds.IndexOf(SelectedRingtone);
         }
 
         public static void SaveCustomization()
@@ -281,7 +281,7 @@ namespace Scoops.customization
             if (ringtoneObject == null) return;
 
             displayRingtone.GetComponent<AudioSource>().clip = ringtoneObject;
-            displayRingtoneName.GetComponent<TextMeshProUGUI>().text = "[ " + ringtoneObject.name + " ]";
+            displayRingtoneName.GetComponent<TextMeshProUGUI>().text = "[ " + ringtoneObject.name.Replace("_Ringtone", "").Replace("_ringtone", "") + " ]";
         }
     }
 }
