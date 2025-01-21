@@ -74,6 +74,7 @@ public class Plugin : BaseUnityPlugin
 
         Log.LogInfo("Loading default phone customization...");
         CustomizationManager.LoadSkinCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
+        CustomizationManager.LoadCharmCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
         CustomizationManager.LoadRingtoneCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
 
         ReadCustomizationFromFile();

@@ -33,6 +33,7 @@ namespace Scoops.customization
         private static GameObject displayPhone;
         private static GameObject displayRingtone;
         private static GameObject displayRingtoneName;
+        private static Transform displayCharmPoint;
 
         private static int skinIndex = 0;
         private static int charmIndex = 0;
@@ -52,11 +53,11 @@ namespace Scoops.customization
 
                 if (skinCustomizations.ContainsKey(customizationId))
                 {
-                    Debug.Log("Skipped skin customization: " + customizationId + ", reason: duplicate id");
+                    Plugin.Log.LogWarning("Skipped skin customization: " + customizationId + ", reason: duplicate id");
                     continue;
                 }
 
-                Debug.Log("Loaded skin customization: " + customizationId);
+                Plugin.Log.LogInfo("Loaded skin customization: " + customizationId);
                 skinCustomizations.Add(customizationId, customization);
                 skinIds.Add(customizationId);
             }
@@ -76,11 +77,11 @@ namespace Scoops.customization
 
                 if (charmCustomizations.ContainsKey(customizationId))
                 {
-                    Debug.Log("Skipped charm customization: " + customizationId + ", reason: duplicate id");
+                    Plugin.Log.LogWarning("Skipped charm customization: " + customizationId + ", reason: duplicate id");
                     continue;
                 }
 
-                Debug.Log("Loaded charm customization: " + customizationId);
+                Plugin.Log.LogInfo("Loaded charm customization: " + customizationId);
                 charmCustomizations.Add(customizationId, customization);
                 charmIds.Add(customizationId);
             }
@@ -100,11 +101,11 @@ namespace Scoops.customization
 
                 if (ringtoneCustomizations.ContainsKey(customizationId))
                 {
-                    Debug.Log("Skipped ringtone customization: " + customizationId + ", reason: duplicate id");
+                    Plugin.Log.LogWarning("Skipped ringtone customization: " + customizationId + ", reason: duplicate id");
                     continue;
                 }
 
-                Debug.Log("Loaded ringtone customization: " + customizationId);
+                Plugin.Log.LogInfo("Loaded ringtone customization: " + customizationId);
                 ringtoneCustomizations.Add(customizationId, customization);
                 ringtoneIds.Add(customizationId);
             }
@@ -121,6 +122,7 @@ namespace Scoops.customization
             displayPhone = customizationPanel.Find("Panel").Find("PhoneDisplayModel").gameObject;
             displayRingtone = customizationPanel.Find("Panel").Find("AudioDisplay").Find("AudioDisplayIcon").gameObject;
             displayRingtoneName = customizationPanel.Find("Panel").Find("AudioDisplay").Find("RingtoneName").gameObject;
+            displayCharmPoint = customizationPanel.Find("Panel").Find("CharmRotatePoint").Find("CharmDisplayModel");
 
             GameObject nextCustomizationButton = customizationPanel.Find("Panel").Find("NextButton").gameObject;
             GameObject prevCustomizationButton = customizationPanel.Find("Panel").Find("PrevButton").gameObject;
@@ -142,6 +144,9 @@ namespace Scoops.customization
             ApplySkinToDisplay(SelectedSkin);
             skinIndex = skinIds.IndexOf(SelectedSkin);
 
+            ApplyCharmToDisplay(SelectedCharm);
+            charmIndex = charmIds.IndexOf(SelectedCharm);
+
             ApplyRingtoneToDisplay(SelectedRingtone);
             skinIndex = skinIds.IndexOf(SelectedSkin);
         }
@@ -157,6 +162,10 @@ namespace Scoops.customization
             {
                 NextSkin();
             }
+            else if (displayCharmPoint.gameObject.activeInHierarchy)
+            {
+                NextCharm();
+            }
             else if (displayRingtone.activeInHierarchy)
             {
                 NextRingtone();
@@ -168,6 +177,10 @@ namespace Scoops.customization
             if (displayPhone.activeInHierarchy)
             {
                 PrevSkin();
+            }
+            else if (displayCharmPoint.gameObject.activeInHierarchy)
+            {
+                PrevCharm();
             }
             else if (displayRingtone.activeInHierarchy)
             {
@@ -191,6 +204,24 @@ namespace Scoops.customization
 
             SelectedSkin = skinIds[skinIndex];
             ApplySkinToDisplay(skinIds[skinIndex]);
+        }
+
+        public static void NextCharm()
+        {
+            charmIndex++;
+            if (charmIndex >= charmIds.Count) { charmIndex = 0; }
+
+            SelectedCharm = charmIds[charmIndex];
+            ApplyCharmToDisplay(charmIds[charmIndex]);
+        }
+
+        public static void PrevCharm()
+        {
+            charmIndex--;
+            if (charmIndex < 0) { charmIndex = charmIds.Count - 1; }
+
+            SelectedCharm = charmIds[charmIndex];
+            ApplyCharmToDisplay(charmIds[charmIndex]);
         }
 
         public static void NextRingtone()
@@ -224,6 +255,24 @@ namespace Scoops.customization
             displayPhone.transform.Find("PhoneDial").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneDial").GetComponent<Renderer>().materials;
             // Top Mat
             displayPhone.transform.Find("PhoneTop").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneTop").GetComponent<Renderer>().materials;
+        }
+
+        public static void ApplyCharmToDisplay(string charmId)
+        {
+            GameObject charmPrefab = charmCustomizations[charmId];
+            if (charmPrefab == null) return;
+
+            GameObject.Destroy(displayCharmPoint.GetChild(0).gameObject);
+
+            GameObject charm = GameObject.Instantiate(charmPrefab, displayCharmPoint);
+
+            charm.layer = 31;
+
+            var children = charm.GetComponentsInChildren<Transform>(includeInactive: true);
+            foreach (var child in children)
+            {
+                child.gameObject.layer = 31;
+            }
         }
 
         public static void ApplyRingtoneToDisplay(string ringtoneId)

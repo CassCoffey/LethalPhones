@@ -458,6 +458,12 @@ namespace Scoops.misc
                 {
                     canvasRenderer.enabled = enabled;
                 }
+
+                GameObject charmPoint = localPhoneModel.transform.Find("LocalPhoneModel").Find("CharmAttach").gameObject;
+                if (charmPoint != null)
+                {
+                    charmPoint.SetActive(enabled);
+                }
             }
         }
 
@@ -490,6 +496,12 @@ namespace Scoops.misc
                 if (canvasRenderer != null)
                 {
                     canvasRenderer.enabled = enabled;
+                }
+
+                GameObject charmPoint = serverPhoneModel.transform.Find("ServerPhoneModel").Find("CharmAttach").gameObject;
+                if (charmPoint != null)
+                {
+                    charmPoint.SetActive(enabled);
                 }
 
                 if (serverPersonalPhoneNumberUI != null)
@@ -773,8 +785,6 @@ namespace Scoops.misc
             GameObject skinObject = CustomizationManager.skinCustomizations[skinId];
             if (skinObject == null) return;
 
-            Debug.Log("Skin ID - " + skinId);
-
             if (IsOwner)
             {
                 if (localPhoneModel == null)
@@ -808,6 +818,39 @@ namespace Scoops.misc
                 serverPhoneDisplay.Find("PhoneDial").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneDial").GetComponent<Renderer>().materials;
                 // Top Mat
                 serverPhoneDisplay.Find("PhoneTop").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneTop").GetComponent<Renderer>().materials;
+            }
+        }
+
+        protected override void ApplyCharm(string charmId)
+        {
+            GameObject charmPrefab = CustomizationManager.charmCustomizations[charmId];
+            if (charmPrefab == null) return;
+
+            if (IsOwner)
+            {
+                if (localPhoneModel == null)
+                {
+                    localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
+                }
+                Transform localPhoneDisplay = localPhoneModel.transform.Find("LocalPhoneModel");
+
+                if (localPhoneDisplay.Find("CharmAttach").childCount == 0)
+                {
+                    GameObject.Instantiate(charmPrefab, localPhoneDisplay.Find("CharmAttach"));
+                }
+            }
+            else
+            {
+                if (serverPhoneModel == null)
+                {
+                    serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+                }
+                Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
+
+                if (serverPhoneDisplay.Find("CharmAttach").childCount == 0)
+                {
+                    GameObject.Instantiate(charmPrefab, serverPhoneDisplay.Find("CharmAttach"));
+                }
             }
         }
 
