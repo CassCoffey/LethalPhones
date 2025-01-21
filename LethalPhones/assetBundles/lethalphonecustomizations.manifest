@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 2540195928
+CRC: 95224910
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 2d01d1ea92ebcf606cbcfd252b07b7f4
+    Hash: fbc98af8c70a738d141a0c8b5acb9971
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 2d01d1ea92ebcf606cbcfd252b07b7f4
+    Hash: fbc98af8c70a738d141a0c8b5acb9971
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -38,7 +38,9 @@ Assets:
 - Assets/Customizations/Hazard_Skin.prefab
 - Assets/Customizations/Default_Ringtone.wav
 - Assets/Customizations/Pink_Skin.prefab
+- Assets/Customizations/Kitten_Skin.prefab
 - Assets/Customizations/Reactor_Ringtone.wav
+- Assets/Customizations/Killer_Skin.prefab
 - Assets/Customizations/Default_Skin.prefab
 - Assets/Customizations/Schaeffer_Ringtone.mp3
 Dependencies: []
