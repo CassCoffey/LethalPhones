@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 2712931124
+CRC: 4167222489
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: eb2620dfa6971654d18285ab5ffd6467
+    Hash: 8788f6ea966d8a9395cc9701499e995e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: eb2620dfa6971654d18285ab5ffd6467
+    Hash: 8788f6ea966d8a9395cc9701499e995e
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -56,6 +56,7 @@ Assets:
 - Assets/Customizations/NeverGonnaGiveYouUp_Ringtone.wav
 - Assets/Customizations/Killer_Skin.prefab
 - Assets/Customizations/CrazyFrog_Ringtone.wav
+- Assets/Customizations/CasinoNights_Skin.prefab
 - Assets/Customizations/Default_Skin.prefab
 - Assets/Customizations/BuggyBuddy_Charm.prefab
 - Assets/Customizations/Boombox_Ringtone.wav
