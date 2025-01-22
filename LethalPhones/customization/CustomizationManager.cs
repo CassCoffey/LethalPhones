@@ -53,9 +53,9 @@ namespace Scoops.customization
                 if (file.EndsWith(".phoneCustom"))
                 {
                     AssetBundle bundle = AssetBundle.LoadFromFile(file);
-                    LoadSkinCustomizations(bundle, file);
-                    LoadCharmCustomizations(bundle, file);
-                    LoadRingtoneCustomizations(bundle, file);
+                    LoadSkinCustomizations(bundle, bundle.name);
+                    LoadCharmCustomizations(bundle, bundle.name);
+                    LoadRingtoneCustomizations(bundle, bundle.name);
                 }
             }
         }

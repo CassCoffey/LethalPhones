@@ -129,6 +129,19 @@ public class Plugin : BaseUnityPlugin
             CustomizationManager.SelectedSkin = lines[0];
             CustomizationManager.SelectedCharm = lines[1];
             CustomizationManager.SelectedRingtone = lines[2];
+
+            if (!CustomizationManager.skinIds.Contains(CustomizationManager.SelectedSkin))
+            {
+                CustomizationManager.SelectedSkin = CustomizationManager.DEFAULT_SKIN;
+            }
+            if (!CustomizationManager.charmIds.Contains(CustomizationManager.SelectedCharm))
+            {
+                CustomizationManager.SelectedCharm = CustomizationManager.DEFAULT_CHARM;
+            }
+            if (!CustomizationManager.ringtoneIds.Contains(CustomizationManager.SelectedRingtone))
+            {
+                CustomizationManager.SelectedRingtone = CustomizationManager.DEFAULT_RINGTONE;
+            }
         }
     }
 
