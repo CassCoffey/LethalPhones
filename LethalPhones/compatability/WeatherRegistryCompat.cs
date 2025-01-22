@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Runtime.CompilerServices;
 using WeatherRegistry;
-using WeatherRegistry.Definitions;
 
 namespace Scoops.compatability
 {
@@ -11,6 +8,10 @@ namespace Scoops.compatability
         public static bool Enabled =>
             BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("mrov.WeatherRegistry");
 
-        public static Weather CurrentWeather => WeatherManager.GetCurrentLevelWeather();
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        public static string CurrentWeatherName()
+        {
+            return WeatherManager.GetCurrentLevelWeather().name;
+        }
     }
 }

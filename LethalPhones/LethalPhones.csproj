@@ -66,7 +66,7 @@
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.UI.dll</HintPath>
       </Reference>
       <Reference Include="WeatherRegistry">
-        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\WeatherRegistry\WeatherRegistry.dll</HintPath>
+        <HintPath>..\..\..\Stuff\Modding\Lethal Company\WeatherRegistry\WeatherRegistry.dll</HintPath>
       </Reference>
     </ItemGroup>
 

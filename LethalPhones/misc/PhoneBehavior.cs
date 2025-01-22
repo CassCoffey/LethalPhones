@@ -397,7 +397,7 @@ namespace Scoops.misc
             targetConnectionQuality = 1f;
             if (WeatherRegistryCompat.Enabled)
             {
-                string currWeather = WeatherRegistryCompat.CurrentWeather.name.ToLower();
+                string currWeather = WeatherRegistryCompat.CurrentWeatherName().ToLower();
                 if (registryBadWeathers.Contains(currWeather))
                 {
                     targetConnectionQuality -= 0.25f;
