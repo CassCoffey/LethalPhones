@@ -111,6 +111,11 @@ namespace Scoops.misc
 
         public void ToggleActive(bool active)
         {
+            if (!active && Config.hangupOnPutaway.Value)
+            {
+                HangupButtonPressed();
+            }
+
             toggled = active;
             if (active)
             {

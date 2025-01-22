@@ -12,6 +12,7 @@ namespace Scoops
         public static ConfigEntry<float> deathHangupTime;
         public static ConfigEntry<bool> hideHands;
         public static ConfigEntry<bool> disableRingtones;
+        public static ConfigEntry<bool> hangupOnPutaway;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -71,6 +72,12 @@ namespace Scoops
                     "disableRingtones",
                     false,
                     "If true, ringtone customizations will not be used and phones will always use the default ringtone."
+            );
+            hangupOnPutaway = cfg.Bind(
+                    "General",
+                    "hangupOnPutaway",
+                    false,
+                    "If true, the phone will hang up any active calls when it is put away, so you cannot talk on the phone without actively holding it."
             );
 
             // Enemies
