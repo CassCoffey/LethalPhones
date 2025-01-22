@@ -143,8 +143,8 @@ namespace Scoops.customization
             displayPhone = customizationPanel.Find("Panel").Find("PhoneDisplayModel").gameObject;
             displayRingtone = customizationPanel.Find("Panel").Find("AudioDisplay").Find("AudioDisplayIcon").gameObject;
             displayRingtoneName = customizationPanel.Find("Panel").Find("AudioDisplay").Find("RingtoneName").gameObject;
-            displayCharmPoint = customizationPanel.Find("Panel").Find("CharmRotatePoint").Find("CharmDisplayModel");
-            displayNoCharm = customizationPanel.Find("Panel").Find("NoCharm").gameObject;
+            displayCharmPoint = customizationPanel.Find("Panel").Find("CharmDisplay").Find("CharmRotatePoint").Find("CharmDisplayModel");
+            displayNoCharm = customizationPanel.Find("Panel").Find("CharmDisplay").Find("NoCharm").gameObject;
 
             GameObject nextCustomizationButton = customizationPanel.Find("Panel").Find("NextButton").gameObject;
             GameObject prevCustomizationButton = customizationPanel.Find("Panel").Find("PrevButton").gameObject;
