@@ -3,6 +3,7 @@ using HarmonyLib;
 using Scoops.misc;
 using Scoops.service;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -33,7 +34,13 @@ namespace Scoops.patch
         [HarmonyPrefix]
         private static void CleanupPlayerPhone(ref StartOfRound __instance, int playerObjectNumber, ulong clientId)
         {
+            if (!(NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+            {
+                return;
+            }
             PhoneNetworkHandler.Instance.DeletePlayerPhone(playerObjectNumber);
+
+            PhoneNetworkHandler.Instance.UpdateClipboardText();
         }
 
         [HarmonyPatch("Update")]
