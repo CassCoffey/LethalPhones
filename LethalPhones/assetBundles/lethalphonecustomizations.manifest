@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1171770678
+CRC: 616737230
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: ef022cf7246defa6c4f4074ca481ebcc
+    Hash: 4f5289393d9d900b02326ebf25628594
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: ef022cf7246defa6c4f4074ca481ebcc
+    Hash: 4f5289393d9d900b02326ebf25628594
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -72,6 +72,7 @@ Assets:
 - Assets/Customizations/EggSmallBeak_Charm.prefab
 - Assets/Customizations/Pastel_Skin.prefab
 - Assets/Customizations/Default_Charm.prefab
+- Assets/Customizations/Cruiser_Charm.prefab
 - Assets/Customizations/CityRug_Skin.prefab
 - Assets/Customizations/Bunny_Skin.prefab
 - Assets/Customizations/Drowning_Ringtone.wav
