@@ -438,26 +438,27 @@ namespace Scoops.misc
                 }
 
                 targetConnectionQuality -= Mathf.Lerp(0f, 0.4f, Mathf.InverseLerp(0f, 300f, entranceDist));
+            }
 
-                float apparatusDist = 300f;
+            float apparatusDist = 300f;
 
-                LungProp[] apparatusArray = UnityEngine.Object.FindObjectsOfType<LungProp>(false);
-                for (int i = 0; i < apparatusArray.Length; i++)
+            LungProp[] apparatusArray = UnityEngine.Object.FindObjectsOfType<LungProp>(false);
+            for (int i = 0; i < apparatusArray.Length; i++)
+            {
+                float newDist = Vector3.Distance(apparatusArray[i].transform.position, transform.position);
+                if (apparatusArray[i].isLungDocked)
                 {
-                    if (apparatusArray[i].isLungDocked)
-                    {
-                        float newDist = Vector3.Distance(apparatusArray[i].transform.position, transform.position);
-                        if (newDist < apparatusDist)
-                        {
-                            apparatusDist = newDist;
-                        }
-                    }
+                    newDist += 10f;
                 }
-
-                if (apparatusDist <= 50f)
+                if (newDist < apparatusDist)
                 {
-                    targetConnectionQuality -= Mathf.Lerp(0.4f, 0f, Mathf.InverseLerp(0f, 50f, apparatusDist));
+                    apparatusDist = newDist;
                 }
+            }
+
+            if (apparatusDist <= 50f)
+            {
+                targetConnectionQuality -= Mathf.Lerp(0.5f, 0f, Mathf.InverseLerp(0f, 50f, apparatusDist));
             }
 
             targetConnectionQuality = Mathf.Clamp01(targetConnectionQuality);

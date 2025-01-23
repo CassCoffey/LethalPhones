@@ -68,6 +68,11 @@ namespace Scoops.customization
                 {
                     continue;
                 }
+                if (Config.removeBaseSkins.Value && bundleName == "lethalphones.customizations" && !potentialPrefab.ToLower().EndsWith("default_skin.prefab"))
+                {
+                    continue;
+                }
+
                 GameObject customization = bundle.LoadAsset<GameObject>(potentialPrefab);
 
                 string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_skin", "");
@@ -92,6 +97,11 @@ namespace Scoops.customization
                 {
                     continue;
                 }
+                if (Config.removeBaseCharms.Value && bundleName == "lethalphones.customizations" && !potentialPrefab.ToLower().EndsWith("default_charm.prefab"))
+                {
+                    continue;
+                }
+
                 GameObject customization = bundle.LoadAsset<GameObject>(potentialPrefab);
 
                 string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_charm", "");
@@ -116,6 +126,11 @@ namespace Scoops.customization
                 {
                     continue;
                 }
+                if (Config.removeBaseRingtones.Value && bundleName == "lethalphones.customizations" && !potentialRingtone.ToLower().EndsWith("default_ringtone.wav"))
+                {
+                    continue;
+                }
+
                 AudioClip customization = bundle.LoadAsset<AudioClip>(potentialRingtone);
 
                 string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_ringtone", "");

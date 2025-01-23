@@ -972,7 +972,7 @@ namespace Scoops.misc
                 case phoneVolume.Ring:
                     activePhoneRingCoroutine = PhoneRingCoroutine(4);
                     StartCoroutine(activePhoneRingCoroutine);
-                    if (Config.disableRingtones.Value)
+                    if (Config.disableRingtones.Value && !IsOwner)
                     {
                         ringAudio.clip = CustomizationManager.ringtoneCustomizations[CustomizationManager.DEFAULT_RINGTONE];
                     } 

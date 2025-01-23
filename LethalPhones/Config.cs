@@ -12,7 +12,12 @@ namespace Scoops
         public static ConfigEntry<float> deathHangupTime;
         public static ConfigEntry<bool> hideHands;
         public static ConfigEntry<bool> disableRingtones;
+        public static ConfigEntry<bool> removeBaseSkins;
+        public static ConfigEntry<bool> removeBaseCharms;
+        public static ConfigEntry<bool> removeBaseRingtones;
+
         public static ConfigEntry<bool> hangupOnPutaway;
+        public static ConfigEntry<bool> respawnClipboard;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -71,13 +76,39 @@ namespace Scoops
                     "General",
                     "disableRingtones",
                     false,
-                    "If true, ringtone customizations will not be used and phones will always use the default ringtone."
+                    "If true, ringtone customizations will not be used for other players and their phones will always use the default ringtone. You can still customize your own."
             );
-            hangupOnPutaway = cfg.Bind(
+            removeBaseSkins = cfg.Bind(
                     "General",
+                    "removeBaseSkins",
+                    false,
+                    "If true, only the default skin from the mod will be shown in the customization screen. Addon mods will still show."
+            );
+            removeBaseCharms = cfg.Bind(
+                    "General",
+                    "removeBaseCharms",
+                    false,
+                    "If true, only the default charm from the mod will be shown in the customization screen. Addon mods will still show."
+            );
+            removeBaseRingtones = cfg.Bind(
+                    "General",
+                    "removeBaseRingtones",
+                    false,
+                    "If true, only the default ringtone from the mod will be shown in the customization screen. Addon mods will still show."
+            );
+
+            // Balance
+            hangupOnPutaway = cfg.Bind(
+                    "Balance",
                     "hangupOnPutaway",
                     false,
                     "If true, the phone will hang up any active calls when it is put away, so you cannot talk on the phone without actively holding it."
+            );
+            respawnClipboard = cfg.Bind(
+                    "Balance",
+                    "respawnClipboard",
+                    false,
+                    "If true, the phonebook clipboard will respawn back on the ship if it is lost or sold."
             );
 
             // Enemies

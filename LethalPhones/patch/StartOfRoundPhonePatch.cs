@@ -66,6 +66,20 @@ namespace Scoops.patch
             }
         }
 
+        [HarmonyPatch("PassTimeToNextDay")]
+        [HarmonyPostfix]
+        private static void PassTimeToNextDay(ref StartOfRound __instance)
+        {
+            if (!(NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+            {
+                return;
+            }
+            if (Config.respawnClipboard.Value)
+            {
+                PhoneNetworkHandler.Instance.CheckClipboardRespawn();
+            }
+        }
+
         public static List<AudioSource> GetAllAudioSourcesInRange(Vector3 position)
         {
             List<AudioSource> closeSources = new List<AudioSource>();

@@ -12,6 +12,7 @@ using Scoops.misc;
 using System.Reflection;
 using System.Reflection.Emit;
 using Scoops.customization;
+using LethalLib.Modules;
 
 namespace Scoops.patch;
 
@@ -157,7 +158,7 @@ public class PlayerPhonePatch
             return;
         }
 
-        float changeAmount = 0f - Mathf.Clamp01(damageNumber / 100f);
+        float changeAmount = 0f - Mathf.Clamp01(damageNumber / 50f);
         PhoneManager.localPhone.InfluenceConnectionQuality(changeAmount);
     }
 
@@ -192,7 +193,7 @@ public class PlayerPhonePatch
         {
             return;
         }
-        if (!PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+        if (PhoneNetworkHandler.Locked.Value)
         {
             return;
         }

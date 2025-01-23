@@ -20,6 +20,8 @@ namespace Scoops.service
 
         public static Clipboard PhonebookClipboard;
 
+        public static NetworkVariable<bool> Locked = new NetworkVariable<bool>();
+
         private Dictionary<string, ulong> phoneNumberDict;
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
@@ -30,9 +32,7 @@ namespace Scoops.service
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                var phonebookClipboard = Object.Instantiate(NetworkObjectManager.clipboardPrefab);
-                phonebookClipboard.GetComponent<NetworkObject>().Spawn();
-                PhonebookClipboard = phonebookClipboard.GetComponent<Clipboard>();
+                SpawnClipboard();
             }
         }
 
@@ -51,6 +51,11 @@ namespace Scoops.service
             phoneNumberDict = new Dictionary<string, ulong>();
             phoneObjectDict = new Dictionary<string, PhoneBehavior>();
 
+            if (NetworkManager.Singleton.IsServer)
+            {
+                Locked.Value = !PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer;
+            }
+
             base.OnNetworkSpawn();
         }
 
@@ -62,6 +67,22 @@ namespace Scoops.service
         public void RequestClientUpdates()
         {
             UpdateAllClientsServerRpc();
+        }
+
+        public void SpawnClipboard()
+        {
+            var phonebookClipboard = Object.Instantiate(NetworkObjectManager.clipboardPrefab, StartOfRound.Instance.elevatorTransform);
+            phonebookClipboard.GetComponent<NetworkObject>().Spawn();
+            PhonebookClipboard = phonebookClipboard.GetComponent<Clipboard>();
+        }
+
+        public void CheckClipboardRespawn()
+        {
+            if (PhonebookClipboard == null)
+            {
+                SpawnClipboard();
+                UpdateClipboardText();
+            }
         }
 
         public void UpdateClipboardText()
@@ -144,7 +165,7 @@ namespace Scoops.service
         public void MakeOutgoingCallServerRpc(string number, ulong senderId, ServerRpcParams serverRpcParams = default)
         {
             // No calling until phones are unlocked
-            if (!PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+            if (Locked.Value)
             {
                 return;
             }

@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 4185633547
+CRC: 1171770678
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 273abb5dbeef8acbd72f4cc0fe5a9b47
+    Hash: ef022cf7246defa6c4f4074ca481ebcc
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 273abb5dbeef8acbd72f4cc0fe5a9b47
+    Hash: ef022cf7246defa6c4f4074ca481ebcc
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -34,41 +34,64 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/Customizations/Default_Charm.prefab
 - Assets/Customizations/Blue_Skin.prefab
 - Assets/Customizations/BabyHotline_Ringtone.wav
 - Assets/Customizations/Caramelldansen_Ringtone.wav
 - Assets/Customizations/FuzzyDice_Charm.prefab
-- Assets/Customizations/BabyBuddy_Charm.prefab
 - Assets/Customizations/Hazard_Skin.prefab
 - Assets/Customizations/Wonderwall_Ringtone.wav
-- Assets/Customizations/Drowning_Ringtone.wav
+- Assets/Customizations/Bee_Skin.prefab
 - Assets/Customizations/Green_Skin.prefab
+- Assets/Customizations/PrideProgress_Charm.prefab
 - Assets/Customizations/NokiaToreador_Ringtone.wav
-- Assets/Customizations/Default_Ringtone.wav
-- Assets/Customizations/Red_Skin.prefab
+- Assets/Customizations/Missing_Skin.prefab
+- Assets/Customizations/PhoneCharm_Charm.prefab
 - Assets/Customizations/Kitten_Skin.prefab
-- Assets/Customizations/WhatsNewPussycat_Ringtone.wav
 - Assets/Customizations/Ribs_Ringtone.wav
 - Assets/Customizations/Reactor_Ringtone.wav
-- Assets/Sounds/Lambda_Boombox5_Ringtone.mp3
-- Assets/Customizations/Darude_Ringtone.wav
 - Assets/Customizations/BrackenBuddy_Charm.prefab
+- Assets/Customizations/NeverGonnaGiveYouUp_Ringtone.wav
 - Assets/Customizations/Killer_Skin.prefab
 - Assets/Customizations/CrazyFrog_Ringtone.wav
-- Assets/Customizations/NeverGonnaGiveYouUp_Ringtone.wav
-- Assets/Customizations/CasinoNights_Skin.prefab
-- Assets/Customizations/Default_Skin.prefab
 - Assets/Customizations/BuggyBuddy_Charm.prefab
-- Assets/Customizations/Boombox_Ringtone.wav
+- Assets/Customizations/Beehive_Charm.prefab
+- Assets/Customizations/Pajama_Skin.prefab
+- Assets/Customizations/BabyBuddy_Charm.prefab
+- Assets/Customizations/Egg_Charm.prefab
 - Assets/Customizations/Punk_Skin.prefab
 - Assets/Customizations/Skype_Ringtone.wav
-- Assets/Customizations/NokiaMozart_Ringtone.wav
+- Assets/Customizations/Lambda_Boombox5_Ringtone.wav
 - Assets/Customizations/Beethoven_Ringtone.wav
 - Assets/Customizations/Purple_Skin.prefab
+- Assets/Customizations/PrideLesbian_Charm.prefab
 - Assets/Customizations/CoilBuddy_Charm.prefab
 - Assets/Customizations/Wndrwll_Ringtone.wav
 - Assets/Customizations/CallMeMaybe_Ringtone.wav
-- Assets/Customizations/Shovel_Charm.prefab
+- Assets/Customizations/PridePride_Charm.prefab
+- Assets/Customizations/EggBigEyes_Charm.prefab
+- Assets/Customizations/EggSmallBeak_Charm.prefab
 - Assets/Customizations/Pastel_Skin.prefab
+- Assets/Customizations/Default_Charm.prefab
+- Assets/Customizations/CityRug_Skin.prefab
+- Assets/Customizations/Bunny_Skin.prefab
+- Assets/Customizations/Drowning_Ringtone.wav
+- Assets/Customizations/PridePan_Charm.prefab
+- Assets/Customizations/PacMan_Skin.prefab
+- Assets/Customizations/PrideNonbinary_Charm.prefab
+- Assets/Customizations/Lambda_Delivery_Ringtone.mp3
+- Assets/Customizations/Pacman_Dubstep_Ringtone.wav
+- Assets/Customizations/PrideTrans_Charm.prefab
+- Assets/Customizations/Default_Ringtone.wav
+- Assets/Customizations/Red_Skin.prefab
+- Assets/Customizations/WhatsNewPussycat_Ringtone.wav
+- Assets/Customizations/Darude_Ringtone.wav
+- Assets/Customizations/PrideMLM_Charm.prefab
+- Assets/Customizations/EggLongArms_Charm.prefab
+- Assets/Customizations/CasinoNights_Skin.prefab
+- Assets/Customizations/PrideBi_Charm.prefab
+- Assets/Customizations/Default_Skin.prefab
+- Assets/Customizations/Boombox_Ringtone.wav
+- Assets/Customizations/Masked_Charm.prefab
+- Assets/Customizations/NokiaMozart_Ringtone.wav
+- Assets/Customizations/Shovel_Charm.prefab
 Dependencies: []
