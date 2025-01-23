@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3097384982
+CRC: 4185633547
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 804d7becdd1f37882113fa135213c02a
+    Hash: 273abb5dbeef8acbd72f4cc0fe5a9b47
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 804d7becdd1f37882113fa135213c02a
+    Hash: 273abb5dbeef8acbd72f4cc0fe5a9b47
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -51,11 +51,12 @@ Assets:
 - Assets/Customizations/WhatsNewPussycat_Ringtone.wav
 - Assets/Customizations/Ribs_Ringtone.wav
 - Assets/Customizations/Reactor_Ringtone.wav
-- Assets/Customizations/BrackenBuddy_Charm.prefab
+- Assets/Sounds/Lambda_Boombox5_Ringtone.mp3
 - Assets/Customizations/Darude_Ringtone.wav
-- Assets/Customizations/NeverGonnaGiveYouUp_Ringtone.wav
+- Assets/Customizations/BrackenBuddy_Charm.prefab
 - Assets/Customizations/Killer_Skin.prefab
 - Assets/Customizations/CrazyFrog_Ringtone.wav
+- Assets/Customizations/NeverGonnaGiveYouUp_Ringtone.wav
 - Assets/Customizations/CasinoNights_Skin.prefab
 - Assets/Customizations/Default_Skin.prefab
 - Assets/Customizations/BuggyBuddy_Charm.prefab

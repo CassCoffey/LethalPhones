@@ -77,7 +77,10 @@ namespace Scoops.service
                 }
             }
 
-            PhonebookClipboard.UpdateTextClientRpc(phones.ToArray());
+            if (PhonebookClipboard != null)
+            {
+                PhonebookClipboard.UpdateTextClientRpc(phones.ToArray());
+            }
         }
 
         [ServerRpc(RequireOwnership = false)]

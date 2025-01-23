@@ -30,7 +30,7 @@ public class LethalPhonesInputClass : LcInputActions
     public InputAction VolumePhoneKey { get; set; }
 }
 
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.1.3")]
+[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.1.4")]
 [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("evaisa.lethallib", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
