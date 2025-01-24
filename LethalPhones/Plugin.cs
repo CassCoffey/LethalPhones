@@ -2,6 +2,7 @@
 using BepInEx.Logging;
 using HarmonyLib;
 using LethalCompanyInputUtils.Api;
+using Scoops.compatability;
 using Scoops.customization;
 using Scoops.patch;
 using Scoops.service;
@@ -88,6 +89,16 @@ public class Plugin : BaseUnityPlugin
         Log.LogInfo($"Applying patches...");
         ApplyPluginPatch();
         Log.LogInfo($"Patches applied");
+
+        if (WeatherRegistryCompat.Enabled)
+        {
+            Log.LogInfo("Loaded Weather Registry Compatability");
+        }
+
+        if (MirageCompat.Enabled)
+        {
+            Log.LogInfo("Loaded Mirage Compatability");
+        }
     }
 
     /// <summary>

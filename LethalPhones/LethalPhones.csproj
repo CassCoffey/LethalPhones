@@ -58,13 +58,10 @@
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\LethalLib\LethalLib.dll</HintPath>
       </Reference>
       <Reference Publicize="true" Include="Mirage">
-        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Mirage\Mirage.dll</HintPath>
-      </Reference>
-      <Reference Include="Mirage.Compatibility">
-        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Mirage\Mirage.Compatibility.dll</HintPath>
+        <HintPath>..\..\..\Stuff\Modding\Lethal Company\Mirage\Mirage.dll</HintPath>
       </Reference>
       <Reference Include="Mirage.Core">
-        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Mirage\Mirage.Core.dll</HintPath>
+        <HintPath>..\..\..\Stuff\Modding\Lethal Company\Mirage\Mirage.Core.dll</HintPath>
       </Reference>
       <Reference Include="Unity.Animation.Rigging">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>

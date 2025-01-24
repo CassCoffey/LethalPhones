@@ -1015,13 +1015,20 @@ namespace Scoops.misc
             outgoingCall = null;
             PlayBusySound();
             StartCoroutine(TemporaryStatusCoroutine(status));
+            StartCoroutine(BusyHangupCoroutine());
         }
 
         private IEnumerator TemporaryStatusCoroutine(string status)
         {
             phoneStatusUI.text = status;
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(4f);
             UpdateCallingUI();
+        }
+
+        private IEnumerator BusyHangupCoroutine()
+        {
+            yield return new WaitForSeconds(4f);
+            PlayHangupSound();
         }
 
         [ServerRpc]

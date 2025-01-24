@@ -162,7 +162,7 @@ namespace Scoops
                     "Enemies.Masked",
                     "maxPhoneMasked",
                     2,
-                    "Maximum number of Masked that can spawn with phones."
+                    "Maximum number of Masked that can spawn with phones. NOTE: This only functions if you are using Mirage."
             );
             chancePhoneMask = cfg.Bind(
                     "Enemies.Masked",
@@ -173,7 +173,7 @@ namespace Scoops
             minPhoneMaskedInterval = cfg.Bind(
                     "Enemies.Masked",
                     "minPhoneMaskedInterval",
-                    20f,
+                    45f,
                     "The shortest time (in seconds) between calls from each Masked."
             );
             maxPhoneMaskedInterval = cfg.Bind(
