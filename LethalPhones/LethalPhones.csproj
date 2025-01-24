@@ -43,6 +43,7 @@
         <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
         <PackageReference Include="BepInEx.Core" Version="5.*" />
         <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
+        <PackageReference Include="FSharp.Core" Version="9.0.101" />
         <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" />
     </ItemGroup>
 
@@ -55,6 +56,15 @@
       </Reference>
       <Reference Include="LethalLib">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\LethalLib\LethalLib.dll</HintPath>
+      </Reference>
+      <Reference Publicize="true" Include="Mirage">
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Mirage\Mirage.dll</HintPath>
+      </Reference>
+      <Reference Include="Mirage.Compatibility">
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Mirage\Mirage.Compatibility.dll</HintPath>
+      </Reference>
+      <Reference Include="Mirage.Core">
+        <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\BepInEx\plugins\Mirage\Mirage.Core.dll</HintPath>
       </Reference>
       <Reference Include="Unity.Animation.Rigging">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>

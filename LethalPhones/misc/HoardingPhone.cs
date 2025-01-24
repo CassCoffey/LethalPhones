@@ -1,5 +1,8 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
+using Mirage.Domain.Audio;
+using Mirage.Unity;
+using Scoops.compatability;
 using Scoops.patch;
 using Scoops.service;
 using System;
@@ -103,7 +106,27 @@ namespace Scoops.misc
                 {
                     this.chitterInterval = 0f;
                     randomChitterTime = UnityEngine.Random.Range(4f, 8f);
-                    RoundManager.PlayRandomClip(bug.creatureVoice, bug.chitterSFX, true, 1f, 0);
+
+                    if (MirageCompat.Enabled)
+                    {
+                        MirageVoice.MimicVoice mimic = bug.gameObject.GetComponent<MirageVoice.MimicVoice>();
+                        if (mimic)
+                        {
+                            if (!bug.isEnemyDead && mimic.mimicPlayer.mimickingPlayer != null)
+                            {
+                                var recording = Recording.getRecording(mimic.recordingManager);
+                                if (recording.Result != null)
+                                {
+                                    Debug.Log("Recording - " + recording.Result.Value);
+                                    mimic.audioStream.StreamOpusFromFile(recording.Result.Value);
+                                }
+                            }
+                        }
+                    } 
+                    else
+                    {
+                        RoundManager.PlayRandomClip(bug.creatureVoice, bug.chitterSFX, true, 1f, 0);
+                    }   
                 }
                 else
                 {
