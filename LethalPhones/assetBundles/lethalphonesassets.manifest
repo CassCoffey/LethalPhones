@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 186393129
+CRC: 1993387858
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 0824e564437a4002319ea59470d99954
+    Hash: d18ac5f9bfef8e8a413439582b22c1d0
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1cb0cac70df76fe9a1b54ad0644bb708
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 0824e564437a4002319ea59470d99954
+    Hash: d18ac5f9bfef8e8a413439582b22c1d0
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -185,45 +185,46 @@ SerializeReferenceClassIdentifiers:
   ClassName: UnityEngine.UI.SpriteState
 Assets:
 - Assets/Textures/icons8-no-connection-96.png
-- Assets/Textures/icons8-low-connection-96.png
 - Assets/Textures/icons8-shake-phone-96.png
 - Assets/Sounds/PhoneStaticTwo.wav
-- Assets/Sounds/PhoneBusy.wav
 - Assets/ClipboardPhoneBook.prefab
+- Assets/Textures/icons8-incoming-call-96.png
+- Assets/Textures/icons8-medium-connection-96.png
+- Assets/Sounds/RotaryDialForwardOptionOne.wav
+- Assets/Sounds/RotaryDialBackOptionOne.wav
+- Assets/LocalPhoneModel.prefab
+- Assets/ServerPhoneModel.prefab
+- Assets/Sounds/PhoneStaticThree.wav
+- Assets/Sounds/PhoneRing_Vibrate.wav
+- Assets/Sounds/RotaryFinishOptionOne.wav
+- Assets/MaskPhonePrefab.prefab
+- Assets/ServerLeftArmPhone.prefab
+- Assets/Textures/icons8-low-connection-96.png
+- Assets/PhoneAudioExternal.prefab
+- Assets/Sounds/PhoneBusy.wav
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
 - Assets/Textures/icons8-voicemail-96.png
 - Assets/Sounds/PhoneStaticOne.wav
 - Assets/Sounds/RotaryStopperOptionOne.wav
 - Assets/SwitchboardContainer.prefab
-- Assets/Textures/icons8-incoming-call-96.png
-- Assets/Textures/icons8-medium-connection-96.png
-- Assets/Sounds/RotaryDialForwardOptionOne.wav
-- Assets/Sounds/RotaryDialBackOptionOne.wav
 - Assets/BugPhonePrefab.prefab
 - Assets/Sounds/PhoneRing_Reciever.wav
 - Assets/PhonePrefab.prefab
 - Assets/Textures/icons8-signal-96.png
-- Assets/ServerPhoneModel.prefab
 - Assets/RightArmPhone.prefab
 - Assets/PhoneAudioInternal.prefab
 - Assets/PhoneNetworkHandler.prefab
-- Assets/Sounds/PhoneStaticThree.wav
 - Assets/Textures/icons8-silent-96.png
 - Assets/Sounds/PhoneHangup.wav
 - Assets/BugServerPhoneModel.prefab
 - Assets/PhoneCustomization_GUI.prefab
 - Assets/Sounds/RotaryFinishOptionTwo.wav
-- Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/Sounds/RotaryDialForwardOptionTwo.wav
-- Assets/Sounds/RotaryFinishOptionOne.wav
 - Assets/Sounds/PhoneSwitch.wav
-- Assets/LocalPhoneModel.prefab
-- Assets/ServerLeftArmPhone.prefab
 - Assets/Sounds/RotaryDialBackOptionTwo.wav
-- Assets/PhoneAudioExternal.prefab
+- Assets/ServerPhoneTargetHolder.prefab
 - Assets/Sounds/RotaryStopperOptionTwo.wav
 - Assets/LeftArmPhone.prefab
-- Assets/ServerPhoneTargetHolder.prefab
 - Assets/Textures/icons8-audio-96.png
 Dependencies: []

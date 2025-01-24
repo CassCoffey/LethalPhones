@@ -1,19 +1,23 @@
-﻿using Scoops.compatability;
+﻿using LethalLib.Modules;
+using Scoops.compatability;
+using Scoops.customization;
 using Scoops.patch;
 using Scoops.service;
 using System.Collections;
+using System.Numerics;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 
 namespace Scoops.misc
 {
-    public class HoardingPhone : PhoneBehavior
+    public class MaskedPhone : PhoneBehavior
     {
-        public HoarderBugAI bug;
+        public MaskedPlayerEnemy masked;
         public GameObject serverPhoneModel;
 
-        private float chitterInterval = 0f;
-        private float randomChitterTime = 3f;
+        public TextMeshProUGUI serverPersonalPhoneNumberUI;
 
         private bool preppingCall = false;
         private bool preppingPickup = false;
@@ -22,20 +26,96 @@ namespace Scoops.misc
         private IEnumerator activeCallDelayCoroutine;
         private IEnumerator activeCallTimeoutCoroutine;
 
+        private Transform upperSpine;
+
+        private bool armsActive = false;
+
         public override void Start()
         {
             base.Start();
 
-            this.bug = transform.parent.GetComponent<HoarderBugAI>();
+            this.masked = transform.parent.GetComponent<MaskedPlayerEnemy>();
             this.ringAudio = this.GetComponent<AudioSource>();
 
-            GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugServerPhoneModel");
-            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature").Find("Abdomen").Find("Chest").Find("Head").Find("Bone.03").Find("Bone.04").Find("Bone.04_end"), false);
+            upperSpine = masked.transform.Find("ScavengerModel").Find("metarig").Find("spine").Find("spine.001").Find("spine.002").Find("spine.003");
+
+            GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneModel");
+            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+
+            Transform ServerArmsRig = masked.transform.Find("ScavengerModel").Find("metarig").Find("Rig 1");
+            GameObject leftArmServerPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerLeftArmPhone");
+            GameObject leftArmServerPhoneTargetPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneTargetHolder");
+
+            GameObject serverLeftArmPhoneRig = GameObject.Instantiate(leftArmServerPhoneRigPrefab, ServerArmsRig, false);
+
+            GameObject serverLeftArmPhoneTarget = GameObject.Instantiate(leftArmServerPhoneTargetPrefab, upperSpine, false);
+
+            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = upperSpine.Find("shoulder.L").Find("arm.L_upper");
+            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.target = serverLeftArmPhoneTarget.transform.Find("ServerPhoneTarget");
+
+            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
+
+            masked.transform.Find("ScavengerModel").Find("metarig").GetComponent<RigBuilder>().Build();
+
+            SetPhoneServerModelActive(false);
+
+            ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+            LeftArmRig.weight = 0f;
+
+            Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
+            this.serverPersonalPhoneNumberUI = serverPhoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
+
+            PhoneNetworkHandler.Instance.RequestClientUpdates();
+        }
+
+        public void SetPhoneServerModelActive(bool enabled = false)
+        {
+            if (serverPhoneModel != null)
+            {
+                SkinnedMeshRenderer mainRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").GetComponent<SkinnedMeshRenderer>();
+                if (mainRenderer != null)
+                {
+                    mainRenderer.enabled = enabled;
+                }
+                SkinnedMeshRenderer antennaRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
+                if (antennaRenderer != null)
+                {
+                    antennaRenderer.enabled = enabled;
+                }
+                MeshRenderer topRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
+                if (topRenderer != null)
+                {
+                    topRenderer.enabled = enabled;
+                }
+                MeshRenderer dialRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
+                if (dialRenderer != null)
+                {
+                    dialRenderer.enabled = enabled;
+                }
+
+                Canvas canvasRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas").GetComponent<Canvas>();
+                if (canvasRenderer != null)
+                {
+                    canvasRenderer.enabled = enabled;
+                }
+
+                GameObject charmPoint = serverPhoneModel.transform.Find("ServerPhoneModel").Find("CharmAttach").gameObject;
+                if (charmPoint != null)
+                {
+                    charmPoint.SetActive(enabled);
+                }
+
+                if (serverPersonalPhoneNumberUI != null)
+                {
+                    serverPersonalPhoneNumberUI.text = phoneNumber;
+                }
+            }
         }
 
         public void Death()
         {
-            HoardingBugPhonePatch.phoneBugs--;
+            MaskedPhonePatch.phoneMasks--;
 
             if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
             if (activePickupDelayCoroutine != null) StopCoroutine(activePickupDelayCoroutine);
@@ -67,19 +147,25 @@ namespace Scoops.misc
 
         public override void Update()
         {
-            if (IsOwner && !bug.isEnemyDead)
+            if (IsOwner && !masked.isEnemyDead)
             {
                 if (outgoingCall == null && activeCall == null)
                 {
+                    // put the phone away
+                    if (armsActive)
+                    {
+                        ToggleServerPhoneModelServerRpc(false);
+                    }
+
                     if (incomingCall == null)
                     {
                         // we NEED to be on a call or we'll DIE
                         if (!preppingCall)
                         {
-                            activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneBugInterval.Value, Config.maxPhoneBugInterval.Value));
+                            activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneMaskedInterval.Value, Config.maxPhoneMaskedInterval.Value));
                             StartCoroutine(activeCallDelayCoroutine);
                         }
-                    } 
+                    }
                     else if (!preppingPickup)
                     {
                         activePickupDelayCoroutine = PickupDelayCoroutine(2f);
@@ -88,22 +174,6 @@ namespace Scoops.misc
                 }
             }
 
-            if (activeCall != null && !(MirageCompat.Enabled && MirageCompat.IsEnemyMimicking(bug)))
-            {
-                if (this.chitterInterval >= randomChitterTime)
-                {
-                    this.chitterInterval = 0f;
-                    randomChitterTime = UnityEngine.Random.Range(4f, 8f);
-
-                    RoundManager.PlayRandomClip(bug.creatureVoice, bug.chitterSFX, true, 1f, 0);
-                }
-                else
-                {
-                    this.chitterInterval += Time.deltaTime;
-                }
-            }
-
-
             base.Update();
         }
 
@@ -111,7 +181,7 @@ namespace Scoops.misc
         {
             if (MirageCompat.Enabled && activeCall != null)
             {
-                MirageCompat.UnmuteEnemy(bug);
+                MirageCompat.UnmuteEnemy(masked);
             }
         }
 
@@ -120,7 +190,7 @@ namespace Scoops.misc
             preppingPickup = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall != null && outgoingCall == null && activeCall == null && !bug.isEnemyDead)
+            if (incomingCall != null && outgoingCall == null && activeCall == null && !masked.isEnemyDead)
             {
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
@@ -129,6 +199,8 @@ namespace Scoops.misc
                 StopRingingServerRpc();
                 PlayPickupSoundServerRpc();
                 UpdateCallValues();
+
+                ToggleServerPhoneModelServerRpc(true);
             }
 
             preppingPickup = false;
@@ -139,7 +211,7 @@ namespace Scoops.misc
             preppingCall = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall == null && outgoingCall == null && activeCall == null && !bug.isEnemyDead)
+            if (incomingCall == null && outgoingCall == null && activeCall == null && !masked.isEnemyDead)
             {
                 CallRandomNumber();
                 if (outgoingCall != null)
@@ -147,9 +219,10 @@ namespace Scoops.misc
                     activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall);
                     StartCoroutine(activeCallTimeoutCoroutine);
                     UpdateCallValues();
+                    ToggleServerPhoneModelServerRpc(true);
                 }
             }
-            
+
             preppingCall = false;
         }
 
@@ -162,6 +235,45 @@ namespace Scoops.misc
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
                 outgoingCall = null;
                 UpdateCallValues();
+                ToggleServerPhoneModelServerRpc(false);
+            }
+        }
+
+        protected override void ApplySkin(string skinId)
+        {
+            GameObject skinObject = CustomizationManager.skinCustomizations[skinId];
+            if (skinObject == null) return;
+
+            if (serverPhoneModel == null)
+            {
+                serverPhoneModel = upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+            }
+            Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
+
+            // Main Mat
+            serverPhoneDisplay.GetComponent<Renderer>().materials = skinObject.GetComponent<Renderer>().materials;
+            // Antenna Mat
+            serverPhoneDisplay.Find("PhoneAntenna").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneAntenna").GetComponent<Renderer>().materials;
+            // Dial Mat
+            serverPhoneDisplay.Find("PhoneDial").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneDial").GetComponent<Renderer>().materials;
+            // Top Mat
+            serverPhoneDisplay.Find("PhoneTop").GetComponent<Renderer>().materials = skinObject.transform.Find("PhoneTop").GetComponent<Renderer>().materials;
+        }
+
+        protected override void ApplyCharm(string charmId)
+        {
+            GameObject charmPrefab = CustomizationManager.charmCustomizations[charmId];
+            if (charmPrefab == null) return;
+
+            if (serverPhoneModel == null)
+            {
+                serverPhoneModel = upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+            }
+            Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
+
+            if (serverPhoneDisplay.Find("CharmAttach").childCount == 0)
+            {
+                GameObject.Instantiate(charmPrefab, serverPhoneDisplay.Find("CharmAttach"));
             }
         }
 
@@ -191,18 +303,44 @@ namespace Scoops.misc
             activeCaller = activeCallerUpdate;
         }
 
+        [ServerRpc]
+        public void ToggleServerPhoneModelServerRpc(bool active)
+        {
+            ToggleServerPhoneModelClientRpc(active);
+        }
+
+        [ClientRpc]
+        public void ToggleServerPhoneModelClientRpc(bool active)
+        {
+            SetPhoneServerModelActive(active);
+
+            Transform ServerArmsRig = masked.transform.Find("ScavengerModel").Find("metarig").Find("Rig 1");
+            ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+
+            armsActive = active;
+
+            if (active)
+            {
+                LeftArmRig.weight = 1f;
+            }
+            else
+            {
+                LeftArmRig.weight = 0f;
+            }
+        }
+
         public override void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
         {
-            if (bug == null)
+            if (masked == null)
             {
                 return;
             }
-            if (bug.creatureVoice == null)
+            if (masked.creatureVoice == null)
             {
                 return;
             }
 
-            AudioSource currentVoiceChatAudioSource = bug.creatureVoice;
+            AudioSource currentVoiceChatAudioSource = masked.creatureVoice;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
             OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
@@ -225,7 +363,7 @@ namespace Scoops.misc
                 highPass.enabled = true;
                 highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, connectionQuality);
             }
-            
+
 
             if (distance != 0f)
             {
@@ -244,7 +382,7 @@ namespace Scoops.misc
 
             currentVoiceChatAudioSource.volume += Config.voiceSoundMod.Value;
 
-            if ((staticMode && hardStatic) || bug.isEnemyDead)
+            if ((staticMode && hardStatic) || masked.isEnemyDead)
             {
                 currentVoiceChatAudioSource.volume = 0f;
             }
@@ -252,16 +390,16 @@ namespace Scoops.misc
 
         public override void RemovePhoneVoiceEffect()
         {
-            if (bug == null)
+            if (masked == null)
             {
                 return;
             }
-            if (bug.creatureVoice == null)
+            if (masked.creatureVoice == null)
             {
                 return;
             }
 
-            AudioSource currentVoiceChatAudioSource = bug.creatureVoice;
+            AudioSource currentVoiceChatAudioSource = masked.creatureVoice;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
             OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();

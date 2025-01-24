@@ -12,6 +12,7 @@ namespace Scoops.patch
         static GameObject networkPrefab = null;
         public static GameObject phonePrefab = null;
         public static GameObject bugPhonePrefab = null;
+        public static GameObject maskPhonePrefab = null;
         public static GameObject clipboardPrefab = null;
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
@@ -39,6 +40,14 @@ namespace Scoops.patch
                 bugPhonePrefab.AddComponent<HoardingPhone>();
 
                 NetworkManager.Singleton.AddNetworkPrefab(bugPhonePrefab);
+            }
+
+            if (maskPhonePrefab == null)
+            {
+                maskPhonePrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("MaskPhonePrefab");
+                maskPhonePrefab.AddComponent<MaskedPhone>();
+
+                NetworkManager.Singleton.AddNetworkPrefab(maskPhonePrefab);
             }
 
             if (clipboardPrefab == null)

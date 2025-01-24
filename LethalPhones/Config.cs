@@ -26,6 +26,11 @@ namespace Scoops
         public static ConfigEntry<float> minPhoneBugInterval;
         public static ConfigEntry<float> maxPhoneBugInterval;
 
+        public static ConfigEntry<int> maxPhoneMasked;
+        public static ConfigEntry<float> chancePhoneMask;
+        public static ConfigEntry<float> minPhoneMaskedInterval;
+        public static ConfigEntry<float> maxPhoneMaskedInterval;
+
         public static ConfigEntry<bool> phonePurchase;
         public static ConfigEntry<int> phonePrice;
 
@@ -126,6 +131,7 @@ namespace Scoops
             );
 
             // Enemies
+            // Hoarding Bugs
             maxPhoneBugs = cfg.Bind(
                     "Enemies.HoardingBugs",
                     "maxPhoneBugs",
@@ -149,6 +155,32 @@ namespace Scoops
                     "maxPhoneBugInterval",
                     100f,
                     "The longest time (in seconds) between calls from each Hoarding Bug."
+            );
+
+            // Masked
+            maxPhoneMasked = cfg.Bind(
+                    "Enemies.Masked",
+                    "maxPhoneMasked",
+                    2,
+                    "Maximum number of Masked that can spawn with phones."
+            );
+            chancePhoneMask = cfg.Bind(
+                    "Enemies.Masked",
+                    "chancePhoneMask",
+                    1f,
+                    "The chance (0 - 1) that a Masked will be spawned with a phone."
+            );
+            minPhoneMaskedInterval = cfg.Bind(
+                    "Enemies.Masked",
+                    "minPhoneMaskedInterval",
+                    20f,
+                    "The shortest time (in seconds) between calls from each Masked."
+            );
+            maxPhoneMaskedInterval = cfg.Bind(
+                    "Enemies.Masked",
+                    "maxPhoneMaskedInterval",
+                    120f,
+                    "The longest time (in seconds) between calls from each Masked."
             );
 
             // Unlockables
