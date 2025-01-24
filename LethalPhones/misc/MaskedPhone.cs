@@ -66,8 +66,19 @@ namespace Scoops.misc
             Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
             this.serverPersonalPhoneNumberUI = serverPhoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
 
-            PhoneNetworkHandler.Instance.RequestClientUpdates();
+            if (IsOwner)
+            {
+                StartCoroutine(CustomizationCoroutine());
+            }
         }
+
+        // wait for a moment before syncing the phone customizations
+        public IEnumerator CustomizationCoroutine()
+        {
+            yield return new WaitForSeconds(2f);
+
+            PhoneNetworkHandler.Instance.RequestClientUpdates();
+        } 
 
         public void SetPhoneServerModelActive(bool enabled = false)
         {
@@ -242,12 +253,8 @@ namespace Scoops.misc
         protected override void ApplySkin(string skinId)
         {
             GameObject skinObject = CustomizationManager.skinCustomizations[skinId];
-            if (skinObject == null) return;
+            if (skinObject == null || serverPhoneModel == null) return;
 
-            if (serverPhoneModel == null)
-            {
-                serverPhoneModel = upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
-            }
             Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
 
             // Main Mat
@@ -263,12 +270,8 @@ namespace Scoops.misc
         protected override void ApplyCharm(string charmId)
         {
             GameObject charmPrefab = CustomizationManager.charmCustomizations[charmId];
-            if (charmPrefab == null) return;
+            if (charmPrefab == null || serverPhoneModel == null) return;
 
-            if (serverPhoneModel == null)
-            {
-                serverPhoneModel = upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
-            }
             Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
 
             if (serverPhoneDisplay.Find("CharmAttach").childCount == 0)
