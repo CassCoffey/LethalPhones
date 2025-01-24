@@ -15,9 +15,11 @@ namespace Scoops
         public static ConfigEntry<bool> removeBaseSkins;
         public static ConfigEntry<bool> removeBaseCharms;
         public static ConfigEntry<bool> removeBaseRingtones;
+        public static ConfigEntry<string> customizationBlacklist;
 
         public static ConfigEntry<bool> hangupOnPutaway;
         public static ConfigEntry<bool> respawnClipboard;
+        public static ConfigEntry<int> maxPhoneNumber;
 
         public static ConfigEntry<int> maxPhoneBugs;
         public static ConfigEntry<float> chancePhoneBug;
@@ -96,6 +98,12 @@ namespace Scoops
                     false,
                     "If true, only the default ringtone from the mod will be shown in the customization screen. Addon mods will still show."
             );
+            customizationBlacklist = cfg.Bind(
+                    "General",
+                    "customizationBlacklist",
+                    "",
+                    "A comma-separated list of lowercase customization names that you do not want loaded. This works for base customizations and addons. Include the bundle name, eg: 'lethalphones.customizations.buggybuddy,lethalphones.customizations.rust'"
+            );
 
             // Balance
             hangupOnPutaway = cfg.Bind(
@@ -110,13 +118,19 @@ namespace Scoops
                     false,
                     "If true, the phonebook clipboard will respawn back on the ship if it is lost or sold."
             );
+            maxPhoneNumber = cfg.Bind(
+                    "Balance",
+                    "maxPhoneNumber",
+                    10000,
+                    "This is the number of phone numbers that can be generated. The default of 10000 means numbers 0000 - 9999. You can lower this if you don't want to have to remember 4 digits, remember that the leading 0s will always be there. So putting 10 here will generate numbers from 0000 - 0009."
+            );
 
             // Enemies
             maxPhoneBugs = cfg.Bind(
-                    "Enemies.HoardingBugs",                                             // Config section
-                    "maxPhoneBugs",                                                     // Key of this config
-                    1,                                                                  // Default value
-                    "Maximum number of Hoarding Bugs that can spawn with phones."       // Description
+                    "Enemies.HoardingBugs",
+                    "maxPhoneBugs",
+                    1,
+                    "Maximum number of Hoarding Bugs that can spawn with phones."
             );
             chancePhoneBug = cfg.Bind(
                     "Enemies.HoardingBugs",

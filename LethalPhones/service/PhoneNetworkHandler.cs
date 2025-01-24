@@ -108,11 +108,20 @@ namespace Scoops.service
         public void CreateNewPhoneNumberServerRpc(ulong phoneId, string skinId, string charmId, string ringtoneId, ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
-            int phoneNumber = Random.Range(0, 10000); ;
+
+            int maxNumber = Config.maxPhoneNumber.Value;
+            if (phoneNumberDict.Count >= maxNumber)
+            {
+                Plugin.Log.LogError("Cannot create a new unique phone number. Not enough numbers remaining. Please increase the maxPhoneNumber config.");
+                Plugin.Log.LogError("maxPhoneNumber = " + maxNumber + ", current Phone Numbers = " + phoneNumberDict.Count);
+                return;
+            }
+
+            int phoneNumber = Random.Range(0, maxNumber);
             string phoneString = phoneNumber.ToString("D4");
             while (phoneNumberDict.ContainsKey(phoneNumber.ToString()))
             {
-                phoneNumber = Random.Range(0, 10000);
+                phoneNumber = Random.Range(0, maxNumber);
                 phoneString = phoneNumber.ToString("D4");
             }
 

@@ -29,6 +29,8 @@ namespace Scoops.customization
         public static Dictionary<string, AudioClip> ringtoneCustomizations = new Dictionary<string, AudioClip>();
         public static List<string> ringtoneIds = new List<string>();
 
+        public static List<string> customizationBlacklist = new List<string>();
+
         private static Transform customizationPanel;
 
         private static GameObject displayPhone;
@@ -77,6 +79,12 @@ namespace Scoops.customization
 
                 string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_skin", "");
 
+                if (customizationBlacklist.Contains(customizationId))
+                {
+                    Plugin.Log.LogInfo("Skipped skin customization: " + customizationId + ", reason: blacklisted");
+                    continue;
+                }
+
                 if (skinCustomizations.ContainsKey(customizationId))
                 {
                     Plugin.Log.LogWarning("Skipped skin customization: " + customizationId + ", reason: duplicate id");
@@ -106,6 +114,12 @@ namespace Scoops.customization
 
                 string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_charm", "");
 
+                if (customizationBlacklist.Contains(customizationId))
+                {
+                    Plugin.Log.LogInfo("Skipped charm customization: " + customizationId + ", reason: blacklisted");
+                    continue;
+                }
+
                 if (charmCustomizations.ContainsKey(customizationId))
                 {
                     Plugin.Log.LogWarning("Skipped charm customization: " + customizationId + ", reason: duplicate id");
@@ -134,6 +148,12 @@ namespace Scoops.customization
                 AudioClip customization = bundle.LoadAsset<AudioClip>(potentialRingtone);
 
                 string customizationId = (bundleName ?? "") + "." + customization.name.ToLower().Replace("_ringtone", "");
+
+                if (customizationBlacklist.Contains(customizationId))
+                {
+                    Plugin.Log.LogInfo("Skipped ringtone customization: " + customizationId + ", reason: blacklisted");
+                    continue;
+                }
 
                 if (ringtoneCustomizations.ContainsKey(customizationId))
                 {
