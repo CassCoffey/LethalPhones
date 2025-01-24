@@ -1,4 +1,5 @@
-﻿using GameNetcodeStuff;
+﻿using Dissonance;
+using GameNetcodeStuff;
 using HarmonyLib;
 using Scoops.misc;
 using Scoops.service;
@@ -77,6 +78,34 @@ namespace Scoops.patch
             if (Config.respawnClipboard.Value)
             {
                 PhoneNetworkHandler.Instance.CheckClipboardRespawn();
+            }
+        }
+
+        [HarmonyPatch("BuyShipUnlockableServerRpc")]
+        [HarmonyPostfix]
+        private static void BuyShipUnlockable(ref StartOfRound __instance, int unlockableID, int newGroupCreditsAmount)
+        {
+            if (!(NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+            {
+                return;
+            }
+            if (PhoneNetworkHandler.Locked.Value && PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+            {
+                PhoneNetworkHandler.Locked.Value = false;
+            }
+        }
+
+        [HarmonyPatch("LoadUnlockables")]
+        [HarmonyPostfix]
+        private static void LoadUnlockables(ref StartOfRound __instance)
+        {
+            if (!(NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+            {
+                return;
+            }
+            if (PhoneNetworkHandler.Locked.Value && PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+            {
+                PhoneNetworkHandler.Locked.Value = false;
             }
         }
 

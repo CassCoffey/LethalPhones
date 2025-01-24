@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 616737230
+CRC: 1752720931
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4f5289393d9d900b02326ebf25628594
+    Hash: 113733a51805f307b79ccb0b00d2456e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 4f5289393d9d900b02326ebf25628594
+    Hash: 113733a51805f307b79ccb0b00d2456e
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -46,6 +46,7 @@ Assets:
 - Assets/Customizations/NokiaToreador_Ringtone.wav
 - Assets/Customizations/Missing_Skin.prefab
 - Assets/Customizations/PhoneCharm_Charm.prefab
+- Assets/Customizations/Lego_Skin.prefab
 - Assets/Customizations/Kitten_Skin.prefab
 - Assets/Customizations/Ribs_Ringtone.wav
 - Assets/Customizations/Reactor_Ringtone.wav
