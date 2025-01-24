@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1752720931
+CRC: 1148329374
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 113733a51805f307b79ccb0b00d2456e
+    Hash: 60813ff48ab45474bebd94eb50c759a1
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 113733a51805f307b79ccb0b00d2456e
+    Hash: 60813ff48ab45474bebd94eb50c759a1
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -93,6 +93,7 @@ Assets:
 - Assets/Customizations/PrideBi_Charm.prefab
 - Assets/Customizations/Default_Skin.prefab
 - Assets/Customizations/Boombox_Ringtone.wav
+- Assets/Customizations/Rust_Skin.prefab
 - Assets/Customizations/Masked_Charm.prefab
 - Assets/Customizations/NokiaMozart_Ringtone.wav
 - Assets/Customizations/Shovel_Charm.prefab
