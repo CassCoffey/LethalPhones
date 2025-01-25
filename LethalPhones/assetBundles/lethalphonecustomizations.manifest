@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1148329374
+CRC: 2621308734
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 60813ff48ab45474bebd94eb50c759a1
+    Hash: 5b33f6ade6eb5bb1a0f1aeb4f81a9454
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 60813ff48ab45474bebd94eb50c759a1
+    Hash: 5b33f6ade6eb5bb1a0f1aeb4f81a9454
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -71,6 +71,7 @@ Assets:
 - Assets/Customizations/PridePride_Charm.prefab
 - Assets/Customizations/EggBigEyes_Charm.prefab
 - Assets/Customizations/EggSmallBeak_Charm.prefab
+- Assets/Customizations/Goku_Skin.prefab
 - Assets/Customizations/Pastel_Skin.prefab
 - Assets/Customizations/Default_Charm.prefab
 - Assets/Customizations/Cruiser_Charm.prefab
@@ -97,4 +98,5 @@ Assets:
 - Assets/Customizations/Masked_Charm.prefab
 - Assets/Customizations/NokiaMozart_Ringtone.wav
 - Assets/Customizations/Shovel_Charm.prefab
+- Assets/Customizations/Redshirt_Skin.prefab
 Dependencies: []
