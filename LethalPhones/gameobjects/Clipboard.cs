@@ -20,6 +20,7 @@ namespace Scoops.misc
             PhoneNetworkHandler.Instance.UpdateClipboardText();
 
             clipboardRenderer = transform.Find("Board").GetComponent<Renderer>();
+            textArea = transform.Find("Paper").Find("PaperCanvas").Find("Text (TMP)").GetComponent<TextMeshProUGUI>();
         }
 
         //tbh I do not like this

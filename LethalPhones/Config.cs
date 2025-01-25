@@ -43,19 +43,19 @@ namespace Scoops
             ringtoneVolume = cfg.Bind(
                     "General",
                     "ringtoneVolume",
-                    0.8f,
+                    0.6f,
                     "The volume of phone ringtones (0-1)."
             );
             voiceSoundMod = cfg.Bind(
                     "General",
                     "voiceSoundMod",
-                    0f,
+                    -0.2f,
                     "All voices on calls have their volume adjusted by this value."
             );
             backgroundSoundMod = cfg.Bind(
                     "General",
                     "backgroundSoundMod",
-                    -0.1f,
+                    -0.4f,
                     "All background noises on calls have their volume adjusted by this value."
             );
             recordingStartDist = cfg.Bind(

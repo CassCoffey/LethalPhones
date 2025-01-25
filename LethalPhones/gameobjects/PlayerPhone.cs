@@ -1033,6 +1033,7 @@ namespace Scoops.misc
                 StopOutgoingRingingServerRpc();
                 outgoingCall = null;
                 StartCoroutine(TemporaryStatusCoroutine("No Answer"));
+                StartCoroutine(BusyHangupCoroutine());
             }
         }
 
@@ -1207,13 +1208,16 @@ namespace Scoops.misc
 
         public static void UpdatePhoneSanity(PlayerControllerB playerController)
         {
-            PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-            if (phone)
+            if (playerController != null)
             {
-                if (phone.activeCall != null)
+                PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+                if (phone)
                 {
-                    playerController.insanitySpeedMultiplier = -3f * phone.connectionQuality.Value;
-                    playerController.isPlayerAlone = false;
+                    if (phone.activeCall != null)
+                    {
+                        playerController.insanitySpeedMultiplier = -3f * phone.connectionQuality.Value;
+                        playerController.isPlayerAlone = false;
+                    }
                 }
             }
         }
