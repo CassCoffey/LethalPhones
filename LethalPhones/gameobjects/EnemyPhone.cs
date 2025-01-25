@@ -1,19 +1,21 @@
 ﻿using Scoops.compatability;
+using Scoops.misc;
 using Scoops.patch;
 using Scoops.service;
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Scoops.misc
+namespace Scoops.gameobjects
 {
-    public class HoardingPhone : PhoneBehavior
+    public class EnemyPhone : PhoneBehavior
     {
-        public HoarderBugAI bug;
-        public GameObject serverPhoneModel;
-
-        private float chitterInterval = 0f;
-        private float randomChitterTime = 3f;
+        public EnemyAI enemy;
 
         private bool preppingCall = false;
         private bool preppingPickup = false;
@@ -26,17 +28,12 @@ namespace Scoops.misc
         {
             base.Start();
 
-            this.bug = transform.parent.GetComponent<HoarderBugAI>();
+            this.enemy = transform.parent.GetComponent<EnemyAI>();
             this.ringAudio = this.GetComponent<AudioSource>();
-
-            GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugServerPhoneModel");
-            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature").Find("Abdomen").Find("Chest").Find("Head").Find("Bone.03").Find("Bone.04").Find("Bone.04_end"), false);
         }
 
-        public void Death()
+        public virtual void Death()
         {
-            HoardingBugPhonePatch.phoneBugs--;
-
             if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
             if (activePickupDelayCoroutine != null) StopCoroutine(activePickupDelayCoroutine);
             if (activeCallDelayCoroutine != null) StopCoroutine(activeCallDelayCoroutine);
@@ -67,7 +64,7 @@ namespace Scoops.misc
 
         public override void Update()
         {
-            if (IsOwner && !bug.isEnemyDead)
+            if (IsOwner && !enemy.isEnemyDead)
             {
                 if (outgoingCall == null && activeCall == null)
                 {
@@ -79,7 +76,7 @@ namespace Scoops.misc
                             activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneBugInterval.Value, Config.maxPhoneBugInterval.Value));
                             StartCoroutine(activeCallDelayCoroutine);
                         }
-                    } 
+                    }
                     else if (!preppingPickup)
                     {
                         activePickupDelayCoroutine = PickupDelayCoroutine(2f);
@@ -88,22 +85,6 @@ namespace Scoops.misc
                 }
             }
 
-            if (activeCall != null && !(MirageCompat.Enabled && MirageCompat.IsEnemyMimicking(bug)))
-            {
-                if (this.chitterInterval >= randomChitterTime)
-                {
-                    this.chitterInterval = 0f;
-                    randomChitterTime = UnityEngine.Random.Range(4f, 8f);
-
-                    RoundManager.PlayRandomClip(bug.creatureVoice, bug.chitterSFX, true, 1f, 0);
-                }
-                else
-                {
-                    this.chitterInterval += Time.deltaTime;
-                }
-            }
-
-
             base.Update();
         }
 
@@ -111,7 +92,7 @@ namespace Scoops.misc
         {
             if (MirageCompat.Enabled && activeCall != null)
             {
-                MirageCompat.UnmuteEnemy(bug);
+                MirageCompat.UnmuteEnemy(enemy);
             }
         }
 
@@ -120,7 +101,7 @@ namespace Scoops.misc
             preppingPickup = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall != null && outgoingCall == null && activeCall == null && !bug.isEnemyDead)
+            if (incomingCall != null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
             {
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
@@ -139,7 +120,7 @@ namespace Scoops.misc
             preppingCall = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall == null && outgoingCall == null && activeCall == null && !bug.isEnemyDead)
+            if (incomingCall == null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
             {
                 CallRandomNumber();
                 if (outgoingCall != null)
@@ -149,7 +130,6 @@ namespace Scoops.misc
                     UpdateCallValues();
                 }
             }
-            
             preppingCall = false;
         }
 
@@ -193,16 +173,16 @@ namespace Scoops.misc
 
         public override void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
         {
-            if (bug == null)
+            if (enemy == null)
             {
                 return;
             }
-            if (bug.creatureVoice == null)
+            if (enemy.creatureVoice == null)
             {
                 return;
             }
 
-            AudioSource currentVoiceChatAudioSource = bug.creatureVoice;
+            AudioSource currentVoiceChatAudioSource = enemy.creatureVoice;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
             OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();
@@ -225,7 +205,7 @@ namespace Scoops.misc
                 highPass.enabled = true;
                 highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, connectionQuality);
             }
-            
+
 
             if (distance != 0f)
             {
@@ -244,7 +224,7 @@ namespace Scoops.misc
 
             currentVoiceChatAudioSource.volume += Config.voiceSoundMod.Value;
 
-            if ((staticMode && hardStatic) || bug.isEnemyDead)
+            if ((staticMode && hardStatic) || enemy.isEnemyDead)
             {
                 currentVoiceChatAudioSource.volume = 0f;
             }
@@ -252,16 +232,16 @@ namespace Scoops.misc
 
         public override void RemovePhoneVoiceEffect()
         {
-            if (bug == null)
+            if (enemy == null)
             {
                 return;
             }
-            if (bug.creatureVoice == null)
+            if (enemy.creatureVoice == null)
             {
                 return;
             }
 
-            AudioSource currentVoiceChatAudioSource = bug.creatureVoice;
+            AudioSource currentVoiceChatAudioSource = enemy.creatureVoice;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
             AudioHighPassFilter highPass = currentVoiceChatAudioSource.GetComponent<AudioHighPassFilter>();
             OccludeAudio occludeAudio = currentVoiceChatAudioSource.GetComponent<OccludeAudio>();

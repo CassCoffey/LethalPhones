@@ -94,7 +94,7 @@
     <!-- Move the plugin to the game's plugin directory and start the game to test it -->
     <Target Condition="'$(CI)' != 'true' And $(StartGame)" Name="StartGame" AfterTargets="PostBuildEvent">
         <PropertyGroup>
-          <PluginVersion>1.1.6</PluginVersion>
+          <PluginVersion>1.1.7</PluginVersion>
         </PropertyGroup>
         <!-- Create a temporary copy of the plugin in the target directory -->
         <!-- This is a workaround because if we copy it directly to the game's plugin directory, an error is thrown because the game is using the plugin -->
