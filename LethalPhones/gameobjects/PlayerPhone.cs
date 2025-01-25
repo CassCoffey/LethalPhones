@@ -53,6 +53,9 @@ namespace Scoops.misc
         private bool previousToggled = false;
         private bool stoppered = false;
 
+        private float phoneEquipAnimSpeed = 0.25f;
+        private float phoneEquipAnimProgress = 1f;
+
         public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
         private phoneVolume currentVolume = phoneVolume.Ring;
 
@@ -111,6 +114,8 @@ namespace Scoops.misc
 
         public void ToggleActive(bool active)
         {
+            phoneEquipAnimProgress = 0f;
+
             if (!active && Config.hangupOnPutaway.Value)
             {
                 HangupButtonPressed();
@@ -140,10 +145,14 @@ namespace Scoops.misc
                 HUDManager.Instance.ChangeControlTip(1, "Hangup Phone : [" + Plugin.InputActionInstance.HangupPhoneKey.bindings[0].ToDisplayString() + "]", false);
                 HUDManager.Instance.ChangeControlTip(2, "Dial Phone : [" + Plugin.InputActionInstance.DialPhoneKey.bindings[0].ToDisplayString() + "]", false);
                 HUDManager.Instance.ChangeControlTip(3, "Toggle Phone Volume : [" + Plugin.InputActionInstance.VolumePhoneKey.bindings[0].ToDisplayString() + "]", false);
+
+                localPhoneModel.GetComponent<Animator>().Play("PhoneFlipOpen");
             } 
             else
             {
                 HUDManager.Instance.ClearControlTips();
+
+                localPhoneModel.GetComponent<Animator>().Play("PhoneFlipClosed");
             }
 
             ToggleServerPhoneModelServerRpc(active);
@@ -211,24 +220,22 @@ namespace Scoops.misc
             ChainIKConstraint RightArmRig = ArmsRig.Find("RightArmPhone(Clone)").GetComponent<ChainIKConstraint>();
             ChainIKConstraint LeftArmRig = ArmsRig.Find("LeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
 
-            if (toggled && LeftArmRig.weight < 0.9f)
+            if (phoneEquipAnimProgress != 1f)
             {
-                LeftArmRig.weight = Mathf.Lerp(LeftArmRig.weight, 1f, 25f * Time.deltaTime);
+                phoneEquipAnimProgress = Mathf.Clamp01(phoneEquipAnimProgress + (Time.deltaTime / phoneEquipAnimSpeed));
 
-                if (LeftArmRig.weight >= 0.9f)
+                if (toggled)
                 {
-                    LeftArmRig.weight = 1f;
+                    LeftArmRig.weight = Mathf.Lerp(0f, 1f, phoneEquipAnimProgress);
                 }
-            }
-            else if (!toggled && LeftArmRig.weight > 0.1f)
-            {
-                LeftArmRig.weight = Mathf.Lerp(LeftArmRig.weight, 0f, 25f * Time.deltaTime);
-
-                if (LeftArmRig.weight <= 0.1f)
+                else if (!toggled)
                 {
-                    LeftArmRig.weight = 0f;
+                    LeftArmRig.weight = Mathf.Lerp(1f, 0f, phoneEquipAnimProgress);
 
-                    SetPhoneLocalModelActive(false);
+                    if (phoneEquipAnimProgress == 1f)
+                    {
+                        SetPhoneLocalModelActive(false);
+                    }
                 }
             }
 
