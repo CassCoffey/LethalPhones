@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using LethalLib.Modules;
 using Scoops.misc;
 using Scoops.service;
 using Unity.Netcode;
@@ -56,6 +57,20 @@ namespace Scoops.patch
                 clipboardPrefab.AddComponent<Clipboard>();
 
                 NetworkManager.Singleton.AddNetworkPrefab(clipboardPrefab);
+
+                if (Config.clipboardPurchase.Value)
+                {
+                    Item clipboardItem = clipboardPrefab.GetComponent<PhysicsProp>().itemProperties;
+                    clipboardItem.spawnPrefab = clipboardPrefab;
+                    
+                    TerminalNode itemInfo = ScriptableObject.CreateInstance<TerminalNode>();
+                    itemInfo.name = "ClipboardInfoNode";
+                    itemInfo.displayText = "A clipboard with everyone's phone numbers written on it. Will auto update if players join or leave.\n\n";
+                    itemInfo.clearPreviousText = true;
+                    itemInfo.maxCharactersToType = 25;
+                    
+                    Items.RegisterShopItem(clipboardItem, null, null, itemInfo, Config.clipboardPrice.Value);
+                }
             }
         }
 

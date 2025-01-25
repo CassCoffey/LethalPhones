@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3628425173
+CRC: 3395612337
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: b3d93d4d59c90484adfa699abe533a3c
+    Hash: 0de38b9276e611978339b0f159530542
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1cb0cac70df76fe9a1b54ad0644bb708
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: b3d93d4d59c90484adfa699abe533a3c
+    Hash: 0de38b9276e611978339b0f159530542
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -202,11 +202,13 @@ Assets:
 - Assets/Textures/icons8-low-connection-96.png
 - Assets/PhoneAudioExternal.prefab
 - Assets/Sounds/PhoneBusy.wav
+- Assets/Sounds/PhoneFlipClosed.wav
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneRing_Caller.wav
 - Assets/Textures/icons8-voicemail-96.png
 - Assets/Sounds/PhoneStaticOne.wav
 - Assets/Sounds/RotaryStopperOptionOne.wav
+- Assets/Sounds/PhoneFlipOpen.wav
 - Assets/SwitchboardContainer.prefab
 - Assets/BugPhonePrefab.prefab
 - Assets/Sounds/PhoneRing_Reciever.wav

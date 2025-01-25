@@ -53,7 +53,7 @@ namespace Scoops.misc
         private bool previousToggled = false;
         private bool stoppered = false;
 
-        private float phoneEquipAnimSpeed = 0.25f;
+        private float phoneEquipAnimSpeed = 0.2f;
         private float phoneEquipAnimProgress = 1f;
 
         public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
@@ -61,12 +61,15 @@ namespace Scoops.misc
 
         protected IEnumerator activeCallTimeoutCoroutine;
 
+        protected IEnumerator closeDelayCoroutine;
+
         public override void Start()
         {
             base.Start();
 
             this.player = transform.parent.GetComponent<PlayerControllerB>();
             this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+            ringAudio.volume = Config.ringtoneVolume.Value;
             this.nonCorpseRingAudio = ringAudio;
 
             this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
@@ -114,16 +117,18 @@ namespace Scoops.misc
 
         public void ToggleActive(bool active)
         {
-            phoneEquipAnimProgress = 0f;
-
             if (!active && Config.hangupOnPutaway.Value)
             {
                 HangupButtonPressed();
             }
-
-            toggled = active;
+            
             if (active)
             {
+                if (closeDelayCoroutine != null) StopCoroutine(closeDelayCoroutine);
+
+                toggled = active;
+                phoneEquipAnimProgress = 0f;
+
                 SetPhoneLocalModelActive(active);
                 personalPhoneNumberUI.text = phoneNumber;
                 
@@ -147,15 +152,31 @@ namespace Scoops.misc
                 HUDManager.Instance.ChangeControlTip(3, "Toggle Phone Volume : [" + Plugin.InputActionInstance.VolumePhoneKey.bindings[0].ToDisplayString() + "]", false);
 
                 localPhoneModel.GetComponent<Animator>().Play("PhoneFlipOpen");
+
+                rotaryAudio.PlayOneShot(PhoneAssetManager.phoneFlipOpen);
             } 
             else
             {
                 HUDManager.Instance.ClearControlTips();
 
                 localPhoneModel.GetComponent<Animator>().Play("PhoneFlipClosed");
+
+                rotaryAudio.PlayOneShot(PhoneAssetManager.phoneFlipClosed);
+
+                if (closeDelayCoroutine != null) StopCoroutine(closeDelayCoroutine);
+                closeDelayCoroutine = CloseDelayCoroutine();
+                StartCoroutine(closeDelayCoroutine);
             }
 
             ToggleServerPhoneModelServerRpc(active);
+        }
+
+        public IEnumerator CloseDelayCoroutine()
+        {
+            yield return new WaitForSeconds(0.15f);
+
+            toggled = false;
+            phoneEquipAnimProgress = 0f;
         }
 
         // Here's where we break some bones

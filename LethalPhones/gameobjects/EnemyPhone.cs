@@ -30,6 +30,7 @@ namespace Scoops.gameobjects
 
             this.enemy = transform.parent.GetComponent<EnemyAI>();
             this.ringAudio = this.GetComponent<AudioSource>();
+            ringAudio.volume = Config.ringtoneVolume.Value;
         }
 
         public virtual void Death()

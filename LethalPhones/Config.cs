@@ -4,6 +4,7 @@ namespace Scoops
 {
     public class Config
     {
+        public static ConfigEntry<float> ringtoneVolume;
         public static ConfigEntry<float> recordingStartDist;
         public static ConfigEntry<float> backgroundVoiceDist;
         public static ConfigEntry<float> eavesdropDist;
@@ -33,10 +34,18 @@ namespace Scoops
 
         public static ConfigEntry<bool> phonePurchase;
         public static ConfigEntry<int> phonePrice;
+        public static ConfigEntry<bool> clipboardPurchase;
+        public static ConfigEntry<int> clipboardPrice;
 
         public Config(ConfigFile cfg)
         {
             // General
+            ringtoneVolume = cfg.Bind(
+                    "General",
+                    "ringtoneVolume",
+                    0.8f,
+                    "The volume of phone ringtones (0-1)."
+            );
             voiceSoundMod = cfg.Bind(
                     "General",
                     "voiceSoundMod",
@@ -195,6 +204,18 @@ namespace Scoops
                     "phonePrice",
                     200,
                     "The cost of unlocking Phones."
+            );
+            clipboardPurchase = cfg.Bind(
+                    "Unlockables",
+                    "clipboardPurchase",
+                    true,
+                    "Can additional Phonebook Clipboards be purchased?"
+            );
+            clipboardPrice = cfg.Bind(
+                    "Unlockables",
+                    "clipboardPrice",
+                    10,
+                    "The cost of Phonebook Clipboards."
             );
         }
     }

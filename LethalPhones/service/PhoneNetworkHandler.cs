@@ -27,7 +27,6 @@ namespace Scoops.service
 
         public PlayerPhone localPhone;
 
-
         public void Start()
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
@@ -98,9 +97,9 @@ namespace Scoops.service
                 }
             }
 
-            if (PhonebookClipboard != null)
+            foreach (Clipboard clipboard in FindObjectsOfType<Clipboard>())
             {
-                PhonebookClipboard.UpdateTextClientRpc(phones.ToArray());
+                clipboard.UpdateTextClientRpc(phones.ToArray());
             }
         }
 
