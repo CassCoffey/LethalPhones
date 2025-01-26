@@ -33,7 +33,16 @@ namespace Scoops.service
             {
                 if (Config.enableStartClipboard.Value)
                 {
-                    SpawnClipboard();
+                    // when loading a save, don't spawn a clipboard if there already is one
+                    Clipboard savedClipboard = FindAnyObjectByType<Clipboard>();
+                    if (!savedClipboard)
+                    {
+                        SpawnClipboard();
+                    } 
+                    else
+                    {
+                        PhonebookClipboard = savedClipboard;
+                    }
                 }
             }
         }
