@@ -12,6 +12,7 @@ namespace Scoops.compatability
             BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("qwbarch.Mirage");
 
         // We need to redo the mirage muting check, minus the inside/outside factory check and hiding checks
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void UnmuteEnemy(EnemyAI enemy)
         {
             MimicVoice mimic = enemy.gameObject.GetComponent<MimicVoice>();
@@ -33,6 +34,7 @@ namespace Scoops.compatability
             mimic.audioStream.AudioSource.mute = false;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static PlayerControllerB GetMimickedPlayer(EnemyAI enemy)
         {
             MimicVoice mimic = enemy.gameObject.GetComponent<MimicVoice>();
@@ -40,6 +42,7 @@ namespace Scoops.compatability
             return mimic.mimicPlayer.MimickingPlayer;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static bool IsEnemyMimicking(EnemyAI enemy)
         {
             MimicVoice mimic = enemy.gameObject.GetComponent<MimicVoice>();

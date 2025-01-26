@@ -17,12 +17,14 @@ namespace Scoops.gameobjects
     {
         public EnemyAI enemy;
 
-        private bool preppingCall = false;
-        private bool preppingPickup = false;
+        protected bool preppingCall = false;
+        protected bool preppingPickup = false;
+        protected bool preppingHangup = false;
 
-        private IEnumerator activePickupDelayCoroutine;
-        private IEnumerator activeCallDelayCoroutine;
-        private IEnumerator activeCallTimeoutCoroutine;
+        protected IEnumerator activePickupDelayCoroutine;
+        protected IEnumerator activeCallDelayCoroutine;
+        protected IEnumerator activeCallTimeoutCoroutine;
+        protected IEnumerator activeCallHangupCoroutine;
 
         public override void Start()
         {
@@ -39,6 +41,7 @@ namespace Scoops.gameobjects
             if (activePickupDelayCoroutine != null) StopCoroutine(activePickupDelayCoroutine);
             if (activeCallDelayCoroutine != null) StopCoroutine(activeCallDelayCoroutine);
             if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
+            if (activeCallHangupCoroutine != null) StopCoroutine(activeCallHangupCoroutine);
 
             if (IsOwner)
             {
@@ -97,7 +100,7 @@ namespace Scoops.gameobjects
             }
         }
 
-        private IEnumerator PickupDelayCoroutine(float time)
+        protected virtual IEnumerator PickupDelayCoroutine(float time)
         {
             preppingPickup = true;
             yield return new WaitForSeconds(time);
@@ -116,7 +119,7 @@ namespace Scoops.gameobjects
             preppingPickup = false;
         }
 
-        private IEnumerator CallDelayCoroutine(float time)
+        protected virtual IEnumerator CallDelayCoroutine(float time)
         {
             preppingCall = true;
             yield return new WaitForSeconds(time);
@@ -134,7 +137,7 @@ namespace Scoops.gameobjects
             preppingCall = false;
         }
 
-        private IEnumerator CallTimeoutCoroutine(string number)
+        protected virtual IEnumerator CallTimeoutCoroutine(string number)
         {
             yield return new WaitForSeconds(14f);
 
@@ -144,6 +147,19 @@ namespace Scoops.gameobjects
                 outgoingCall = null;
                 UpdateCallValues();
             }
+        }
+
+        protected virtual IEnumerator CallHangupCoroutine(string number, float time)
+        {
+            yield return new WaitForSeconds(time);
+
+            if (activeCall == number)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                activeCall = null;
+                UpdateCallValues();
+            }
+            preppingHangup = false;
         }
 
         public void UpdateCallValues()

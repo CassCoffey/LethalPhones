@@ -1,21 +1,48 @@
 ﻿using HarmonyLib;
+using Scoops.compatability;
 using Scoops.customization;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Scoops.patch
 {
     internal class MainMenuPatch
     {
-        [HarmonyPatch(typeof(MenuManager), "Awake")]
+        // Borrowing many methods for menu injection from LethalConfig.
+
+        [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
-        public static void AttachPhoneCustomizationUI(MenuManager __instance)
+        public static void Start(MenuManager __instance)
         {
             if (__instance.isInitScene) return;
 
-            CustomizationManager.SpawnCustomizationGUI();
+            __instance.StartCoroutine(DelayedMainMenuInjection());
+        }
+
+        private static IEnumerator DelayedMainMenuInjection()
+        {
+            yield return new WaitForSeconds(0);
+            InjectToMainMenu();
+        }
+
+        private static void InjectToMainMenu()
+        {
+            Plugin.Log.LogInfo("Injecting phone customization menu into main menu...");
+
+            var menuContainer = GameObject.Find("MenuContainer");
+            if (!menuContainer) return;
+
+            var mainButtonsTransform = menuContainer.transform.Find("MainButtons");
+            if (!mainButtonsTransform) return;
+
+            var quitButton = mainButtonsTransform.Find("QuitButton");
+            if (!quitButton) return;
+
+            CustomizationMenuUtils.InjectMenu(mainButtonsTransform, quitButton.gameObject);
         }
     }
 }

@@ -20,6 +20,7 @@ namespace Scoops
 
         public static ConfigEntry<bool> hangupOnPutaway;
         public static ConfigEntry<bool> respawnClipboard;
+        public static ConfigEntry<bool> enableStartClipboard;
         public static ConfigEntry<int> maxPhoneNumber;
 
         public static ConfigEntry<int> maxPhoneBugs;
@@ -131,6 +132,12 @@ namespace Scoops
                     "respawnClipboard",
                     false,
                     "If true, the phonebook clipboard will respawn back on the ship if it is lost or sold."
+            );
+            enableStartClipboard = cfg.Bind(
+                    "Balance",
+                    "enableStartClipboard",
+                    true,
+                    "If true, one free Phonebook Clipboard will be added to the ship at the start of new saves."
             );
             maxPhoneNumber = cfg.Bind(
                     "Balance",

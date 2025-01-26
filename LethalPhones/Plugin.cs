@@ -15,7 +15,7 @@ namespace Scoops;
 
 public class LethalPhonesInputClass : LcInputActions
 {
-    [InputAction("<Keyboard>/backquote", Name = "Toggle Phone", GamepadPath = "<Gamepad>/leftStickPress")]
+    [InputAction("<Keyboard>/y", Name = "Toggle Phone", GamepadPath = "<Gamepad>/leftStickPress")]
     public InputAction TogglePhoneKey { get; set; }
 
     [InputAction("<Keyboard>/q", Name = "Hangup Phone", GamepadPath = "<Gamepad>/dpad/down")]
@@ -31,7 +31,7 @@ public class LethalPhonesInputClass : LcInputActions
     public InputAction VolumePhoneKey { get; set; }
 }
 
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.1.7")]
+[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.1.8")]
 [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("evaisa.lethallib", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]

@@ -56,6 +56,9 @@ namespace Scoops.misc
         private float phoneEquipAnimSpeed = 0.2f;
         private float phoneEquipAnimProgress = 1f;
 
+        private Transform serverArmsRig;
+        private ChainIKConstraint serverLeftArmRig;
+
         public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
         private phoneVolume currentVolume = phoneVolume.Ring;
 
@@ -77,9 +80,9 @@ namespace Scoops.misc
 
             this.serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
             SetPhoneServerModelActive(false);
-            Transform ServerArmsRig = player.meshContainer.Find("metarig").Find("Rig 1");
-            ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
-            LeftArmRig.weight = 0f;
+            serverArmsRig = player.meshContainer.Find("metarig").Find("Rig 1");
+            serverLeftArmRig = serverArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
+            serverLeftArmRig.weight = 0f;
 
             rotaryAudio = localPhoneModel.GetComponent<AudioSource>();
 
@@ -1060,6 +1063,30 @@ namespace Scoops.misc
             PlayHangupSound();
         }
 
+        private IEnumerator AnimateServerArm(bool active)
+        {
+            while (phoneEquipAnimProgress != 1f)
+            {
+                phoneEquipAnimProgress = Mathf.Clamp01(phoneEquipAnimProgress + (Time.deltaTime / phoneEquipAnimSpeed));
+
+                if (active)
+                {
+                    serverLeftArmRig.weight = Mathf.Lerp(0f, 1f, phoneEquipAnimProgress);
+                }
+                else if (!active)
+                {
+                    serverLeftArmRig.weight = Mathf.Lerp(1f, 0f, phoneEquipAnimProgress);
+
+                    if (phoneEquipAnimProgress == 1f)
+                    {
+                        SetPhoneServerModelActive(false);
+                    }
+                }
+
+                yield return null;
+            }
+        }
+
         [ServerRpc]
         public void ToggleServerPhoneModelServerRpc(bool active)
         {
@@ -1074,20 +1101,18 @@ namespace Scoops.misc
                 return;
             }
 
-            SetPhoneServerModelActive(active);
-
-            Transform ServerArmsRig = player.meshContainer.Find("metarig").Find("Rig 1");
-            ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
-
             if (active)
             {
-                LeftArmRig.weight = 1f;
-            } else
-            {
-                LeftArmRig.weight = 0f;
-
-                SetPhoneLocalModelActive(false);
+                SetPhoneServerModelActive(active);
+                serverPhoneModel.GetComponent<Animator>().Play("PhoneFlipOpen");
             }
+            else
+            {
+                serverPhoneModel.GetComponent<Animator>().Play("PhoneFlipClosed");
+            }
+
+            phoneEquipAnimProgress = 0f;
+            StartCoroutine(AnimateServerArm(active));
         }
 
         [ServerRpc]

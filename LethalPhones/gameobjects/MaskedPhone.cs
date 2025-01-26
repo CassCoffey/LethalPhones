@@ -136,6 +136,12 @@ namespace Scoops.misc
                         ToggleServerPhoneModelServerRpc(false);
                     }
                 }
+                else if (activeCall != null && !preppingHangup)
+                {
+                    preppingHangup = true;
+                    activeCallHangupCoroutine = CallHangupCoroutine(activeCall, 30f);
+                    StartCoroutine(activeCallHangupCoroutine);
+                }
             }
 
             base.Update();
@@ -168,6 +174,58 @@ namespace Scoops.misc
             if (serverPhoneDisplay.Find("CharmAttach").childCount == 0)
             {
                 GameObject.Instantiate(charmPrefab, serverPhoneDisplay.Find("CharmAttach"));
+            }
+        }
+
+        protected override IEnumerator PickupDelayCoroutine(float time)
+        {
+            preppingPickup = true;
+            yield return new WaitForSeconds(time);
+
+            if (incomingCall != null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
+            {
+                activeCall = incomingCall;
+                activeCaller = incomingCaller;
+                incomingCall = null;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
+                StopRingingServerRpc();
+                PlayPickupSoundServerRpc();
+                UpdateCallValues();
+                ToggleServerPhoneModelServerRpc(true);
+            }
+
+            preppingPickup = false;
+        }
+
+        protected override IEnumerator CallDelayCoroutine(float time)
+        {
+            preppingCall = true;
+            yield return new WaitForSeconds(time);
+
+            if (incomingCall == null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
+            {
+                CallRandomNumber();
+                if (outgoingCall != null)
+                {
+                    activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall);
+                    StartCoroutine(activeCallTimeoutCoroutine);
+                    UpdateCallValues();
+                    ToggleServerPhoneModelServerRpc(true);
+                }
+            }
+            preppingCall = false;
+        }
+
+        protected override IEnumerator CallTimeoutCoroutine(string number)
+        {
+            yield return new WaitForSeconds(14f);
+
+            if (outgoingCall == number)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                outgoingCall = null;
+                UpdateCallValues();
+                ToggleServerPhoneModelServerRpc(false);
             }
         }
 

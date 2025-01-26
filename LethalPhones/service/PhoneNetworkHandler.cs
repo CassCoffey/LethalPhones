@@ -31,7 +31,10 @@ namespace Scoops.service
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                SpawnClipboard();
+                if (Config.enableStartClipboard.Value)
+                {
+                    SpawnClipboard();
+                }
             }
         }
 
@@ -77,7 +80,7 @@ namespace Scoops.service
 
         public void CheckClipboardRespawn()
         {
-            if (PhonebookClipboard == null)
+            if (Config.enableStartClipboard.Value && PhonebookClipboard == null)
             {
                 SpawnClipboard();
                 UpdateClipboardText();

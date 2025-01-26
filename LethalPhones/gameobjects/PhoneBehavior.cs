@@ -83,21 +83,11 @@ namespace Scoops.misc
 
                 if (audioSourcesInRange.Count > 0)
                 {
-                    foreach (AudioSourceStorage storage in this.audioSourcesInRange)
-                    {
-                        storage.Reset();
-                    }
-
-                    this.audioSourcesInRange.Clear();
+                    ResetAllAudioSources();
                 }
                 if (modifiedVoices.Count > 0)
                 {
-                    foreach (PhoneBehavior modifiedPhone in modifiedVoices)
-                    {
-                        modifiedPhone.RemovePhoneVoiceEffect();
-                    }
-
-                    this.modifiedVoices.Clear();
+                    ResetAllPlayerVoices();
                 }
 
                 spectatorClear = false;
@@ -230,6 +220,8 @@ namespace Scoops.misc
                 listenDist = Vector3.Distance(localPlayer.transform.position, callerPhone.transform.position);
                 if (listenDist > Config.eavesdropDist.Value)
                 {
+                    // We are out of range, get these sources cleared
+                    ResetAllAudioSources();
                     return;
                 }
                 Vector3 directionTo = callerPhone.transform.position - localPlayer.transform.position;
@@ -266,6 +258,16 @@ namespace Scoops.misc
             }
         }
 
+        protected void ResetAllAudioSources()
+        {
+            foreach (AudioSourceStorage storage in this.audioSourcesInRange)
+            {
+                storage.Reset();
+            }
+
+            this.audioSourcesInRange.Clear();
+        }
+
         protected virtual bool IsBeingSpectated()
         {
             return false;
@@ -297,6 +299,8 @@ namespace Scoops.misc
                     listenDist = Vector3.Distance(localPlayer.transform.position, transform.position);
                     if (listenDist > Config.eavesdropDist.Value)
                     {
+                        // We are out of range, get these sources cleared
+                        ResetAllPlayerVoices();
                         return;
                     }
                     Vector3 directionTo = transform.position - localPlayer.transform.position;
@@ -360,6 +364,16 @@ namespace Scoops.misc
                     }
                 }
             }
+        }
+
+        protected void ResetAllPlayerVoices()
+        {
+            foreach (PhoneBehavior modifiedPhone in modifiedVoices)
+            {
+                modifiedPhone.RemovePhoneVoiceEffect();
+            }
+
+            this.modifiedVoices.Clear();
         }
 
         protected virtual void ApplySkin(string skinId)
@@ -811,12 +825,7 @@ namespace Scoops.misc
             {
                 if (audioSourcesInRange.Count > 0)
                 {
-                    foreach (AudioSourceStorage storage in this.audioSourcesInRange)
-                    {
-                        storage.Reset();
-                    }
-
-                    this.audioSourcesInRange.Clear();
+                    ResetAllAudioSources();
                 }
             }
 
@@ -824,12 +833,7 @@ namespace Scoops.misc
             {
                 if (modifiedVoices.Count > 0)
                 {
-                    foreach (PhoneBehavior modifiedPhone in modifiedVoices)
-                    {
-                        modifiedPhone.RemovePhoneVoiceEffect();
-                    }
-
-                    this.modifiedVoices.Clear();
+                    ResetAllPlayerVoices();
                 }
             }
 
