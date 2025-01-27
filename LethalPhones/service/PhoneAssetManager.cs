@@ -1,4 +1,5 @@
 ﻿
+using LethalLib.Extras;
 using LethalLib.Modules;
 using Scoops.misc;
 using System;
@@ -208,11 +209,11 @@ namespace Scoops.service
             PersonalPhones.unlockableType = 1;
             PersonalPhones.maxNumber = 1;
 
-            TerminalNode itemInfo = ScriptableObject.CreateInstance<TerminalNode>();
-            itemInfo.name = "PersonalPhonesInfoNode";
-            itemInfo.displayText = "Personal Phones for the whole crew! These do not take up an item slot or require battery, but tend to be difficult to work with in stressful situations.\n\n";
-            itemInfo.clearPreviousText = true;
-            itemInfo.maxCharactersToType = 25;
+            TerminalNode phoneInfo = ScriptableObject.CreateInstance<TerminalNode>();
+            phoneInfo.name = "PersonalPhonesInfoNode";
+            phoneInfo.displayText = "Personal Phones for the whole crew! These do not take up an item slot or require battery, but tend to be difficult to work with in stressful situations.\n\n";
+            phoneInfo.clearPreviousText = true;
+            phoneInfo.maxCharactersToType = 25;
 
             if (!Config.phonePurchase.Value)
             {
@@ -221,7 +222,28 @@ namespace Scoops.service
             } 
             else
             {
-                Unlockables.RegisterUnlockable(PersonalPhones, StoreType.ShipUpgrade, null, null, itemInfo, Config.phonePrice.Value);
+                Unlockables.RegisterUnlockable(PersonalPhones, StoreType.ShipUpgrade, null, null, phoneInfo, Config.phonePrice.Value);
+            }
+
+            if (Config.switchboardPurchase.Value)
+            {
+                UnlockableItem Switchboard = new UnlockableItem();
+                Switchboard.prefabObject = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer");
+                Switchboard.unlockableName = "Phone Switchboard";
+                Switchboard.IsPlaceable = true;
+                Switchboard.spawnPrefab = true;
+                Switchboard.alwaysInStock = true;
+                Switchboard.canBeStored = true;
+                Switchboard.unlockableType = 1;
+                Switchboard.maxNumber = 1;
+
+                TerminalNode switchboardInfo = ScriptableObject.CreateInstance<TerminalNode>();
+                switchboardInfo.name = "PhoneSwitchboardInfoNode";
+                switchboardInfo.displayText = "A Switchboard for your ship. Enjoy easy routing and management of your co-workers' Personal Phones from the safety of your ship.\n\n";
+                switchboardInfo.clearPreviousText = true;
+                switchboardInfo.maxCharactersToType = 25;
+
+                Unlockables.RegisterUnlockable(Switchboard, StoreType.ShipUpgrade, null, null, switchboardInfo, Config.switchboardPrice.Value);
             }
 
             customizationGUI = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneCustomization_GUI");

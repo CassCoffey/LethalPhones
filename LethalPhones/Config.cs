@@ -37,6 +37,8 @@ namespace Scoops
         public static ConfigEntry<int> phonePrice;
         public static ConfigEntry<bool> clipboardPurchase;
         public static ConfigEntry<int> clipboardPrice;
+        public static ConfigEntry<bool> switchboardPurchase;
+        public static ConfigEntry<int> switchboardPrice;
 
         public Config(ConfigFile cfg)
         {
@@ -223,6 +225,18 @@ namespace Scoops
                     "clipboardPrice",
                     10,
                     "The cost of Phonebook Clipboards."
+            );
+            switchboardPurchase = cfg.Bind(
+                    "Unlockables",
+                    "switchboardPurchase",
+                    true,
+                    "Can the switchboard be purchased?"
+            );
+            switchboardPrice = cfg.Bind(
+                    "Unlockables",
+                    "switchboardPrice",
+                    500,
+                    "The cost of the Phone Switchboard."
             );
         }
     }
