@@ -174,8 +174,6 @@ namespace Scoops.customization
 
         public static void SpawnCustomizationGUI()
         {
-            if (skinCustomizations.Count == 0 && charmCustomizations.Count == 0) return; // Don't spawn the ui if no cosmetics are loaded
-
             GameObject customizationGUI = GameObject.Instantiate(PhoneAssetManager.customizationGUI);
 
             customizationPanel = customizationGUI.transform.Find("CustomizationCanvas").Find("CustomizationPanel");

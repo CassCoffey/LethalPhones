@@ -62,12 +62,31 @@ namespace Scoops.service
             phoneNumberDict = new Dictionary<string, ulong>();
             phoneObjectDict = new Dictionary<string, PhoneBehavior>();
 
-            if (NetworkManager.Singleton.IsServer)
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                Locked.Value = !PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer;
+                CheckPhoneUnlock();
             }
 
             base.OnNetworkSpawn();
+        }
+
+        public static void CheckPhoneUnlock()
+        {
+            if (!Config.phonePurchase.Value)
+            {
+                Locked.Value = false;
+                return;
+            }
+
+            bool locked = true;
+            foreach (UnlockableItem unlockable in StartOfRound.Instance.unlockablesList.unlockables)
+            {
+                if (unlockable.unlockableName == PhoneAssetManager.PHONE_UNLOCK_NAME)
+                {
+                    locked = !unlockable.hasBeenUnlockedByPlayer;
+                }
+            }
+            Locked.Value = locked;
         }
 
         public void CreateNewPhone(ulong phoneId, string skinId, string charmId, string ringtoneId)

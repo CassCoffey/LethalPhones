@@ -75,24 +75,18 @@ namespace Scoops.patch
             {
                 return;
             }
-            if (Config.respawnClipboard.Value)
-            {
-                PhoneNetworkHandler.Instance.CheckClipboardRespawn();
-            }
+            PhoneNetworkHandler.CheckPhoneUnlock();
         }
 
-        [HarmonyPatch("BuyShipUnlockableServerRpc")]
+        [HarmonyPatch("UnlockShipObject")]
         [HarmonyPostfix]
-        private static void BuyShipUnlockable(ref StartOfRound __instance, int unlockableID, int newGroupCreditsAmount)
+        private static void UnlockShipObject(ref StartOfRound __instance, int unlockableID)
         {
             if (!(NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
             {
                 return;
             }
-            if (PhoneNetworkHandler.Locked.Value && PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
-            {
-                PhoneNetworkHandler.Locked.Value = false;
-            }
+            PhoneNetworkHandler.CheckPhoneUnlock();
         }
 
         [HarmonyPatch("LoadUnlockables")]
@@ -103,10 +97,18 @@ namespace Scoops.patch
             {
                 return;
             }
-            if (PhoneNetworkHandler.Locked.Value && PhoneAssetManager.PersonalPhones.hasBeenUnlockedByPlayer)
+            PhoneNetworkHandler.CheckPhoneUnlock();
+        }
+
+        [HarmonyPatch("ResetShip")]
+        [HarmonyPostfix]
+        private static void ResetShip(ref StartOfRound __instance)
+        {
+            if (!(NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
             {
-                PhoneNetworkHandler.Locked.Value = false;
+                return;
             }
+            PhoneNetworkHandler.CheckPhoneUnlock();
         }
 
         public static List<AudioSource> GetAllAudioSourcesInRange(Vector3 position)

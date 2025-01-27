@@ -20,6 +20,8 @@ namespace Scoops.patch
         {
             if (__instance.isInitScene) return;
 
+            if (CustomizationManager.skinCustomizations.Count == 1 && CustomizationManager.charmCustomizations.Count == 1 && CustomizationManager.ringtoneCustomizations.Count == 1) return; // Don't spawn the ui if no cosmetics are loaded
+
             __instance.StartCoroutine(DelayedMainMenuInjection());
         }
 
