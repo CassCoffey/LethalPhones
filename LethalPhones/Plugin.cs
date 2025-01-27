@@ -31,7 +31,14 @@ public class LethalPhonesInputClass : LcInputActions
     public InputAction VolumePhoneKey { get; set; }
 }
 
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, "1.1.9")]
+public static class PluginInformation
+{
+    public const string PLUGIN_GUID = "LethalPhones";
+    public const string PLUGIN_NAME = "LethalPhones";
+    public const string PLUGIN_VERSION = "1.1.9";
+}
+
+[BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
 [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("evaisa.lethallib", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
@@ -48,7 +55,7 @@ public class Plugin : BaseUnityPlugin
 
     public static string customizationSavePath;
 
-    private readonly Harmony _harmony = new(PluginInfo.PLUGIN_GUID);
+    private readonly Harmony _harmony = new(PluginInformation.PLUGIN_GUID);
 
     internal static LethalPhonesInputClass InputActionInstance = new LethalPhonesInputClass();
 
@@ -59,6 +66,8 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
+        Log.LogInfo("Loading LethalPhones Version " + PluginInformation.PLUGIN_VERSION);
+
         NetcodePatcher(); // ONLY RUN ONCE
 
         var dllFolderPath = System.IO.Path.GetDirectoryName(Info.Location);
