@@ -75,7 +75,10 @@ namespace Scoops.patch
             {
                 return;
             }
-            PhoneNetworkHandler.CheckPhoneUnlock();
+            if (Config.respawnClipboard.Value)
+            {
+                PhoneNetworkHandler.Instance.CheckClipboardRespawn();
+            }
         }
 
         [HarmonyPatch("UnlockShipObject")]
