@@ -35,11 +35,11 @@ namespace Scoops.service
                 {
                     // when loading a save, don't spawn a clipboard if there already is one
                     Clipboard savedClipboard = FindAnyObjectByType<Clipboard>();
-                    if (!savedClipboard)
+                    if (!savedClipboard && StartOfRound.Instance.gameStats.daysSpent == 0)
                     {
                         SpawnClipboard();
-                    } 
-                    else
+                    }
+                    else if (savedClipboard)
                     {
                         PhonebookClipboard = savedClipboard;
                     }

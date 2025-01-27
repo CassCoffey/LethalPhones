@@ -371,9 +371,9 @@ public class PlayerPhonePatch
         }
     }
 
-    [HarmonyPatch("ScrollMouse_performed")]
+    [HarmonyPatch("SwitchToItemSlot")]
     [HarmonyPostfix]
-    private static void ScrollMouse_performed(ref PlayerControllerB __instance)
+    private static void ScrollMouse_SwitchToItemSlotperformed(ref PlayerControllerB __instance)
     {
         if ((!__instance.IsOwner || !__instance.isPlayerControlled || (__instance.IsServer && !__instance.isHostPlayerObject)) && !__instance.isTestingPlayer)
         {
