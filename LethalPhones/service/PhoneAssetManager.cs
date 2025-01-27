@@ -193,35 +193,30 @@ namespace Scoops.service
 
         public static GameObject customizationGUI;
 
-        public static UnlockableItem PersonalPhones;
+        public const string PHONE_UNLOCK_NAME = "Personal Phones";
 
         public static void Init()
         {
             Plugin.Log.LogInfo($"Loading Assets...");
 
-            PersonalPhones = new UnlockableItem();
-            PersonalPhones.unlockableName = "Personal Phones";
-            PersonalPhones.IsPlaceable = false;
-            PersonalPhones.spawnPrefab = false;
-            PersonalPhones.alwaysInStock = true;
-            PersonalPhones.canBeStored = false;
-            PersonalPhones.unlockableType = 1;
-            PersonalPhones.maxNumber = 1;
-
-            TerminalNode itemInfo = ScriptableObject.CreateInstance<TerminalNode>();
-            itemInfo.name = "PersonalPhonesInfoNode";
-            itemInfo.displayText = "Personal Phones for the whole crew! These do not take up an item slot or require battery, but tend to be difficult to work with in stressful situations.\n\n";
-            itemInfo.clearPreviousText = true;
-            itemInfo.maxCharactersToType = 25;
-
-            if (!Config.phonePurchase.Value)
+            if (Config.phonePurchase.Value)
             {
-                PersonalPhones.hasBeenUnlockedByPlayer = true;
-                PersonalPhones.alreadyUnlocked = true;
-            } 
-            else
-            {
-                Unlockables.RegisterUnlockable(PersonalPhones, StoreType.ShipUpgrade, null, null, itemInfo, Config.phonePrice.Value);
+                UnlockableItem personalPhones = new UnlockableItem();
+                personalPhones.unlockableName = PHONE_UNLOCK_NAME;
+                personalPhones.IsPlaceable = false;
+                personalPhones.spawnPrefab = false;
+                personalPhones.alwaysInStock = true;
+                personalPhones.canBeStored = false;
+                personalPhones.unlockableType = 1;
+                personalPhones.maxNumber = 1;
+
+                TerminalNode itemInfo = ScriptableObject.CreateInstance<TerminalNode>();
+                itemInfo.name = "PersonalPhonesInfoNode";
+                itemInfo.displayText = "Personal Phones for the whole crew! These do not take up an item slot or require battery, but tend to be difficult to work with in stressful situations.\n\n";
+                itemInfo.clearPreviousText = true;
+                itemInfo.maxCharactersToType = 25;
+
+                Unlockables.RegisterUnlockable(personalPhones, StoreType.ShipUpgrade, null, null, itemInfo, Config.phonePrice.Value);
             }
 
             customizationGUI = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneCustomization_GUI");
