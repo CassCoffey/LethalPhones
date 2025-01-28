@@ -220,27 +220,6 @@ namespace Scoops.service
                 Unlockables.RegisterUnlockable(personalPhones, StoreType.ShipUpgrade, null, null, itemInfo, Config.phonePrice.Value);
             }
 
-            if (Config.switchboardPurchase.Value)
-            {
-                UnlockableItem Switchboard = new UnlockableItem();
-                Switchboard.prefabObject = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer");
-                Switchboard.unlockableName = "Phone Switchboard";
-                Switchboard.IsPlaceable = true;
-                Switchboard.spawnPrefab = true;
-                Switchboard.alwaysInStock = true;
-                Switchboard.canBeStored = true;
-                Switchboard.unlockableType = 1;
-                Switchboard.maxNumber = 1;
-
-                TerminalNode switchboardInfo = ScriptableObject.CreateInstance<TerminalNode>();
-                switchboardInfo.name = "PhoneSwitchboardInfoNode";
-                switchboardInfo.displayText = "A Switchboard for your ship. Enjoy easy routing and management of your co-workers' Personal Phones from the safety of your ship.\n\n";
-                switchboardInfo.clearPreviousText = true;
-                switchboardInfo.maxCharactersToType = 25;
-
-                Unlockables.RegisterUnlockable(Switchboard, StoreType.ShipUpgrade, null, null, switchboardInfo, Config.switchboardPrice.Value);
-            }
-
             customizationGUI = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneCustomization_GUI");
 
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");

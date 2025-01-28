@@ -1,6 +1,7 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
 using LethalLib.Modules;
+using Scoops.gameobjects;
 using Scoops.misc;
 using Scoops.patch;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ namespace Scoops.service
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
+        public SwitchboardPhone switchboard;
 
         public void Start()
         {
@@ -89,6 +91,11 @@ namespace Scoops.service
             Locked.Value = locked;
         }
 
+        public void RegisterSwitchboard(ulong switchboardId)
+        {
+            RegisterSwitchboardServerRpc(switchboardId);
+        }
+
         public void CreateNewPhone(ulong phoneId, string skinId, string charmId, string ringtoneId)
         {
             CreateNewPhoneNumberServerRpc(phoneId, skinId, charmId, ringtoneId);
@@ -135,6 +142,20 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
+        public void RegisterSwitchboardServerRpc(ulong SwitchboardId, ServerRpcParams serverRpcParams = default)
+        {
+            string number = Config.switchboardNumber.Value.ToString();
+
+            PhoneBehavior switchboard = GetNetworkObject(SwitchboardId).GetComponent<PhoneBehavior>();
+            Plugin.Log.LogInfo($"New switchboard for object: " + SwitchboardId);
+
+            phoneNumberDict.Add(number, switchboard.NetworkObjectId);
+            phoneObjectDict.Add(number, switchboard);
+
+            switchboard.SetNewPhoneNumberClientRpc(number);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
         public void CreateNewPhoneNumberServerRpc(ulong phoneId, string skinId, string charmId, string ringtoneId, ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
@@ -149,7 +170,7 @@ namespace Scoops.service
 
             int phoneNumber = Random.Range(0, maxNumber);
             string phoneString = phoneNumber.ToString("D4");
-            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()))
+            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()) || phoneNumber == Config.switchboardNumber.Value)
             {
                 phoneNumber = Random.Range(0, maxNumber);
                 phoneString = phoneNumber.ToString("D4");
