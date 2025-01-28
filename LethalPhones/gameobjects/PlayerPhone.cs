@@ -71,33 +71,33 @@ namespace Scoops.misc
             base.Start();
 
             this.player = transform.parent.GetComponent<PlayerControllerB>();
-            this.ringAudio = player.transform.Find("Audios").Find("PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
+            this.ringAudio = player.transform.Find("Audios/PhoneAudioExternal(Clone)").GetComponent<AudioSource>();
             ringAudio.volume = Config.ringtoneVolume.Value;
             this.nonCorpseRingAudio = ringAudio;
 
-            this.localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
+            this.localPhoneModel = player.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)").gameObject;
             SetPhoneLocalModelActive(false);
 
-            this.serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+            this.serverPhoneModel = player.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)").gameObject;
             SetPhoneServerModelActive(false);
-            serverArmsRig = player.meshContainer.Find("metarig").Find("Rig 1");
+            serverArmsRig = player.meshContainer.Find("metarig/Rig 1");
             serverLeftArmRig = serverArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
             serverLeftArmRig.weight = 0f;
 
             rotaryAudio = localPhoneModel.GetComponent<AudioSource>();
 
-            this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("InteractionNode");
+            this.localPhoneInteractionNode = localPhoneModel.transform.Find("LocalPhoneModel/InteractionNode");
             localPhoneInteractionBase = new Vector3(localPhoneInteractionNode.localPosition.x, localPhoneInteractionNode.localPosition.y, localPhoneInteractionNode.localPosition.z);
-            this.localPhoneStopperNode = localPhoneModel.transform.Find("LocalPhoneModel").Find("StopperNode");
+            this.localPhoneStopperNode = localPhoneModel.transform.Find("LocalPhoneModel/StopperNode");
 
-            Transform phoneCanvas = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
+            Transform phoneCanvas = localPhoneModel.transform.Find("LocalPhoneModel/PhoneTop/PhoneCanvas");
             this.dialingNumberUI = phoneCanvas.Find("DialingNumber").GetComponent<TextMeshProUGUI>();
             dialingNumberUI.text = "----";
             this.phoneStatusUI = phoneCanvas.Find("PhoneState").GetComponent<TextMeshProUGUI>();
             phoneStatusUI.text = "";
             this.personalPhoneNumberUI = phoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
 
-            Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
+            Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneTop/PhoneCanvas");
             this.serverPersonalPhoneNumberUI = serverPhoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
 
             this.incomingCallUI = phoneCanvas.Find("IncomingCall").GetComponent<Image>();
@@ -110,7 +110,7 @@ namespace Scoops.misc
             this.volumeSilentUI = phoneCanvas.Find("Silent").GetComponent<Image>();
             this.volumeVibrateUI = phoneCanvas.Find("Vibrate").GetComponent<Image>();
 
-            localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial");
+            localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel/PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
             foreach (Transform child in localPhoneDial)
             {
@@ -187,7 +187,7 @@ namespace Scoops.misc
         {
             if (IsOwner && toggled && !Config.hideHands.Value)
             {
-                Transform handL = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+                Transform handL = player.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L");
                 Transform fingerL1 = handL.Find("finger1.L");
                 fingerL1.localEulerAngles = new Vector3(36.1390076f, 275.679993f, 76.3550034f);
                 fingerL1.Find("finger1.L.001").localEulerAngles = new Vector3(284.725983f, 350.876007f, 10.5490074f);
@@ -206,7 +206,7 @@ namespace Scoops.misc
 
                 if (Plugin.InputActionInstance.DialPhoneKey.IsPressed())
                 {
-                    Transform handR = player.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
+                    Transform handR = player.localArmsTransform.Find("shoulder.R/arm.R_upper/arm.R_lower/hand.R");
                     Transform fingerR1 = handR.Find("finger1.R");
                     fingerR1.localEulerAngles = new Vector3(32.4089966f, 57.2649841f, 319.315002f);
                     fingerR1.Find("finger1.R.001").localEulerAngles = new Vector3(288.475983f, 341.432007f, 4.1400032f);
@@ -473,29 +473,29 @@ namespace Scoops.misc
                 {
                     mainRenderer.enabled = enabled;
                 }
-                SkinnedMeshRenderer antennaRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
+                SkinnedMeshRenderer antennaRenderer = localPhoneModel.transform.Find("LocalPhoneModel/PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
                 if (antennaRenderer != null)
                 {
                     antennaRenderer.enabled = enabled;
                 }
-                MeshRenderer topRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
+                MeshRenderer topRenderer = localPhoneModel.transform.Find("LocalPhoneModel/PhoneTop").GetComponent<MeshRenderer>();
                 if (topRenderer != null)
                 {
                     topRenderer.enabled = enabled;
                 }
-                MeshRenderer dialRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
+                MeshRenderer dialRenderer = localPhoneModel.transform.Find("LocalPhoneModel/PhoneDial").GetComponent<MeshRenderer>();
                 if (dialRenderer != null)
                 {
                     dialRenderer.enabled = enabled;
                 }
 
-                Canvas canvasRenderer = localPhoneModel.transform.Find("LocalPhoneModel").Find("PhoneTop").Find("PhoneCanvas").GetComponent<Canvas>();
+                Canvas canvasRenderer = localPhoneModel.transform.Find("LocalPhoneModel/PhoneTop/PhoneCanvas").GetComponent<Canvas>();
                 if (canvasRenderer != null)
                 {
                     canvasRenderer.enabled = enabled;
                 }
 
-                GameObject charmPoint = localPhoneModel.transform.Find("LocalPhoneModel").Find("CharmAttach").gameObject;
+                GameObject charmPoint = localPhoneModel.transform.Find("LocalPhoneModel/CharmAttach").gameObject;
                 if (charmPoint != null)
                 {
                     charmPoint.SetActive(enabled);
@@ -512,29 +512,29 @@ namespace Scoops.misc
                 {
                     mainRenderer.enabled = enabled;
                 }
-                SkinnedMeshRenderer antennaRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
+                SkinnedMeshRenderer antennaRenderer = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneAntenna").GetComponent<SkinnedMeshRenderer>();
                 if (antennaRenderer != null)
                 {
                     antennaRenderer.enabled = enabled;
                 }
-                MeshRenderer topRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").GetComponent<MeshRenderer>();
+                MeshRenderer topRenderer = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneTop").GetComponent<MeshRenderer>();
                 if (topRenderer != null)
                 {
                     topRenderer.enabled = enabled;
                 }
-                MeshRenderer dialRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneDial").GetComponent<MeshRenderer>();
+                MeshRenderer dialRenderer = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneDial").GetComponent<MeshRenderer>();
                 if (dialRenderer != null)
                 {
                     dialRenderer.enabled = enabled;
                 }
 
-                Canvas canvasRenderer = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas").GetComponent<Canvas>();
+                Canvas canvasRenderer = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneTop/PhoneCanvas").GetComponent<Canvas>();
                 if (canvasRenderer != null)
                 {
                     canvasRenderer.enabled = enabled;
                 }
 
-                GameObject charmPoint = serverPhoneModel.transform.Find("ServerPhoneModel").Find("CharmAttach").gameObject;
+                GameObject charmPoint = serverPhoneModel.transform.Find("ServerPhoneModel/CharmAttach").gameObject;
                 if (charmPoint != null)
                 {
                     charmPoint.SetActive(enabled);
@@ -825,7 +825,7 @@ namespace Scoops.misc
             {
                 if (localPhoneModel == null)
                 {
-                    localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
+                    localPhoneModel = player.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)").gameObject;
                 }
                 Transform localPhoneDisplay = localPhoneModel.transform.Find("LocalPhoneModel");
 
@@ -842,7 +842,7 @@ namespace Scoops.misc
             {
                 if (serverPhoneModel == null)
                 {
-                    serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+                    serverPhoneModel = player.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)").gameObject;
                 }
                 Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
 
@@ -866,7 +866,7 @@ namespace Scoops.misc
             {
                 if (localPhoneModel == null)
                 {
-                    localPhoneModel = player.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("LocalPhoneModel(Clone)").gameObject;
+                    localPhoneModel = player.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)").gameObject;
                 }
                 Transform localPhoneDisplay = localPhoneModel.transform.Find("LocalPhoneModel");
 
@@ -879,7 +879,7 @@ namespace Scoops.misc
             {
                 if (serverPhoneModel == null)
                 {
-                    serverPhoneModel = player.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L").Find("ServerPhoneModel(Clone)").gameObject;
+                    serverPhoneModel = player.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)").gameObject;
                 }
                 Transform serverPhoneDisplay = serverPhoneModel.transform.Find("ServerPhoneModel");
 

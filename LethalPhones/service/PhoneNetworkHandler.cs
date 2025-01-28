@@ -27,7 +27,6 @@ namespace Scoops.service
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
-        public SwitchboardPhone switchboard;
 
         public void Start()
         {

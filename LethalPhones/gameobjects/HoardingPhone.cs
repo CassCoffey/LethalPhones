@@ -23,7 +23,7 @@ namespace Scoops.misc
             bug = (HoarderBugAI)enemy;
 
             GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugServerPhoneModel");
-            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature").Find("Abdomen").Find("Chest").Find("Head").Find("Bone.03").Find("Bone.04").Find("Bone.04_end"), false);
+            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature/Abdomen/Chest/Head/Bone.03/Bone.04/Bone.04_end"), false);
         }
 
         public override void Death()
