@@ -120,6 +120,16 @@ namespace Scoops.misc
             }
         }
 
+        public virtual string GetPhoneName()
+        {
+            return "???";
+        }
+
+        public bool IsBusy()
+        {
+            return outgoingCall != null || incomingCall != null || activeCall != null;
+        }
+
         public void CallRandomNumber()
         {
             string number = GetRandomExistingPhoneNumber();

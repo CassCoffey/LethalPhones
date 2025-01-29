@@ -1,4 +1,5 @@
-﻿using LethalLib.Modules;
+﻿using GameNetcodeStuff;
+using LethalLib.Modules;
 using Scoops.compatability;
 using Scoops.customization;
 using Scoops.gameobjects;
@@ -59,10 +60,36 @@ namespace Scoops.misc
             Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneTop/PhoneCanvas");
             this.serverPersonalPhoneNumberUI = serverPhoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
 
+            PlayerControllerB mimicPlayer = MirageCompat.GetMimickedPlayer(masked);
+            PlayerPhone phone = mimicPlayer.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+
+            string skin = CustomizationManager.DEFAULT_SKIN;
+            string charm = CustomizationManager.DEFAULT_CHARM;
+            string ringtone = CustomizationManager.DEFAULT_RINGTONE;
+
+            if (phone != null)
+            {
+                skin = phone.phoneSkinId;
+                charm = phone.phoneCharmId;
+                ringtone = phone.phoneRingtoneId;
+            }
+
             if (IsOwner)
             {
                 StartCoroutine(CustomizationCoroutine());
+                PhoneNetworkHandler.Instance.CreateNewPhone(NetworkObjectId, skin, charm, ringtone);
             }
+        }
+
+        public override string GetPhoneName()
+        {
+            if (MirageCompat.Enabled && masked)
+            {
+                PlayerControllerB mimicPlayer = MirageCompat.GetMimickedPlayer(masked);
+                return mimicPlayer.playerUsername;
+            }
+
+            return base.GetPhoneName();
         }
 
         // wait for a moment before syncing the phone customizations

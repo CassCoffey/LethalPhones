@@ -27,6 +27,7 @@ namespace Scoops.service
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
+        public SwitchboardPhone switchboard;
 
         public void Start()
         {
@@ -140,18 +141,44 @@ namespace Scoops.service
             }
         }
 
+        public void UpdateSwitchboardPhones()
+        {
+            List<ulong> phones = new List<ulong>();
+            List<PhoneBehavior> phoneBehaviors = phoneObjectDict.Values.ToList<PhoneBehavior>();
+
+            if (phoneBehaviors.Count > 1)
+            {
+                phoneBehaviors.Sort((e,f) => { return e.phoneNumber.CompareTo(f.phoneNumber); });
+            }
+
+            foreach (PhoneBehavior phone in phoneBehaviors)
+            {
+                phones.Add(phone.NetworkObjectId);
+            }
+
+            switchboard.UpdatePhoneListClientRpc(phones.ToArray());
+        }
+
         [ServerRpc(RequireOwnership = false)]
         public void RegisterSwitchboardServerRpc(ulong SwitchboardId, ServerRpcParams serverRpcParams = default)
         {
+            if (switchboard != null)
+            {
+                Plugin.Log.LogInfo($"Tried to register more than one switchboard.");
+                return;
+            }
+
             string number = Config.switchboardNumber.Value.ToString();
 
-            PhoneBehavior switchboard = GetNetworkObject(SwitchboardId).GetComponent<PhoneBehavior>();
+            switchboard = GetNetworkObject(SwitchboardId).GetComponent<SwitchboardPhone>();
             Plugin.Log.LogInfo($"New switchboard for object: " + SwitchboardId);
 
             phoneNumberDict.Add(number, switchboard.NetworkObjectId);
             phoneObjectDict.Add(number, switchboard);
 
             switchboard.SetNewPhoneNumberClientRpc(number);
+
+            UpdateSwitchboardPhones();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -187,6 +214,11 @@ namespace Scoops.service
             phone.phoneRingtoneId = ringtoneId;
 
             phone.SetNewPhoneNumberClientRpc(phoneString);
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
 
         public void DeletePlayerPhone(int playerId)
@@ -200,6 +232,11 @@ namespace Scoops.service
                 phone.GetComponent<NetworkObject>().RemoveOwnership();
             }
             RemoveNumber(number);
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
 
         public void DeletePhone(ulong phoneId)
@@ -212,6 +249,11 @@ namespace Scoops.service
                 phone.GetComponent<NetworkObject>().RemoveOwnership();
             }
             RemoveNumber(number);
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
 
         public void RemoveNumber(string number)

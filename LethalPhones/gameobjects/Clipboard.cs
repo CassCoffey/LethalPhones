@@ -45,7 +45,7 @@ namespace Scoops.misc
             foreach (ulong phoneId in phoneIds)
             {
                 PlayerPhone playerPhone = GetNetworkObject(phoneId).GetComponent<PlayerPhone>();
-                newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.player.playerUsername + "\n";
+                newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.GetPhoneName() + "\n";
             }
 
             textArea.text = newClipboardText;

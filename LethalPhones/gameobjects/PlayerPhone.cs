@@ -118,6 +118,11 @@ namespace Scoops.misc
             }
         }
 
+        public override string GetPhoneName()
+        {
+            return player.playerUsername;
+        }
+
         public void ToggleActive(bool active)
         {
             if (!active && Config.hangupOnPutaway.Value)
@@ -1028,7 +1033,7 @@ namespace Scoops.misc
 
         private IEnumerator CallTimeoutCoroutine(string number)
         {
-            yield return new WaitForSeconds(14f);
+            yield return new WaitForSeconds(15f);
 
             if (outgoingCall == number)
             {
