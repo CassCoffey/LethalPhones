@@ -144,6 +144,12 @@ namespace Scoops.misc
             PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
         }
 
+        public virtual void CallNumber(string number)
+        {
+            outgoingCall = number;
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
+        }
+
         public string GetRandomExistingPhoneNumber()
         {
             PhoneBehavior[] allPhones = GameObject.FindObjectsByType<PhoneBehavior>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -584,7 +590,7 @@ namespace Scoops.misc
             PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId, this.phoneCharmId, this.phoneRingtoneId);
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         protected void UpdateConnectionQualityServerRpc(float currentConnectionQuality)
         {
             connectionQuality.Value = currentConnectionQuality;
@@ -617,6 +623,25 @@ namespace Scoops.misc
             else if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.LineBusyServerRpc(callerNumber);
+            }
+        }
+
+        [ClientRpc]
+        public void TransferCallClientRpc(ulong callerId, string callerNumber, string transferNumber)
+        {
+            if (activeCall == callerNumber)
+            {
+                PlayHangupSound();
+                activeCall = null;
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                UpdateCallingUI();
+
+                Debug.Log("transferring to " + transferNumber);
+                CallNumber(transferNumber);
+            }
+            else
+            {
+                // No you can't transfer a call you're not on.
             }
         }
 
@@ -669,7 +694,7 @@ namespace Scoops.misc
             }
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void PlayHangupSoundServerRpc()
         {
             PlayHangupSoundClientRpc();
@@ -687,7 +712,7 @@ namespace Scoops.misc
             thisAudio.PlayOneShot(PhoneAssetManager.phoneHangup);
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void PlayPickupSoundServerRpc()
         {
             PlayPickupSoundClientRpc();
@@ -711,7 +736,7 @@ namespace Scoops.misc
             thisAudio.PlayOneShot(PhoneAssetManager.phoneBusy);
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void StopRingingServerRpc()
         {
             StopRingingClientRpc();
@@ -723,7 +748,7 @@ namespace Scoops.misc
             StopRinging();
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void StartOutgoingRingingServerRpc()
         {
             StartOutgoingRingingClientRpc();
@@ -735,7 +760,7 @@ namespace Scoops.misc
             StartOutgoingRinging();
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void StopOutgoingRingingServerRpc()
         {
             StopOutgoingRingingClientRpc();

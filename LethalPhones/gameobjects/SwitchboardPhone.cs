@@ -9,11 +9,17 @@ using GameNetcodeStuff;
 using System.Collections;
 using Scoops.customization;
 using Scoops.patch;
+using static UnityEngine.CullingGroup;
+using LethalLib.Modules;
 
 namespace Scoops.gameobjects
 {
     public class SwitchboardPhone : PhoneBehavior
     {
+        public NetworkVariable<ulong> switchboardOperatorId = new NetworkVariable<ulong>();
+        public NetworkVariable<bool> silenced = new NetworkVariable<bool>();
+        public NetworkVariable<int> selectedIndex = new NetworkVariable<int>();
+
         public PlayerControllerB switchboardOperator;
 
         private List<PhoneBehavior> allPhones;
@@ -27,14 +33,15 @@ namespace Scoops.gameobjects
         private ulong outgoingCaller;
 
         private PhoneBehavior selectedPhone = null;
-        private int selectedIndex = -1;
 
         private float uiUpdateCounter = 0f;
         private const float uiUpdateInterval = 1f;
 
-        private bool silenced = false;
+        private int localSelectedIndex = -1;
 
         protected IEnumerator activeCallTimeoutCoroutine;
+
+        private bool started = false;
 
         public override void Start()
         {
@@ -85,7 +92,7 @@ namespace Scoops.gameobjects
 
             transform.Find("RingerCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
             {
-                VolumeSwitchPressed();
+                VolumeSwitch();
             });
 
             transform.Find("HeadphoneCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
@@ -97,17 +104,69 @@ namespace Scoops.gameobjects
             {
                 PhoneNetworkHandler.Instance.RegisterSwitchboard(this.NetworkObjectId);
             }
+
+            UpdateCallingUI();
+
+            started = true;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+            {
+                switchboardOperatorId.Value = this.NetworkObjectId;
+                silenced.Value = false;
+                selectedIndex.Value = -1;
+            } 
+            else
+            {
+                if (switchboardOperatorId.Value != this.NetworkObjectId)
+                {
+                    OnOperatorChanged(this.NetworkObjectId, switchboardOperatorId.Value);
+                }
+                switchboardOperatorId.OnValueChanged += OnOperatorChanged;
+
+                if (silenced.Value != false)
+                {
+                    transform.Find("RingerCube").GetComponent<AnimatedObjectTrigger>().boolValue = false;
+                    transform.Find("SwitchboardMesh").GetComponent<Animator>().SetBool("ringer", false);
+                }
+
+                if (selectedIndex.Value != -1)
+                {
+                    OnSelectedIndexChanged(-1, selectedIndex.Value);
+                }
+                selectedIndex.OnValueChanged += OnSelectedIndexChanged;
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            switchboardOperatorId.OnValueChanged -= OnOperatorChanged;
+            selectedIndex.OnValueChanged -= OnSelectedIndexChanged;
         }
 
         public override void Update()
         {
+            base.Update();
+
+            uiUpdateCounter += Time.deltaTime;
+            if (uiUpdateCounter >= uiUpdateInterval)
+            {
+                uiUpdateCounter = 0f;
+                UpdateCallingUI();
+            }
+
             if (IsOwner)
             {
-                uiUpdateCounter += Time.deltaTime;
-                if (uiUpdateCounter >= uiUpdateInterval)
+                if (switchboardOperator != null)
                 {
-                    uiUpdateCounter = 0f;
-                    UpdateCallingUI();
+                    if (!switchboardOperator.isInHangarShipRoom)
+                    {
+                        switchboardOperatorId.Value = this.NetworkObjectId;
+                        switchboardOperator = null;
+                        ToggleOperator(false);
+                    }
                 }
             }
         }
@@ -119,7 +178,14 @@ namespace Scoops.gameobjects
 
         private void ChangeSelection(int change)
         {
-            // no input during inbound call
+            // do a local selection change to avoid lag
+            ChangeSelectionLocal(change);
+
+            ChangeSelectionServerRpc(change);
+        }
+
+        private void ChangeSelectionLocal(int change)
+        {
             if (incomingCall != null)
             {
                 return;
@@ -127,22 +193,23 @@ namespace Scoops.gameobjects
 
             if (allPhones.Count == 0)
             {
-                selectedIndex = 0;
+                localSelectedIndex = 0;
                 selectedPhone = null;
-            } 
+            }
             else
             {
-                selectedIndex += change;
-                while (selectedIndex < 0)
+                int newValue = localSelectedIndex + change;
+                while (newValue < 0)
                 {
-                    selectedIndex = allPhones.Count - 1;
+                    newValue = allPhones.Count - 1;
                 }
-                while (selectedIndex >= allPhones.Count)
+                while (newValue >= allPhones.Count)
                 {
-                    selectedIndex = 0;
+                    newValue = 0;
                 }
 
-                selectedPhone = allPhones[selectedIndex];
+                selectedPhone = allPhones[newValue];
+                localSelectedIndex = newValue;
 
                 UpdateCallingUI();
             }
@@ -210,10 +277,12 @@ namespace Scoops.gameobjects
 
         private void UpdateInfoList()
         {
+            if (allPhones.Count == 0) return;
+
             // The selected info box
             for (int i = 0; i < 5; i++)
             {
-                int index = selectedIndex + i - 2;
+                int index = localSelectedIndex + i - 2;
                 while (index < 0 || index >= allPhones.Count)
                 {
                     if (index < 0)
@@ -251,16 +320,8 @@ namespace Scoops.gameobjects
             }
         }
 
-        public void CallSelectedNumber()
+        public override void CallNumber(string number)
         {
-            string number = selectedPhone.phoneNumber;
-            if (number == phoneNumber)
-            {
-                Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
-                UpdateCallingUI();
-                return;
-            }
-
             StartOutgoingRingingServerRpc();
             outgoingCall = number;
             outgoingCaller = selectedPhone.NetworkObjectId;
@@ -274,25 +335,60 @@ namespace Scoops.gameobjects
             StartCoroutine(activeCallTimeoutCoroutine);
         }
 
+        public void CallSelectedNumber()
+        {
+            string number = selectedPhone.phoneNumber;
+            if (number == phoneNumber)
+            {
+                Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
+                UpdateCallingUI();
+                return;
+            }
+
+            CallNumber(number);
+        }
+
         public void OperatorSwitch(PlayerControllerB player)
         {
-            if (switchboardOperator == null)
+            OperatorSwitchServerRpc(player.NetworkObjectId);
+        }
+
+        private void ToggleOperator(bool active)
+        {
+            transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = !active;
+            headphonePos = active ? switchboardOperator.playerGlobalHead : transform.Find("HeadphoneCube");
+
+            if (started)
             {
-                transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = false;
-                switchboardOperator = player;
-                headphonePos = switchboardOperator.playerGlobalHead;
+                UpdateCallingUI();
+
+                ResetAllAudioSources();
+                ResetAllPlayerVoices();
+            }
+        }
+
+        private void OnSelectedIndexChanged(int prev, int current)
+        {
+            localSelectedIndex = selectedIndex.Value;
+
+            if (started)
+            {
+                if (localSelectedIndex < 0 || localSelectedIndex >= allPhones.Count)
+                {
+                    localSelectedIndex = 0;
+                }
+
+                selectedPhone = allPhones[selectedIndex.Value];
                 UpdateCallingUI();
             }
-            else
-            {
-                if (switchboardOperator == player)
-                {
-                    transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = true;
-                    switchboardOperator = null;
-                    headphonePos = transform.Find("HeadphoneCube");
-                    UpdateCallingUI();
-                }
-            }
+        }
+
+        private void OnOperatorChanged(ulong prev, ulong current)
+        {
+            PlayerControllerB newOperator = GetNetworkObject(current).GetComponent<PlayerControllerB>();
+
+            switchboardOperator = newOperator;
+            ToggleOperator(newOperator != null);
         }
 
         public void HangupButtonPressed()
@@ -324,10 +420,7 @@ namespace Scoops.gameobjects
                 UpdateCallingUI();
             }
 
-            if (IsOwner)
-            {
-                UpdateCallValues();
-            }
+            UpdateCallValues();
         }
 
         public void CallButtonPressed()
@@ -356,10 +449,7 @@ namespace Scoops.gameobjects
                 CallSelectedNumber();
             }
 
-            if (IsOwner)
-            {
-                UpdateCallValues();
-            }
+            UpdateCallValues();
         }
 
         public void TransferButtonPressed()
@@ -367,23 +457,23 @@ namespace Scoops.gameobjects
             if (activeCall != null)
             {
                 // hang up our call and have them auto-call the transfer
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.TransferCallServerRpc(activeCall, selectedPhone.phoneNumber, NetworkObjectId);
                 PlayHangupSoundServerRpc();
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
-
-                //code to auto call will go here
             } 
             else
             {
                 // Do nothing
             }
+
+            UpdateCallValues();
         }
 
-        public void VolumeSwitchPressed()
+        public void VolumeSwitch()
         {
-            silenced = !transform.Find("SwitchboardMesh").GetComponent<Animator>().GetBool("ringer");
+            VolumeSwitchServerRpc();
         }
 
         public void UpdateCallValues()
@@ -394,8 +484,7 @@ namespace Scoops.gameobjects
                    activeCall == null ? -1 : int.Parse(activeCall),
                    incomingCaller,
                    outgoingCaller,
-                   activeCaller,
-                   silenced);
+                   activeCaller);
         }
 
         private IEnumerator CallTimeoutCoroutine(string number)
@@ -415,7 +504,7 @@ namespace Scoops.gameobjects
         protected override void StartRinging()
         {
             ringAudio.Stop();
-            if (!silenced)
+            if (!silenced.Value)
             {
                 activePhoneRingCoroutine = PhoneRingCoroutine(4);
                 StartCoroutine(activePhoneRingCoroutine);
@@ -424,14 +513,77 @@ namespace Scoops.gameobjects
             }
         }
 
-        [ServerRpc]
-        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong outgoingCallerUpdate, ulong activeCallerUpdate, bool volumeUpdate)
+        [ServerRpc(RequireOwnership = false)]
+        public void ChangeSelectionServerRpc(int change)
         {
-            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, outgoingCallerUpdate, activeCallerUpdate, volumeUpdate);
+            // no input during inbound call
+            if (incomingCall != null)
+            {
+                return;
+            }
+
+            if (allPhones.Count == 0)
+            {
+                selectedIndex.Value = 0;
+                selectedPhone = null;
+            }
+            else
+            {
+                int newValue = selectedIndex.Value + change;
+                while (newValue < 0)
+                {
+                    newValue = allPhones.Count - 1;
+                }
+                while (newValue >= allPhones.Count)
+                {
+                    newValue = 0;
+                }
+
+                selectedPhone = allPhones[newValue];
+                selectedIndex.Value = newValue;
+                localSelectedIndex = newValue;
+
+                UpdateCallingUI();
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void VolumeSwitchServerRpc()
+        {
+            Debug.Log("Setting silent to " + !transform.Find("SwitchboardMesh").GetComponent<Animator>().GetBool("ringer"));
+            silenced.Value = !transform.Find("SwitchboardMesh").GetComponent<Animator>().GetBool("ringer");
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void OperatorSwitchServerRpc(ulong playerId)
+        {
+            PlayerControllerB player = GetNetworkObject(playerId).GetComponent<PlayerControllerB>();
+
+            if (switchboardOperator == null)
+            {
+                switchboardOperator = player;
+                switchboardOperatorId.Value = player.NetworkObjectId;
+                ToggleOperator(true);
+            }
+            else
+            {
+                if (switchboardOperator == player)
+                {
+                    switchboardOperator = null;
+                    switchboardOperatorId.Value = this.NetworkObjectId;
+                    ToggleOperator(false);
+                }
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong outgoingCallerUpdate, ulong activeCallerUpdate)
+        {
+            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, outgoingCallerUpdate, activeCallerUpdate);
         }
 
         [ClientRpc]
-        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong outgoingCallerUpdate, ulong activeCallerUpdate, bool volumeUpdate)
+        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong outgoingCallerUpdate, ulong activeCallerUpdate)
         {
             // A little messy? I don't like this.
             outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
@@ -440,12 +592,16 @@ namespace Scoops.gameobjects
             incomingCaller = incomingCallerUpdate;
             outgoingCaller = outgoingCallerUpdate;
             activeCaller = activeCallerUpdate;
-            silenced = volumeUpdate;
         }
 
         [ClientRpc]
         public void UpdatePhoneListClientRpc(ulong[] phoneIds)
         {
+            if (allPhones == null)
+            {
+                allPhones = new List<PhoneBehavior>();
+            }
+
             allPhones.Clear();
 
             foreach (ulong phoneId in phoneIds)
@@ -454,12 +610,18 @@ namespace Scoops.gameobjects
                 allPhones.Add(phone);
             }
 
-            if (allPhones.Count > 0)
+            if (IsOwner && allPhones.Count > 0)
             {
                 if (!allPhones.Contains(selectedPhone))
                 {
                     selectedPhone = allPhones[0];
-                    selectedIndex = 0;
+                    selectedIndex.Value = 0;
+                    localSelectedIndex = 0;
+                } 
+                else
+                {
+                    localSelectedIndex = allPhones.IndexOf(selectedPhone);
+                    selectedIndex.Value = localSelectedIndex;
                 }
 
                 UpdateInfoList();
@@ -504,6 +666,7 @@ namespace Scoops.gameobjects
                         ResetAllPlayerVoices();
                         return;
                     }
+
                     Vector3 directionTo = headphonePos.position - localPlayer.transform.position;
                     directionTo = directionTo / listenDist;
                     listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);

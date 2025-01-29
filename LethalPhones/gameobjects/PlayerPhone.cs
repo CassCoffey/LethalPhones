@@ -760,6 +760,21 @@ namespace Scoops.misc
             }
         }
 
+        public override void CallNumber(string number)
+        {
+            StartOutgoingRingingServerRpc();
+            outgoingCall = number;
+            dialedNumbers.Clear();
+
+            UpdateCallingUI();
+
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
+
+            if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
+            activeCallTimeoutCoroutine = CallTimeoutCoroutine(number);
+            StartCoroutine(activeCallTimeoutCoroutine);
+        }
+
         public void CallDialedNumber()
         {
             string number = GetFullDialNumber();
@@ -776,17 +791,7 @@ namespace Scoops.misc
                 return;
             }
 
-            StartOutgoingRingingServerRpc();
-            outgoingCall = number;
-            dialedNumbers.Clear();
-
-            UpdateCallingUI();
-
-            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
-
-            if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
-            activeCallTimeoutCoroutine = CallTimeoutCoroutine(number);
-            StartCoroutine(activeCallTimeoutCoroutine);
+            CallNumber(number);
         }
 
         protected override void UpdateCallingUI()

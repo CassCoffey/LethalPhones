@@ -173,10 +173,13 @@ namespace Scoops.service
             switchboard = GetNetworkObject(SwitchboardId).GetComponent<SwitchboardPhone>();
             Plugin.Log.LogInfo($"New switchboard for object: " + SwitchboardId);
 
+            switchboard.GetComponent<NetworkObject>().ChangeOwnership(NetworkManager.ServerClientId);
             phoneNumberDict.Add(number, switchboard.NetworkObjectId);
             phoneObjectDict.Add(number, switchboard);
 
             switchboard.SetNewPhoneNumberClientRpc(number);
+
+            RequestClientUpdates();
 
             UpdateSwitchboardPhones();
         }
@@ -214,6 +217,8 @@ namespace Scoops.service
             phone.phoneRingtoneId = ringtoneId;
 
             phone.SetNewPhoneNumberClientRpc(phoneString);
+
+            RequestClientUpdates();
 
             if (switchboard != null)
             {
@@ -306,6 +311,17 @@ namespace Scoops.service
                 string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerId).Key;
 
                 phoneObjectDict[number].HangupCallClientRpc(cancellerId, cancellerPhoneNumber);
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void TransferCallServerRpc(string number, string transferNumber, ulong transferrerId, ServerRpcParams serverRpcParams = default)
+        {
+            if (phoneNumberDict.ContainsKey(number) && phoneNumberDict.ContainsKey(transferNumber))
+            {
+                string transferrerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == transferrerId).Key;
+
+                phoneObjectDict[number].TransferCallClientRpc(transferrerId, transferrerPhoneNumber, transferNumber);
             }
         }
 
