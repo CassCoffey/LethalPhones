@@ -2,6 +2,7 @@
 using GameNetcodeStuff;
 using Scoops.compatability;
 using Scoops.customization;
+using Scoops.gameobjects;
 using Scoops.patch;
 using Scoops.service;
 using System;
@@ -183,9 +184,10 @@ namespace Scoops.misc
                 return;
             }
 
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated())
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated() && !(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == localPlayer))
             {
-                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                 float listenDist = (localPlayer.transform.position - callerPhone.transform.position).sqrMagnitude;
                 if (listenDist > (Config.eavesdropDist.Value * Config.eavesdropDist.Value))
                 {
@@ -224,9 +226,10 @@ namespace Scoops.misc
 
             float listenDist = 0f;
             float listenAngle = 0f;
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated())
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated() && !(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == localPlayer))
             {
-                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                 listenDist = Vector3.Distance(localPlayer.transform.position, callerPhone.transform.position);
                 if (listenDist > Config.eavesdropDist.Value)
                 {
@@ -278,7 +281,7 @@ namespace Scoops.misc
             this.audioSourcesInRange.Clear();
         }
 
-        protected virtual bool IsBeingSpectated()
+        public virtual bool IsBeingSpectated()
         {
             return false;
         }

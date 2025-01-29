@@ -905,7 +905,7 @@ namespace Scoops.misc
             return player.isInElevator && StartOfRound.Instance.hangarDoorsClosed;
         }
 
-        protected override bool IsBeingSpectated()
+        public override bool IsBeingSpectated()
         {
             return (GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == player);
         }

@@ -8,20 +8,21 @@ using UnityEngine.UI;
 using GameNetcodeStuff;
 using System.Collections;
 using Scoops.customization;
-using static Scoops.misc.PlayerPhone;
-using LethalLib.Modules;
+using Scoops.patch;
 
 namespace Scoops.gameobjects
 {
     public class SwitchboardPhone : PhoneBehavior
     {
-        private PlayerControllerB switchboardOperator;
+        public PlayerControllerB switchboardOperator;
 
         private List<PhoneBehavior> allPhones;
         private Transform[] phoneInfoArray;
         private Transform activeCallerInfo;
         private Transform operatorInfo;
         private Transform inboundInfo;
+
+        private Transform headphonePos;
 
         private ulong outgoingCaller;
 
@@ -56,6 +57,8 @@ namespace Scoops.gameobjects
             operatorInfo = transform.Find("SwitchboardScreen/SwitchboardPanel/OperatorPanel");
             inboundInfo = transform.Find("SwitchboardScreen/SwitchboardPanel/NumbersPanel/InboundPanel");
 
+            headphonePos = transform.Find("HeadphoneCube");
+
             allPhones = new List<PhoneBehavior>();
 
             transform.Find("UpCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
@@ -70,6 +73,10 @@ namespace Scoops.gameobjects
             transform.Find("GreenButtonCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
             {
                 CallButtonPressed();
+            });
+            transform.Find("YellowButtonCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
+            {
+                TransferButtonPressed();
             });
             transform.Find("RedButtonCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
             {
@@ -273,6 +280,7 @@ namespace Scoops.gameobjects
             {
                 transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = false;
                 switchboardOperator = player;
+                headphonePos = switchboardOperator.playerGlobalHead;
                 UpdateCallingUI();
             }
             else
@@ -281,6 +289,7 @@ namespace Scoops.gameobjects
                 {
                     transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = true;
                     switchboardOperator = null;
+                    headphonePos = transform.Find("HeadphoneCube");
                     UpdateCallingUI();
                 }
             }
@@ -355,7 +364,21 @@ namespace Scoops.gameobjects
 
         public void TransferButtonPressed()
         {
-            // nothing atm
+            if (activeCall != null)
+            {
+                // hang up our call and have them auto-call the transfer
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                PlayHangupSoundServerRpc();
+                activeCall = null;
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                UpdateCallingUI();
+
+                //code to auto call will go here
+            } 
+            else
+            {
+                // Do nothing
+            }
         }
 
         public void VolumeSwitchPressed()
@@ -440,6 +463,107 @@ namespace Scoops.gameobjects
                 }
 
                 UpdateInfoList();
+            }
+        }
+
+        public override bool IsBeingSpectated()
+        {
+            if (switchboardOperator != null)
+            {
+                return (GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == switchboardOperator);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        protected override void UpdatePlayerVoices()
+        {
+            if (GameNetworkManager.Instance == null || GameNetworkManager.Instance.localPlayerController == null)
+            {
+                return;
+            }
+            if (activeCaller == 0 || activeCall == null)
+            {
+                return;
+            }
+
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            float listenDist = 0f;
+            float listenAngle = 0f;
+            if (switchboardOperator != localPlayer)
+            {
+                if (!IsBeingSpectated())
+                {
+                    listenDist = Vector3.Distance(localPlayer.transform.position, headphonePos.position);
+                    if (listenDist > Config.eavesdropDist.Value)
+                    {
+                        // We are out of range, get these sources cleared
+                        ResetAllPlayerVoices();
+                        return;
+                    }
+                    Vector3 directionTo = headphonePos.position - localPlayer.transform.position;
+                    directionTo = directionTo / listenDist;
+                    listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
+                }
+            }
+
+            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
+            if (callerPhone == PhoneNetworkHandler.Instance.localPhone)
+            {
+                return;
+            }
+
+            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
+
+            if (switchboardOperator == localPlayer || listenDist > 0f)
+            {
+                UpdateStatic(worseConnection, listenDist);
+            }
+
+            float dist = Vector3.Distance(callerPhone.transform.position, headphonePos.position);
+
+            if (dist > Config.recordingStartDist.Value)
+            {
+                modifiedVoices.Add(callerPhone);
+                callerPhone.ApplyPhoneVoiceEffect(0f, listenDist, listenAngle, worseConnection);
+            }
+            else
+            {
+                if (modifiedVoices.Contains(callerPhone))
+                {
+                    modifiedVoices.Remove(callerPhone);
+                    callerPhone.RemovePhoneVoiceEffect();
+                }
+            }
+
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            {
+                PlayerControllerB background = StartOfRound.Instance.allPlayerScripts[i];
+                PlayerPhone backgroundPhone = background.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+                if (background != null && backgroundPhone != null && background.isPlayerControlled && !background.isPlayerDead && !background.IsLocalPlayer)
+                {
+                    if (background != GameNetworkManager.Instance.localPlayerController && backgroundPhone != this && backgroundPhone != callerPhone)
+                    {
+                        float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
+                        float localDist = (backgroundPhone.transform.position - headphonePos.position).sqrMagnitude;
+                        if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
+                        {
+                            modifiedVoices.Add(backgroundPhone);
+                            backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
+                        }
+                        else
+                        {
+                            if (modifiedVoices.Contains(backgroundPhone))
+                            {
+                                modifiedVoices.Remove(backgroundPhone);
+                                backgroundPhone.RemovePhoneVoiceEffect();
+                            }
+                        }
+                    }
+                }
             }
         }
 
