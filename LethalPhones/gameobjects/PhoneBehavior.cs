@@ -365,19 +365,22 @@ namespace Scoops.misc
                 {
                     if (background != GameNetworkManager.Instance.localPlayerController && backgroundPhone != this && backgroundPhone != callerPhone)
                     {
-                        float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
-                        float localDist = (backgroundPhone.transform.position - GameNetworkManager.Instance.localPlayerController.transform.position).sqrMagnitude;
-                        if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
+                        if (!(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == background))
                         {
-                            modifiedVoices.Add(backgroundPhone);
-                            backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
-                        }
-                        else
-                        {
-                            if (modifiedVoices.Contains(backgroundPhone))
+                            float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
+                            float localDist = (backgroundPhone.transform.position - GameNetworkManager.Instance.localPlayerController.transform.position).sqrMagnitude;
+                            if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
                             {
-                                modifiedVoices.Remove(backgroundPhone);
-                                backgroundPhone.RemovePhoneVoiceEffect();
+                                modifiedVoices.Add(backgroundPhone);
+                                backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
+                            }
+                            else
+                            {
+                                if (modifiedVoices.Contains(backgroundPhone))
+                                {
+                                    modifiedVoices.Remove(backgroundPhone);
+                                    backgroundPhone.RemovePhoneVoiceEffect();
+                                }
                             }
                         }
                     }
@@ -393,6 +396,11 @@ namespace Scoops.misc
             }
 
             this.modifiedVoices.Clear();
+        }
+
+        public virtual void UpdateCallValues()
+        {
+            // Nothing by default
         }
 
         protected virtual void ApplySkin(string skinId)
@@ -629,15 +637,24 @@ namespace Scoops.misc
         [ClientRpc]
         public void TransferCallClientRpc(ulong callerId, string callerNumber, string transferNumber)
         {
+            if (!IsOwner)
+            {
+                return;
+            }
+
             if (activeCall == callerNumber)
             {
-                PlayHangupSound();
+                PlayHangupSoundServerRpc();
                 activeCall = null;
                 StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
 
-                Debug.Log("transferring to " + transferNumber);
-                CallNumber(transferNumber);
+                if (transferNumber != phoneNumber)
+                {
+                    CallNumber(transferNumber);
+                }
+
+                UpdateCallValues();
             }
             else
             {

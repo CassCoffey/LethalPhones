@@ -103,6 +103,10 @@ namespace Scoops.gameobjects
             if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.RegisterSwitchboard(this.NetworkObjectId);
+            } 
+            else
+            {
+                PhoneNetworkHandler.Instance.RequestSwitchboardUpdates();
             }
 
             UpdateCallingUI();
@@ -144,6 +148,39 @@ namespace Scoops.gameobjects
         {
             switchboardOperatorId.OnValueChanged -= OnOperatorChanged;
             selectedIndex.OnValueChanged -= OnSelectedIndexChanged;
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
+            if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
+
+            if (IsOwner)
+            {
+                if (activeCall != null)
+                {
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                    activeCall = null;
+                    StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                }
+                if (outgoingCall != null)
+                {
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                    outgoingCall = null;
+                }
+                if (incomingCall != null)
+                {
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                    incomingCall = null;
+                }
+            }
+
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+            {
+                PhoneNetworkHandler.Instance.DeleteSwitchboard();
+            }
         }
 
         public override void Update()
@@ -371,7 +408,7 @@ namespace Scoops.gameobjects
         {
             localSelectedIndex = selectedIndex.Value;
 
-            if (started)
+            if (started && allPhones.Count > 0)
             {
                 if (localSelectedIndex < 0 || localSelectedIndex >= allPhones.Count)
                 {
@@ -476,7 +513,7 @@ namespace Scoops.gameobjects
             VolumeSwitchServerRpc();
         }
 
-        public void UpdateCallValues()
+        public override void UpdateCallValues()
         {
             UpdateCallValuesServerRpc(
                    outgoingCall == null ? -1 : int.Parse(outgoingCall),
@@ -550,8 +587,34 @@ namespace Scoops.gameobjects
         [ServerRpc(RequireOwnership = false)]
         public void VolumeSwitchServerRpc()
         {
-            Debug.Log("Setting silent to " + !transform.Find("SwitchboardMesh").GetComponent<Animator>().GetBool("ringer"));
             silenced.Value = !transform.Find("SwitchboardMesh").GetComponent<Animator>().GetBool("ringer");
+
+            VolumeSwitchClientRpc();
+        }
+
+        [ClientRpc]
+        public void VolumeSwitchClientRpc()
+        {
+            SkinnedMeshRenderer renderer = transform.Find("SwitchboardMesh").GetComponent<SkinnedMeshRenderer>();
+
+            if (silenced.Value)
+            {
+                Material[] mats = renderer.materials;
+
+                mats[2] = PhoneAssetManager.redLight;
+                mats[3] = PhoneAssetManager.offLight;
+
+                renderer.SetMaterialArray(mats);
+            }
+            else
+            {
+                Material[] mats = renderer.materials;
+
+                mats[2] = PhoneAssetManager.offLight;
+                mats[3] = PhoneAssetManager.greenLight;
+
+                renderer.SetMaterialArray(mats);
+            }
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -746,9 +809,12 @@ namespace Scoops.gameobjects
             }
             if (switchboardOperator.currentVoiceChatAudioSource == null)
             {
-                Plugin.Log.LogInfo("Player " + switchboardOperator.name + " Voice Chat Audio Source still null after refresh? Something has gone wrong.");
+                Plugin.Log.LogWarning("Player " + switchboardOperator.name + " Voice Chat Audio Source still null after refresh? Something has gone wrong.");
                 return;
             }
+
+            Debug.Log("Switchboard Operator voice at dist - " + distance);
+            Debug.Log("and listening dist - " + listeningDistance);
 
             AudioSource currentVoiceChatAudioSource = switchboardOperator.currentVoiceChatAudioSource;
             AudioLowPassFilter lowPass = currentVoiceChatAudioSource.GetComponent<AudioLowPassFilter>();
@@ -769,14 +835,14 @@ namespace Scoops.gameobjects
             occludeAudio.lowPassOverride = Mathf.Lerp(6000f, 3000f, connectionQuality);
             lowPass.lowpassResonanceQ = Mathf.Lerp(6f, 3f, connectionQuality);
             highPass.highpassResonanceQ = Mathf.Lerp(3f, 1f, connectionQuality);
-
+            
             if (distance != 0f)
             {
                 float mod = Mathf.InverseLerp(Config.backgroundVoiceDist.Value, 0f, distance);
                 currentVoiceChatAudioSource.volume = currentVoiceChatAudioSource.volume * mod;
                 occludeAudio.lowPassOverride = 1500f;
             }
-
+            
             if (listeningDistance != 0f)
             {
                 float mod = Mathf.InverseLerp(Config.eavesdropDist.Value, 0f, listeningDistance);

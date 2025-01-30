@@ -32,11 +32,6 @@ namespace Scoops.misc
             }
         }
 
-        public override string GetPhoneName()
-        {
-            return "Bug";
-        }
-
         public override void Death()
         {
             HoardingBugPhonePatch.phoneBugs--;

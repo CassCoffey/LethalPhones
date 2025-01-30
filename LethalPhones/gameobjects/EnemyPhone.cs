@@ -162,7 +162,7 @@ namespace Scoops.gameobjects
             preppingHangup = false;
         }
 
-        public void UpdateCallValues()
+        public override void UpdateCallValues()
         {
             UpdateCallValuesServerRpc(
                    outgoingCall == null ? -1 : int.Parse(outgoingCall),

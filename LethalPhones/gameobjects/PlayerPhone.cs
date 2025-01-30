@@ -710,11 +710,6 @@ namespace Scoops.misc
                 // No calls of any sort are happening, make a new one
                 CallDialedNumber();
             }
-
-            if (IsOwner)
-            {
-                UpdateCallValues();
-            }
         }
 
         public void VolumeButtonPressed()
@@ -773,6 +768,11 @@ namespace Scoops.misc
             if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
             activeCallTimeoutCoroutine = CallTimeoutCoroutine(number);
             StartCoroutine(activeCallTimeoutCoroutine);
+
+            if (IsOwner)
+            {
+                UpdateCallValues();
+            }
         }
 
         public void CallDialedNumber()
@@ -976,7 +976,7 @@ namespace Scoops.misc
             StartCoroutine(PhoneBusyCoroutine(reason));
         }
 
-        public void UpdateCallValues()
+        public override void UpdateCallValues()
         {
             UpdateCallValuesServerRpc(
                    outgoingCall == null ? -1 : int.Parse(outgoingCall),
@@ -1158,7 +1158,7 @@ namespace Scoops.misc
             }
             if (player.currentVoiceChatAudioSource == null)
             {
-                Plugin.Log.LogInfo("Player " + player.name + " Voice Chat Audio Source still null after refresh? Something has gone wrong.");
+                Plugin.Log.LogWarning("Player " + player.name + " Voice Chat Audio Source still null after refresh? Something has gone wrong.");
                 return;
             }
 

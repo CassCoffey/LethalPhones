@@ -106,6 +106,11 @@ namespace Scoops.service
             UpdateAllClientsServerRpc();
         }
 
+        public void RequestSwitchboardUpdates()
+        {
+            UpdateAllClientsServerRpc();
+        }
+
         public void SpawnClipboard()
         {
             var phonebookClipboard = Object.Instantiate(NetworkObjectManager.clipboardPrefab, StartOfRound.Instance.elevatorTransform);
@@ -139,6 +144,12 @@ namespace Scoops.service
             {
                 clipboard.UpdateTextClientRpc(phones.ToArray());
             }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void RequestSwitchboardUpdatesServerRpc()
+        {
+            UpdateSwitchboardPhones();
         }
 
         public void UpdateSwitchboardPhones()
@@ -261,6 +272,15 @@ namespace Scoops.service
             }
         }
 
+        public void DeleteSwitchboard()
+        {
+            Plugin.Log.LogInfo("Deleting switchboard");
+            string number = switchboard.phoneNumber;
+
+            RemoveNumber(number);
+            switchboard = null;
+        }
+
         public void RemoveNumber(string number)
         {
             if (number != null)
@@ -269,6 +289,11 @@ namespace Scoops.service
 
                 phoneObjectDict.Remove(number);
                 phoneNumberDict.Remove(number);
+
+                if (switchboard != null)
+                {
+                    UpdateSwitchboardPhones();
+                }
             }
         }
 
@@ -340,6 +365,11 @@ namespace Scoops.service
             }
 
             UpdateClipboardText();
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
     }
 }

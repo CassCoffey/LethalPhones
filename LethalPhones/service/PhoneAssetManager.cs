@@ -192,6 +192,10 @@ namespace Scoops.service
         public static AudioClip phoneStaticTwo;
         public static AudioClip phoneStaticThree;
 
+        public static Material greenLight;
+        public static Material redLight;
+        public static Material offLight;
+
         public static GameObject customizationGUI;
 
         public const string PHONE_UNLOCK_NAME = "Personal Phones";
@@ -238,6 +242,10 @@ namespace Scoops.service
             phoneStaticOne = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticOne");
             phoneStaticTwo = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticTwo");
             phoneStaticThree = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticThree");
+
+            greenLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("GreenLight");
+            redLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("RedLight");
+            offLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("OffLight");
         }
     }
 }
