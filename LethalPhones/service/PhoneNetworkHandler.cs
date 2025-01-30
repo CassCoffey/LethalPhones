@@ -164,7 +164,9 @@ namespace Scoops.service
 
             foreach (PhoneBehavior phone in phoneBehaviors)
             {
-                phones.Add(phone.NetworkObjectId);
+                if (!(phone is MaskedPhone || phone is SwitchboardPhone)) {
+                    phones.Add(phone.NetworkObjectId);
+                }
             }
 
             switchboard.UpdatePhoneListClientRpc(phones.ToArray());
@@ -179,7 +181,7 @@ namespace Scoops.service
                 return;
             }
 
-            string number = Config.switchboardNumber.Value.ToString();
+            string number = Config.switchboardNumber.Value;
 
             switchboard = GetNetworkObject(SwitchboardId).GetComponent<SwitchboardPhone>();
             Plugin.Log.LogInfo($"New switchboard for object: " + SwitchboardId);
@@ -210,7 +212,7 @@ namespace Scoops.service
 
             int phoneNumber = Random.Range(0, maxNumber);
             string phoneString = phoneNumber.ToString("D4");
-            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()) || phoneNumber == Config.switchboardNumber.Value)
+            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()) || phoneNumber.ToString() == Config.switchboardNumber.Value)
             {
                 phoneNumber = Random.Range(0, maxNumber);
                 phoneString = phoneNumber.ToString("D4");

@@ -20,6 +20,8 @@ namespace Scoops.gameobjects
         public NetworkVariable<bool> silenced = new NetworkVariable<bool>();
         public NetworkVariable<int> selectedIndex = new NetworkVariable<int>();
 
+        public GameObject headsetMic = null;
+
         public PlayerControllerB switchboardOperator;
 
         private List<PhoneBehavior> allPhones;
@@ -100,6 +102,8 @@ namespace Scoops.gameobjects
                 OperatorSwitch(player);
             });
 
+            transform.Find("SwitchboardMesh/SwitchboardTape/TapeCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>().text = Config.switchboardNumber.Value;
+
             if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.RegisterSwitchboard(this.NetworkObjectId);
@@ -134,7 +138,9 @@ namespace Scoops.gameobjects
                 {
                     transform.Find("RingerCube").GetComponent<AnimatedObjectTrigger>().boolValue = false;
                     transform.Find("SwitchboardMesh").GetComponent<Animator>().SetBool("ringer", false);
+                    OnVolumeSwitched(false, true);
                 }
+                silenced.OnValueChanged += OnVolumeSwitched;
 
                 if (selectedIndex.Value != -1)
                 {
@@ -148,6 +154,7 @@ namespace Scoops.gameobjects
         {
             switchboardOperatorId.OnValueChanged -= OnOperatorChanged;
             selectedIndex.OnValueChanged -= OnSelectedIndexChanged;
+            silenced.OnValueChanged -= OnVolumeSwitched;
         }
 
         public override void OnDestroy()
@@ -258,6 +265,22 @@ namespace Scoops.gameobjects
             UpdateActiveCallerUI();
             UpdateOperatorUI();
             UpdateInboundUI();
+
+            if (headsetMic != null)
+            {
+                Material[] mats = headsetMic.GetComponent<Renderer>().materials;
+
+                if ((activeCall != null || incomingCall != null || outgoingCall != null) && mats[1] != PhoneAssetManager.greenLight)
+                {
+                    mats[1] = PhoneAssetManager.greenLight;
+                    headsetMic.GetComponent<Renderer>().SetMaterialArray(mats);
+                }
+                else if (!(activeCall != null || incomingCall != null || outgoingCall != null) &&  mats[1] != PhoneAssetManager.offLight)
+                {
+                    mats[1] = PhoneAssetManager.offLight;
+                    headsetMic.GetComponent<Renderer>().SetMaterialArray(mats);
+                }
+            }
         }
 
         private void UpdateActiveCallerUI()
@@ -395,6 +418,15 @@ namespace Scoops.gameobjects
             transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = !active;
             headphonePos = active ? switchboardOperator.playerGlobalHead : transform.Find("HeadphoneCube");
 
+            if (active && switchboardOperator == GameNetworkManager.Instance.localPlayerController)
+            {
+                headsetMic = GameObject.Instantiate(PhoneAssetManager.headphoneDisplayPrefab, switchboardOperator.localVisorTargetPoint);
+            }
+            else if (headsetMic != null)
+            {
+                GameObject.Destroy(headsetMic);
+            }
+
             if (started)
             {
                 UpdateCallingUI();
@@ -426,6 +458,30 @@ namespace Scoops.gameobjects
 
             switchboardOperator = newOperator;
             ToggleOperator(newOperator != null);
+        }
+
+        public void OnVolumeSwitched(bool prev, bool current)
+        {
+            SkinnedMeshRenderer renderer = transform.Find("SwitchboardMesh").GetComponent<SkinnedMeshRenderer>();
+
+            if (silenced.Value)
+            {
+                Material[] mats = renderer.materials;
+
+                mats[2] = PhoneAssetManager.redLight;
+                mats[3] = PhoneAssetManager.offLight;
+
+                renderer.SetMaterialArray(mats);
+            }
+            else
+            {
+                Material[] mats = renderer.materials;
+
+                mats[2] = PhoneAssetManager.offLight;
+                mats[3] = PhoneAssetManager.greenLight;
+
+                renderer.SetMaterialArray(mats);
+            }
         }
 
         public void HangupButtonPressed()
@@ -597,33 +653,7 @@ namespace Scoops.gameobjects
         public void VolumeSwitchServerRpc()
         {
             silenced.Value = !transform.Find("SwitchboardMesh").GetComponent<Animator>().GetBool("ringer");
-
-            VolumeSwitchClientRpc();
-        }
-
-        [ClientRpc]
-        public void VolumeSwitchClientRpc()
-        {
-            SkinnedMeshRenderer renderer = transform.Find("SwitchboardMesh").GetComponent<SkinnedMeshRenderer>();
-
-            if (silenced.Value)
-            {
-                Material[] mats = renderer.materials;
-
-                mats[2] = PhoneAssetManager.redLight;
-                mats[3] = PhoneAssetManager.offLight;
-
-                renderer.SetMaterialArray(mats);
-            }
-            else
-            {
-                Material[] mats = renderer.materials;
-
-                mats[2] = PhoneAssetManager.offLight;
-                mats[3] = PhoneAssetManager.greenLight;
-
-                renderer.SetMaterialArray(mats);
-            }
+            OnVolumeSwitched(!silenced.Value, silenced.Value);
         }
 
         [ServerRpc(RequireOwnership = false)]

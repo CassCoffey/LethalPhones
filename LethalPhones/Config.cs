@@ -39,7 +39,7 @@ namespace Scoops
         public static ConfigEntry<int> clipboardPrice;
         public static ConfigEntry<bool> switchboardPurchase;
         public static ConfigEntry<int> switchboardPrice;
-        public static ConfigEntry<int> switchboardNumber;
+        public static ConfigEntry<string> switchboardNumber;
 
         public Config(ConfigFile cfg)
         {
@@ -166,13 +166,13 @@ namespace Scoops
             minPhoneBugInterval = cfg.Bind(
                     "Enemies.HoardingBugs",
                     "minPhoneBugInterval",
-                    10f,
+                    15f,
                     "The shortest time (in seconds) between calls from each Hoarding Bug."
             );
             maxPhoneBugInterval = cfg.Bind(
                     "Enemies.HoardingBugs",
                     "maxPhoneBugInterval",
-                    100f,
+                    120f,
                     "The longest time (in seconds) between calls from each Hoarding Bug."
             );
 
@@ -186,19 +186,19 @@ namespace Scoops
             chancePhoneMask = cfg.Bind(
                     "Enemies.Masked",
                     "chancePhoneMask",
-                    1f,
+                    0.75f,
                     "The chance (0 - 1) that a Masked will be spawned with a phone."
             );
             minPhoneMaskedInterval = cfg.Bind(
                     "Enemies.Masked",
                     "minPhoneMaskedInterval",
-                    45f,
+                    60f,
                     "The shortest time (in seconds) between calls from each Masked."
             );
             maxPhoneMaskedInterval = cfg.Bind(
                     "Enemies.Masked",
                     "maxPhoneMaskedInterval",
-                    120f,
+                    180f,
                     "The longest time (in seconds) between calls from each Masked."
             );
 
@@ -242,7 +242,7 @@ namespace Scoops
             switchboardNumber = cfg.Bind(
                     "Unlockables",
                     "switchboardNumber",
-                    1111,
+                    "1111",
                     "The phone number of the Switchboard. This should always be 4 digits."
             );
         }

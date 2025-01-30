@@ -198,6 +198,7 @@ namespace Scoops.service
         public static Material offLight;
 
         public static GameObject customizationGUI;
+        public static GameObject headphoneDisplayPrefab;
 
         public const string PHONE_UNLOCK_NAME = "Personal Phones";
 
@@ -226,6 +227,7 @@ namespace Scoops.service
             }
 
             customizationGUI = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneCustomization_GUI");
+            headphoneDisplayPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("HeadsetMicrophone");
 
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
