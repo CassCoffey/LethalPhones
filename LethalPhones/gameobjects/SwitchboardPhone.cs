@@ -205,7 +205,7 @@ namespace Scoops.gameobjects
             {
                 if (switchboardOperator != null)
                 {
-                    if (!switchboardOperator.isInHangarShipRoom)
+                    if (!switchboardOperator.isInHangarShipRoom || switchboardOperator.isPlayerDead)
                     {
                         switchboardOperatorId.Value = this.NetworkObjectId;
                         switchboardOperator = null;
