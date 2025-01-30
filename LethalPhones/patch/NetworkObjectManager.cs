@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using LethalLib.Modules;
+using Scoops.gameobjects;
 using Scoops.misc;
 using Scoops.service;
 using Unity.Netcode;
@@ -15,6 +16,7 @@ namespace Scoops.patch
         public static GameObject bugPhonePrefab = null;
         public static GameObject maskPhonePrefab = null;
         public static GameObject clipboardPrefab = null;
+        public static GameObject switchboardPrefab = null;
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
         public static void Init()
@@ -70,6 +72,35 @@ namespace Scoops.patch
                     itemInfo.maxCharactersToType = 25;
                     
                     Items.RegisterShopItem(clipboardItem, null, null, itemInfo, Config.clipboardPrice.Value);
+                }
+            }
+
+            if (switchboardPrefab == null)
+            {
+                switchboardPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardContainer");
+                switchboardPrefab.AddComponent<SwitchboardPhone>();
+
+                NetworkManager.Singleton.AddNetworkPrefab(switchboardPrefab);
+
+                if (Config.switchboardPurchase.Value)
+                {
+                    UnlockableItem Switchboard = new UnlockableItem();
+                    Switchboard.prefabObject = switchboardPrefab;
+                    Switchboard.unlockableName = "Switchboard";
+                    Switchboard.IsPlaceable = true;
+                    Switchboard.spawnPrefab = true;
+                    Switchboard.alwaysInStock = true;
+                    Switchboard.canBeStored = true;
+                    Switchboard.unlockableType = 1;
+                    Switchboard.maxNumber = 1;
+
+                    TerminalNode switchboardInfo = ScriptableObject.CreateInstance<TerminalNode>();
+                    switchboardInfo.name = "PhoneSwitchboardInfoNode";
+                    switchboardInfo.displayText = "A Switchboard for your ship. Enjoy easy routing and management of your co-workers' Personal Phones from the safety of your ship.\n\n";
+                    switchboardInfo.clearPreviousText = true;
+                    switchboardInfo.maxCharactersToType = 25;
+
+                    Unlockables.RegisterUnlockable(Switchboard, StoreType.ShipUpgrade, null, null, switchboardInfo, Config.switchboardPrice.Value);
                 }
             }
         }

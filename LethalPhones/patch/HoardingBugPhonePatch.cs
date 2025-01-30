@@ -31,8 +31,6 @@ public class HoardingBugPhonePatch
                     GameObject bugPhone = GameObject.Instantiate(NetworkObjectManager.bugPhonePrefab, Vector3.zero, Quaternion.identity);
                     bugPhone.GetComponent<NetworkObject>().Spawn();
                     bugPhone.GetComponent<NetworkObject>().TrySetParent(__instance.transform, false);
-
-                    PhoneManager.CreateNewPhone(bugPhone.GetComponent<NetworkObject>().NetworkObjectId, CustomizationManager.DEFAULT_SKIN, CustomizationManager.DEFAULT_CHARM, CustomizationManager.DEFAULT_RINGTONE);
                 }
             }
         }

@@ -1,4 +1,5 @@
-﻿using LethalLib.Modules;
+﻿using GameNetcodeStuff;
+using LethalLib.Modules;
 using Scoops.compatability;
 using Scoops.customization;
 using Scoops.gameobjects;
@@ -30,12 +31,12 @@ namespace Scoops.misc
 
             masked = (MaskedPlayerEnemy)enemy;
 
-            upperSpine = masked.transform.Find("ScavengerModel").Find("metarig").Find("spine").Find("spine.001").Find("spine.002").Find("spine.003");
+            upperSpine = masked.transform.Find("ScavengerModel/metarig/spine/spine.001/spine.002/spine.003");
 
             GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneModel");
-            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, upperSpine.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L"), false);
 
-            Transform ServerArmsRig = masked.transform.Find("ScavengerModel").Find("metarig").Find("Rig 1");
+            Transform ServerArmsRig = masked.transform.Find("ScavengerModel/metarig/Rig 1");
             GameObject leftArmServerPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerLeftArmPhone");
             GameObject leftArmServerPhoneTargetPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneTargetHolder");
 
@@ -43,26 +44,52 @@ namespace Scoops.misc
 
             GameObject serverLeftArmPhoneTarget = GameObject.Instantiate(leftArmServerPhoneTargetPrefab, upperSpine, false);
 
-            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = upperSpine.Find("shoulder.L").Find("arm.L_upper");
-            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = upperSpine.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = upperSpine.Find("shoulder.L/arm.L_upper");
+            serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = upperSpine.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L");
             serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.target = serverLeftArmPhoneTarget.transform.Find("ServerPhoneTarget");
 
             serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();
 
-            masked.transform.Find("ScavengerModel").Find("metarig").GetComponent<RigBuilder>().Build();
+            masked.transform.Find("ScavengerModel/metarig").GetComponent<RigBuilder>().Build();
 
             SetPhoneServerModelActive(false);
 
             ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
             LeftArmRig.weight = 0f;
 
-            Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel").Find("PhoneTop").Find("PhoneCanvas");
+            Transform serverPhoneCanvas = serverPhoneModel.transform.Find("ServerPhoneModel/PhoneTop/PhoneCanvas");
             this.serverPersonalPhoneNumberUI = serverPhoneCanvas.Find("PersonalNumber").GetComponent<TextMeshProUGUI>();
+
+            PlayerControllerB mimicPlayer = MirageCompat.GetMimickedPlayer(masked);
+            PlayerPhone phone = mimicPlayer.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+
+            string skin = CustomizationManager.DEFAULT_SKIN;
+            string charm = CustomizationManager.DEFAULT_CHARM;
+            string ringtone = CustomizationManager.DEFAULT_RINGTONE;
+
+            if (phone != null)
+            {
+                skin = phone.phoneSkinId;
+                charm = phone.phoneCharmId;
+                ringtone = phone.phoneRingtoneId;
+            }
 
             if (IsOwner)
             {
                 StartCoroutine(CustomizationCoroutine());
+                PhoneNetworkHandler.Instance.CreateNewPhone(NetworkObjectId, skin, charm, ringtone);
             }
+        }
+
+        public override string GetPhoneName()
+        {
+            if (MirageCompat.Enabled && masked)
+            {
+                PlayerControllerB mimicPlayer = MirageCompat.GetMimickedPlayer(masked);
+                return mimicPlayer.playerUsername;
+            }
+
+            return base.GetPhoneName();
         }
 
         // wait for a moment before syncing the phone customizations
@@ -240,7 +267,7 @@ namespace Scoops.misc
         {
             SetPhoneServerModelActive(active);
 
-            Transform ServerArmsRig = masked.transform.Find("ScavengerModel").Find("metarig").Find("Rig 1");
+            Transform ServerArmsRig = masked.transform.Find("ScavengerModel/metarig/Rig 1");
             ChainIKConstraint LeftArmRig = ServerArmsRig.Find("ServerLeftArmPhone(Clone)").GetComponent<ChainIKConstraint>();
 
             armsActive = active;

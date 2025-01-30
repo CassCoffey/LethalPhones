@@ -1,4 +1,5 @@
 ﻿
+using LethalLib.Extras;
 using LethalLib.Modules;
 using Scoops.misc;
 using System;
@@ -176,6 +177,7 @@ namespace Scoops.service
     {
         public static AudioClip phoneRingCaller;
         public static AudioClip phoneRingReciever;
+        public static AudioClip switchboardRing;
         public static AudioClip phonePickup;
         public static AudioClip phoneHangup;
         public static AudioClip phoneRotaryForward;
@@ -191,7 +193,12 @@ namespace Scoops.service
         public static AudioClip phoneStaticTwo;
         public static AudioClip phoneStaticThree;
 
+        public static Material greenLight;
+        public static Material redLight;
+        public static Material offLight;
+
         public static GameObject customizationGUI;
+        public static GameObject headphoneDisplayPrefab;
 
         public const string PHONE_UNLOCK_NAME = "Personal Phones";
 
@@ -220,9 +227,11 @@ namespace Scoops.service
             }
 
             customizationGUI = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneCustomization_GUI");
+            headphoneDisplayPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("HeadsetMicrophone");
 
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
+            switchboardRing = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardRing");
             phonePickup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhonePickup");
             phoneHangup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneHangup");
             phoneRotaryForward = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("RotaryDialForwardOptionTwo");
@@ -237,6 +246,10 @@ namespace Scoops.service
             phoneStaticOne = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticOne");
             phoneStaticTwo = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticTwo");
             phoneStaticThree = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticThree");
+
+            greenLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("GreenLight");
+            redLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("RedLight");
+            offLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("OffLight");
         }
     }
 }

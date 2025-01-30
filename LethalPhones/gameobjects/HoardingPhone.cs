@@ -1,4 +1,5 @@
 ﻿using Scoops.compatability;
+using Scoops.customization;
 using Scoops.gameobjects;
 using Scoops.patch;
 using Scoops.service;
@@ -23,7 +24,12 @@ namespace Scoops.misc
             bug = (HoarderBugAI)enemy;
 
             GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugServerPhoneModel");
-            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature").Find("Abdomen").Find("Chest").Find("Head").Find("Bone.03").Find("Bone.04").Find("Bone.04_end"), false);
+            serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature/Abdomen/Chest/Head/Bone.03/Bone.04/Bone.04_end"), false);
+
+            if (IsOwner)
+            {
+                PhoneNetworkHandler.Instance.CreateNewPhone(NetworkObjectId, CustomizationManager.DEFAULT_SKIN, CustomizationManager.DEFAULT_CHARM, CustomizationManager.DEFAULT_RINGTONE);
+            }
         }
 
         public override void Death()

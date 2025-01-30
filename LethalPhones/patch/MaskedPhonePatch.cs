@@ -34,23 +34,6 @@ public class MaskedPhonePatch
                         GameObject maskPhone = GameObject.Instantiate(NetworkObjectManager.maskPhonePrefab, Vector3.zero, Quaternion.identity);
                         maskPhone.GetComponent<NetworkObject>().Spawn();
                         maskPhone.GetComponent<NetworkObject>().TrySetParent(__instance.transform, false);
-
-                        PlayerControllerB mimicPlayer = MirageCompat.GetMimickedPlayer(__instance);
-                        Debug.Log("Masked mimicking " + mimicPlayer.playerUsername);
-                        PlayerPhone phone = mimicPlayer.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-
-                        string skin = CustomizationManager.DEFAULT_SKIN;
-                        string charm = CustomizationManager.DEFAULT_CHARM;
-                        string ringtone = CustomizationManager.DEFAULT_RINGTONE;
-
-                        if (phone != null)
-                        {
-                            skin = phone.phoneSkinId;
-                            charm = phone.phoneCharmId;
-                            ringtone = phone.phoneRingtoneId;
-                        }
-
-                        PhoneManager.CreateNewPhone(maskPhone.GetComponent<NetworkObject>().NetworkObjectId, skin, charm, ringtone);
                     }
                 }
             }

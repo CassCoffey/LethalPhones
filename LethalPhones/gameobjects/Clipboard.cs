@@ -20,7 +20,7 @@ namespace Scoops.misc
             PhoneNetworkHandler.Instance.UpdateClipboardText();
 
             clipboardRenderer = transform.Find("Board").GetComponent<Renderer>();
-            textArea = transform.Find("Paper").Find("PaperCanvas").Find("Text (TMP)").GetComponent<TextMeshProUGUI>();
+            textArea = transform.Find("Paper/PaperCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>();
         }
 
         //tbh I do not like this
@@ -37,7 +37,7 @@ namespace Scoops.misc
         {
             if (textArea == null)
             {
-                textArea = transform.Find("Paper").Find("PaperCanvas").Find("Text (TMP)").GetComponent<TextMeshProUGUI>();
+                textArea = transform.Find("Paper/PaperCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>();
             }
 
             string newClipboardText = "";
@@ -45,7 +45,7 @@ namespace Scoops.misc
             foreach (ulong phoneId in phoneIds)
             {
                 PlayerPhone playerPhone = GetNetworkObject(phoneId).GetComponent<PlayerPhone>();
-                newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.player.playerUsername + "\n";
+                newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.GetPhoneName() + "\n";
             }
 
             textArea.text = newClipboardText;

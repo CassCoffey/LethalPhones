@@ -2,6 +2,7 @@
 using GameNetcodeStuff;
 using Scoops.compatability;
 using Scoops.customization;
+using Scoops.gameobjects;
 using Scoops.patch;
 using Scoops.service;
 using System;
@@ -120,6 +121,16 @@ namespace Scoops.misc
             }
         }
 
+        public virtual string GetPhoneName()
+        {
+            return "???";
+        }
+
+        public bool IsBusy()
+        {
+            return outgoingCall != null || incomingCall != null || activeCall != null;
+        }
+
         public void CallRandomNumber()
         {
             string number = GetRandomExistingPhoneNumber();
@@ -130,6 +141,12 @@ namespace Scoops.misc
 
             outgoingCall = number;
 
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
+        }
+
+        public virtual void CallNumber(string number)
+        {
+            outgoingCall = number;
             PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
         }
 
@@ -173,9 +190,10 @@ namespace Scoops.misc
                 return;
             }
 
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated())
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated() && !(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == localPlayer))
             {
-                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                 float listenDist = (localPlayer.transform.position - callerPhone.transform.position).sqrMagnitude;
                 if (listenDist > (Config.eavesdropDist.Value * Config.eavesdropDist.Value))
                 {
@@ -214,9 +232,10 @@ namespace Scoops.misc
 
             float listenDist = 0f;
             float listenAngle = 0f;
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated())
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated() && !(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == localPlayer))
             {
-                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
                 listenDist = Vector3.Distance(localPlayer.transform.position, callerPhone.transform.position);
                 if (listenDist > Config.eavesdropDist.Value)
                 {
@@ -268,7 +287,7 @@ namespace Scoops.misc
             this.audioSourcesInRange.Clear();
         }
 
-        protected virtual bool IsBeingSpectated()
+        public virtual bool IsBeingSpectated()
         {
             return false;
         }
@@ -346,19 +365,22 @@ namespace Scoops.misc
                 {
                     if (background != GameNetworkManager.Instance.localPlayerController && backgroundPhone != this && backgroundPhone != callerPhone)
                     {
-                        float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
-                        float localDist = (backgroundPhone.transform.position - GameNetworkManager.Instance.localPlayerController.transform.position).sqrMagnitude;
-                        if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
+                        if (!(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == background))
                         {
-                            modifiedVoices.Add(backgroundPhone);
-                            backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
-                        }
-                        else
-                        {
-                            if (modifiedVoices.Contains(backgroundPhone))
+                            float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
+                            float localDist = (backgroundPhone.transform.position - GameNetworkManager.Instance.localPlayerController.transform.position).sqrMagnitude;
+                            if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
                             {
-                                modifiedVoices.Remove(backgroundPhone);
-                                backgroundPhone.RemovePhoneVoiceEffect();
+                                modifiedVoices.Add(backgroundPhone);
+                                backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
+                            }
+                            else
+                            {
+                                if (modifiedVoices.Contains(backgroundPhone))
+                                {
+                                    modifiedVoices.Remove(backgroundPhone);
+                                    backgroundPhone.RemovePhoneVoiceEffect();
+                                }
                             }
                         }
                     }
@@ -374,6 +396,11 @@ namespace Scoops.misc
             }
 
             this.modifiedVoices.Clear();
+        }
+
+        public virtual void UpdateCallValues()
+        {
+            // Nothing by default
         }
 
         protected virtual void ApplySkin(string skinId)
@@ -571,7 +598,7 @@ namespace Scoops.misc
             PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId, this.phoneCharmId, this.phoneRingtoneId);
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         protected void UpdateConnectionQualityServerRpc(float currentConnectionQuality)
         {
             connectionQuality.Value = currentConnectionQuality;
@@ -604,6 +631,34 @@ namespace Scoops.misc
             else if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.LineBusyServerRpc(callerNumber);
+            }
+        }
+
+        [ClientRpc]
+        public void TransferCallClientRpc(ulong callerId, string callerNumber, string transferNumber)
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+
+            if (activeCall == callerNumber)
+            {
+                PlayHangupSoundServerRpc();
+                activeCall = null;
+                StartOfRound.Instance.UpdatePlayerVoiceEffects();
+                UpdateCallingUI();
+
+                if (transferNumber != phoneNumber)
+                {
+                    CallNumber(transferNumber);
+                }
+
+                UpdateCallValues();
+            }
+            else
+            {
+                // No you can't transfer a call you're not on.
             }
         }
 
@@ -656,7 +711,7 @@ namespace Scoops.misc
             }
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void PlayHangupSoundServerRpc()
         {
             PlayHangupSoundClientRpc();
@@ -674,7 +729,7 @@ namespace Scoops.misc
             thisAudio.PlayOneShot(PhoneAssetManager.phoneHangup);
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void PlayPickupSoundServerRpc()
         {
             PlayPickupSoundClientRpc();
@@ -698,7 +753,7 @@ namespace Scoops.misc
             thisAudio.PlayOneShot(PhoneAssetManager.phoneBusy);
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void StopRingingServerRpc()
         {
             StopRingingClientRpc();
@@ -710,7 +765,7 @@ namespace Scoops.misc
             StopRinging();
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void StartOutgoingRingingServerRpc()
         {
             StartOutgoingRingingClientRpc();
@@ -722,7 +777,7 @@ namespace Scoops.misc
             StartOutgoingRinging();
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void StopOutgoingRingingServerRpc()
         {
             StopOutgoingRingingClientRpc();
@@ -765,7 +820,7 @@ namespace Scoops.misc
             ringAudio.Play();
         }
 
-        protected void StopRinging()
+        protected virtual void StopRinging()
         {
             if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
             ringAudio.Stop();

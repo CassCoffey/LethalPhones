@@ -1,6 +1,7 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
 using LethalLib.Modules;
+using Scoops.gameobjects;
 using Scoops.misc;
 using Scoops.patch;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ namespace Scoops.service
         private Dictionary<string, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
+        public SwitchboardPhone switchboard;
 
         public void Start()
         {
@@ -89,12 +91,22 @@ namespace Scoops.service
             Locked.Value = locked;
         }
 
+        public void RegisterSwitchboard(ulong switchboardId)
+        {
+            RegisterSwitchboardServerRpc(switchboardId);
+        }
+
         public void CreateNewPhone(ulong phoneId, string skinId, string charmId, string ringtoneId)
         {
             CreateNewPhoneNumberServerRpc(phoneId, skinId, charmId, ringtoneId);
         }
 
         public void RequestClientUpdates()
+        {
+            UpdateAllClientsServerRpc();
+        }
+
+        public void RequestSwitchboardUpdates()
         {
             UpdateAllClientsServerRpc();
         }
@@ -135,6 +147,57 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
+        public void RequestSwitchboardUpdatesServerRpc()
+        {
+            UpdateSwitchboardPhones();
+        }
+
+        public void UpdateSwitchboardPhones()
+        {
+            List<ulong> phones = new List<ulong>();
+            List<PhoneBehavior> phoneBehaviors = phoneObjectDict.Values.ToList<PhoneBehavior>();
+
+            if (phoneBehaviors.Count > 1)
+            {
+                phoneBehaviors.Sort((e,f) => { return e.phoneNumber.CompareTo(f.phoneNumber); });
+            }
+
+            foreach (PhoneBehavior phone in phoneBehaviors)
+            {
+                if (!(phone is MaskedPhone || phone is SwitchboardPhone)) {
+                    phones.Add(phone.NetworkObjectId);
+                }
+            }
+
+            switchboard.UpdatePhoneListClientRpc(phones.ToArray());
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void RegisterSwitchboardServerRpc(ulong SwitchboardId, ServerRpcParams serverRpcParams = default)
+        {
+            if (switchboard != null)
+            {
+                Plugin.Log.LogInfo($"Tried to register more than one switchboard.");
+                return;
+            }
+
+            string number = Config.switchboardNumber.Value;
+
+            switchboard = GetNetworkObject(SwitchboardId).GetComponent<SwitchboardPhone>();
+            Plugin.Log.LogInfo($"New switchboard for object: " + SwitchboardId);
+
+            switchboard.GetComponent<NetworkObject>().ChangeOwnership(NetworkManager.ServerClientId);
+            phoneNumberDict.Add(number, switchboard.NetworkObjectId);
+            phoneObjectDict.Add(number, switchboard);
+
+            switchboard.SetNewPhoneNumberClientRpc(number);
+
+            RequestClientUpdates();
+
+            UpdateSwitchboardPhones();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
         public void CreateNewPhoneNumberServerRpc(ulong phoneId, string skinId, string charmId, string ringtoneId, ServerRpcParams serverRpcParams = default)
         {
             ulong clientId = serverRpcParams.Receive.SenderClientId;
@@ -149,7 +212,7 @@ namespace Scoops.service
 
             int phoneNumber = Random.Range(0, maxNumber);
             string phoneString = phoneNumber.ToString("D4");
-            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()))
+            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()) || phoneNumber.ToString() == Config.switchboardNumber.Value)
             {
                 phoneNumber = Random.Range(0, maxNumber);
                 phoneString = phoneNumber.ToString("D4");
@@ -167,6 +230,13 @@ namespace Scoops.service
             phone.phoneRingtoneId = ringtoneId;
 
             phone.SetNewPhoneNumberClientRpc(phoneString);
+
+            RequestClientUpdates();
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
 
         public void DeletePlayerPhone(int playerId)
@@ -180,6 +250,11 @@ namespace Scoops.service
                 phone.GetComponent<NetworkObject>().RemoveOwnership();
             }
             RemoveNumber(number);
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
 
         public void DeletePhone(ulong phoneId)
@@ -192,6 +267,20 @@ namespace Scoops.service
                 phone.GetComponent<NetworkObject>().RemoveOwnership();
             }
             RemoveNumber(number);
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
+        }
+
+        public void DeleteSwitchboard()
+        {
+            Plugin.Log.LogInfo("Deleting switchboard");
+            string number = switchboard.phoneNumber;
+
+            RemoveNumber(number);
+            switchboard = null;
         }
 
         public void RemoveNumber(string number)
@@ -202,6 +291,11 @@ namespace Scoops.service
 
                 phoneObjectDict.Remove(number);
                 phoneNumberDict.Remove(number);
+
+                if (switchboard != null)
+                {
+                    UpdateSwitchboardPhones();
+                }
             }
         }
 
@@ -248,6 +342,17 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
+        public void TransferCallServerRpc(string number, string transferNumber, ulong transferrerId, ServerRpcParams serverRpcParams = default)
+        {
+            if (phoneNumberDict.ContainsKey(number) && phoneNumberDict.ContainsKey(transferNumber))
+            {
+                string transferrerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == transferrerId).Key;
+
+                phoneObjectDict[number].TransferCallClientRpc(transferrerId, transferrerPhoneNumber, transferNumber);
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
         public void LineBusyServerRpc(string number, ServerRpcParams serverRpcParams = default)
         {
             phoneObjectDict[number].InvalidCallClientRpc("Line Busy");
@@ -262,6 +367,11 @@ namespace Scoops.service
             }
 
             UpdateClipboardText();
+
+            if (switchboard != null)
+            {
+                UpdateSwitchboardPhones();
+            }
         }
     }
 }

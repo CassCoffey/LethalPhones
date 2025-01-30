@@ -127,8 +127,6 @@ public class PlayerPhonePatch
         NetworkObject phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<NetworkObject>();
         PhoneManager.CreateNewPhone(phone.NetworkObjectId, CustomizationManager.SelectedSkin, CustomizationManager.SelectedCharm, CustomizationManager.SelectedRingtone);
 
-        PhoneManager.RequestClientUpdates();
-
         Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;
         Plugin.InputActionInstance.HangupPhoneKey.performed += OnHangupPhoneKeyPressed;

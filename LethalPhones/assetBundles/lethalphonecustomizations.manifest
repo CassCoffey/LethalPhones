@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 64589176
+CRC: 2154064045
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: e6699c0bd64cb867ce207b32b1bf96d6
+    Hash: 7bfad09e3bd43514c4a5a9de8bddec1a
   TypeTreeHash:
     serializedVersion: 2
     Hash: 22e41b1e23d90957060c9edb3a5806ba
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: e6699c0bd64cb867ce207b32b1bf96d6
+    Hash: 7bfad09e3bd43514c4a5a9de8bddec1a
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -81,10 +81,11 @@ Assets:
 - Assets/Customizations/PridePan_Charm.prefab
 - Assets/Customizations/PacMan_Skin.prefab
 - Assets/Customizations/PrideNonbinary_Charm.prefab
-- Assets/Customizations/Lambda_Delivery_Ringtone.mp3
+- Assets/Customizations/WristStrap_Charm.prefab
 - Assets/Customizations/Pacman_Dubstep_Ringtone.wav
 - Assets/Customizations/PrideTrans_Charm.prefab
 - Assets/Customizations/Default_Ringtone.wav
+- Assets/Customizations/Lambda_Delivery_Ringtone.mp3
 - Assets/Customizations/Red_Skin.prefab
 - Assets/Customizations/WhatsNewPussycat_Ringtone.wav
 - Assets/Customizations/Darude_Ringtone.wav
