@@ -541,13 +541,22 @@ namespace Scoops.gameobjects
         protected override void StartRinging()
         {
             ringAudio.Stop();
+            transform.Find("SwitchboardMesh").GetComponent<Animator>().Play("RingerRest");
+
             if (!silenced.Value)
             {
                 activePhoneRingCoroutine = PhoneRingCoroutine(4);
                 StartCoroutine(activePhoneRingCoroutine);
-                ringAudio.clip = CustomizationManager.ringtoneCustomizations[CustomizationManager.DEFAULT_RINGTONE];
+                ringAudio.clip = PhoneAssetManager.switchboardRing;
                 ringAudio.Play();
+                transform.Find("SwitchboardMesh").GetComponent<Animator>().Play("RingerRing");
             }
+        }
+
+        protected override void StopRinging()
+        {
+            base.StopRinging();
+            transform.Find("SwitchboardMesh").GetComponent<Animator>().Play("RingerRest");
         }
 
         [ServerRpc(RequireOwnership = false)]

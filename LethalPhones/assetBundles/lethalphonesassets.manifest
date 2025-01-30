@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 4202402120
+CRC: 2861407039
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 937549ff3e3c680bc60ecfffedff8f97
+    Hash: eb0b3b989c60967f2c4745ec108932b9
   TypeTreeHash:
     serializedVersion: 2
     Hash: c648b25490683fff86905ca3ff02e7a3
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 937549ff3e3c680bc60ecfffedff8f97
+    Hash: eb0b3b989c60967f2c4745ec108932b9
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -201,6 +201,7 @@ Assets:
 - Assets/Sounds/RotaryDialBackOptionOne.wav
 - Assets/LocalPhoneModel.prefab
 - Assets/ServerPhoneModel.prefab
+- Assets/Sounds/SwitchboardRing.wav
 - Assets/Sounds/PhoneStaticThree.wav
 - Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/MaskPhonePrefab.prefab

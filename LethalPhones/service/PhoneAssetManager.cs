@@ -177,6 +177,7 @@ namespace Scoops.service
     {
         public static AudioClip phoneRingCaller;
         public static AudioClip phoneRingReciever;
+        public static AudioClip switchboardRing;
         public static AudioClip phonePickup;
         public static AudioClip phoneHangup;
         public static AudioClip phoneRotaryForward;
@@ -228,6 +229,7 @@ namespace Scoops.service
 
             phoneRingCaller = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Caller");
             phoneRingReciever = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Reciever");
+            switchboardRing = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("SwitchboardRing");
             phonePickup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhonePickup");
             phoneHangup = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneHangup");
             phoneRotaryForward = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("RotaryDialForwardOptionTwo");

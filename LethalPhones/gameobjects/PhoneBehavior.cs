@@ -820,7 +820,7 @@ namespace Scoops.misc
             ringAudio.Play();
         }
 
-        protected void StopRinging()
+        protected virtual void StopRinging()
         {
             if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
             ringAudio.Stop();
