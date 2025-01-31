@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using Unity.Netcode;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.UI;
@@ -24,6 +25,7 @@ namespace Scoops.misc
         public Transform localPhoneStopperNode;
         public Transform localPhoneDial;
         public List<GameObject> localPhoneDialNumbers;
+        public List<Vector3> dialNumbersDefaultPos;
         public GameObject serverPhoneModel;
 
         public bool toggled = false;
@@ -47,6 +49,8 @@ namespace Scoops.misc
         private AudioSource nonCorpseRingAudio;
 
         private Transform currentDialingNumber;
+
+        private float maxDialingZ = 0f;
 
         private float timeSinceRotaryMoved = 0f;
         private bool reversingRotary = false;
@@ -112,9 +116,11 @@ namespace Scoops.misc
 
             localPhoneDial = localPhoneModel.transform.Find("LocalPhoneModel/PhoneDial");
             this.localPhoneDialNumbers = new List<GameObject>(10);
+            this.dialNumbersDefaultPos = new List<Vector3>(10);
             foreach (Transform child in localPhoneDial)
             {
                 this.localPhoneDialNumbers.Add(child.gameObject);
+                this.dialNumbersDefaultPos.Add(child.localPosition);
             }
         }
 
@@ -326,6 +332,20 @@ namespace Scoops.misc
                     {
                         currentDialingNumber = closestNum.transform;
 
+                        Vector3 dialVect3 = dialNumbersDefaultPos[localPhoneDialNumbers.IndexOf(currentDialingNumber.gameObject)] - localPhoneInteractionBase;
+                        Vector2 dialVect2 = new Vector2(dialVect3.x, dialVect3.y).normalized;
+                        Vector3 stopperVect3 = localPhoneStopperNode.transform.localPosition - localPhoneInteractionBase;
+                        Vector2 stopperVect2 = new Vector2(stopperVect3.x, stopperVect3.y).normalized;
+
+                        float sign = Mathf.Sign(dialVect2.x * stopperVect2.y - dialVect2.y * stopperVect2.x);
+                        maxDialingZ = Vector2.Angle(dialVect2, stopperVect2) * sign;
+                        if (maxDialingZ < 0)
+                        {
+                            maxDialingZ = 360f + maxDialingZ;
+                        }
+                        // A little magic number flavor
+                        maxDialingZ -= 10f;
+
                         rotaryAudio.Stop();
                         rotaryAudio.clip = PhoneAssetManager.phoneRotaryForward;
                         rotaryAudio.Play();
@@ -339,12 +359,10 @@ namespace Scoops.misc
                 }
                 else if (currentDialingNumber != null)
                 {
-                    float dist = Vector3.Distance(currentDialingNumber.transform.position, localPhoneStopperNode.transform.position);
-
                     Vector3 localNumberLocation = localPhoneInteractionNode.parent.InverseTransformPoint(currentDialingNumber.position);
                     localPhoneInteractionNode.localPosition = new Vector3(localNumberLocation.x, localNumberLocation.y, localPhoneInteractionNode.localPosition.z);
 
-                    if (dist > 0.03f)
+                    if (localPhoneDial.localEulerAngles.z < maxDialingZ)
                     {
                         timeSinceRotaryMoved += Time.deltaTime;
 
@@ -357,7 +375,13 @@ namespace Scoops.misc
                         rotationPower *= vector.magnitude;
                         rotationPower *= 7500f;
 
-                        localPhoneDial.localEulerAngles = new Vector3(0, 0, localPhoneDial.localEulerAngles.z + rotationPower);
+                        float newZ = localPhoneDial.localEulerAngles.z + rotationPower;
+                        if (newZ > maxDialingZ)
+                        {
+                            newZ = maxDialingZ;
+                        }
+
+                        localPhoneDial.localEulerAngles = new Vector3(0, 0, newZ);
 
                         if (rotationPower != 0f)
                         {
