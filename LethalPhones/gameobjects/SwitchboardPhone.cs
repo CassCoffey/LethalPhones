@@ -536,7 +536,7 @@ namespace Scoops.gameobjects
 
                 UpdateCallingUI();
             }
-            else
+            else if (outgoingCall == null)
             {
                 // No calls of any sort are happening, make a new one
                 CallSelectedNumber();

@@ -1013,7 +1013,7 @@ namespace Scoops.misc
                 case phoneVolume.Ring:
                     activePhoneRingCoroutine = PhoneRingCoroutine(4);
                     StartCoroutine(activePhoneRingCoroutine);
-                    if (Config.disableRingtones.Value && !IsOwner)
+                    if ((Config.disableRingtones.Value && !IsOwner) || !CustomizationManager.ringtoneCustomizations.ContainsKey(phoneRingtoneId))
                     {
                         ringAudio.clip = CustomizationManager.ringtoneCustomizations[CustomizationManager.DEFAULT_RINGTONE];
                     } 
