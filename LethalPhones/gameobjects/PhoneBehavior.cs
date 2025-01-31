@@ -1,5 +1,4 @@
-﻿using Dissonance;
-using GameNetcodeStuff;
+﻿using GameNetcodeStuff;
 using Scoops.compatability;
 using Scoops.customization;
 using Scoops.gameobjects;
@@ -11,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Unity.Netcode;
+using Unity.Profiling;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
@@ -465,7 +465,7 @@ namespace Scoops.misc
                 targetConnectionQuality -= 0.1f;
                 float entranceDist = 300f;
 
-                EntranceTeleport[] entranceArray = UnityEngine.Object.FindObjectsOfType<EntranceTeleport>(false);
+                EntranceTeleport[] entranceArray = UnityEngine.Object.FindObjectsByType<EntranceTeleport>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
                 for (int i = 0; i < entranceArray.Length; i++)
                 {
                     if (!entranceArray[i].isEntranceToBuilding)
@@ -483,7 +483,7 @@ namespace Scoops.misc
 
             float apparatusDist = 300f;
 
-            LungProp[] apparatusArray = UnityEngine.Object.FindObjectsOfType<LungProp>(false);
+            LungProp[] apparatusArray = UnityEngine.Object.FindObjectsByType<LungProp>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             for (int i = 0; i < apparatusArray.Length; i++)
             {
                 float newDist = Vector3.Distance(apparatusArray[i].transform.position, transform.position);

@@ -57,7 +57,7 @@ public class Plugin : BaseUnityPlugin
 
     private readonly Harmony _harmony = new(PluginInformation.PLUGIN_GUID);
 
-    internal static LethalPhonesInputClass InputActionInstance = new LethalPhonesInputClass();
+    internal static LethalPhonesInputClass InputActionInstance;
 
     public Plugin()
     {
@@ -66,6 +66,8 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
+        InputActionInstance = new LethalPhonesInputClass();
+
         Log.LogInfo("Loading LethalPhones Version " + PluginInformation.PLUGIN_VERSION);
 
         NetcodePatcher(); // ONLY RUN ONCE

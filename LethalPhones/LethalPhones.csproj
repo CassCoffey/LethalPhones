@@ -111,6 +111,6 @@
         <!-- Start new instances of the game as many times as specified in NumberOfClients -->
         <!-- The ping command is used to apply a delay between each instance, otherwise only one BepInEx debug terminal would be opened -->
         <!-- Use ping command is a workaround because Windows doesn't have a sleep command -->
-        <Exec Command="for /L %%i in (1,1,$(NumberOfClients)) do (start &quot;&quot; &quot;$(GameExePath)&quot; &amp; if %%i lss $(NumberOfClients) (ping 127.0.0.1 -n $(PingDelay) &gt; nul))" />
+        <Exec Command="for /L %%i in (1,1,$(NumberOfClients)) do (start &quot;&quot; &quot;$(GameExePath)&quot; -deepprofiling -profiler-maxusedmemory 2404217728 &amp; if %%i lss $(NumberOfClients) (ping 127.0.0.1 -n $(PingDelay) &gt; nul))" />
     </Target>
 </Project>
