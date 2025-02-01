@@ -201,7 +201,7 @@ namespace Scoops.misc
                 }
             }
 
-            untrackedAudioSources = StartOfRoundPhonePatch.GetAllAudioSourcesInRange(transform.position);
+            untrackedAudioSources = AudioSourceManager.Instance.GetAllAudioSourcesInRange(transform.position);
             foreach (AudioSource source in untrackedAudioSources)
             {
                 if (source != null && source.spatialBlend != 0f)
