@@ -188,7 +188,7 @@ namespace Scoops.gameobjects
             activeCaller = activeCallerUpdate;
         }
 
-        public override void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
+        public void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
         {
             if (enemy == null)
             {
@@ -247,7 +247,7 @@ namespace Scoops.gameobjects
             }
         }
 
-        public override void RemovePhoneVoiceEffect()
+        public void RemovePhoneVoiceEffect()
         {
             if (enemy == null)
             {

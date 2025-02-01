@@ -49,6 +49,9 @@ namespace Scoops.gameobjects
         {
             base.Start();
 
+            this.recordPos = transform.Find("HeadphoneCube");
+            this.playPos = transform.Find("HeadphoneCube");
+
             this.ringAudio = transform.Find("RingerAudio").GetComponent<AudioSource>();
             ringAudio.volume = Config.ringtoneVolume.Value;
 
@@ -417,6 +420,8 @@ namespace Scoops.gameobjects
         {
             transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = !active;
             headphonePos = active ? switchboardOperator.playerGlobalHead : transform.Find("HeadphoneCube");
+            recordPos = headphonePos;
+            playPos = headphonePos;
 
             if (active && switchboardOperator == GameNetworkManager.Instance.localPlayerController)
             {
@@ -430,9 +435,6 @@ namespace Scoops.gameobjects
             if (started)
             {
                 UpdateCallingUI();
-
-                ResetAllAudioSources();
-                ResetAllPlayerVoices();
             }
         }
 
@@ -525,7 +527,6 @@ namespace Scoops.gameobjects
                 {
                     //hang up our active first!
                     PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                    RemovePhoneVoiceEffect(activeCaller);
                 }
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
@@ -764,8 +765,6 @@ namespace Scoops.gameobjects
                     listenDist = Vector3.Distance(localPlayer.transform.position, headphonePos.position);
                     if (listenDist > Config.eavesdropDist.Value)
                     {
-                        // We are out of range, get these sources cleared
-                        ResetAllPlayerVoices();
                         return;
                     }
 
@@ -787,52 +786,9 @@ namespace Scoops.gameobjects
             {
                 UpdateStatic(worseConnection, listenDist);
             }
-
-            float dist = Vector3.Distance(callerPhone.transform.position, headphonePos.position);
-
-            if (dist > Config.recordingStartDist.Value)
-            {
-                modifiedVoices.Add(callerPhone);
-                callerPhone.ApplyPhoneVoiceEffect(0f, listenDist, listenAngle, worseConnection);
-            }
-            else
-            {
-                if (modifiedVoices.Contains(callerPhone))
-                {
-                    modifiedVoices.Remove(callerPhone);
-                    callerPhone.RemovePhoneVoiceEffect();
-                }
-            }
-
-            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
-            {
-                PlayerControllerB background = StartOfRound.Instance.allPlayerScripts[i];
-                PlayerPhone backgroundPhone = background.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-                if (background != null && backgroundPhone != null && background.isPlayerControlled && !background.isPlayerDead && !background.IsLocalPlayer)
-                {
-                    if (background != GameNetworkManager.Instance.localPlayerController && backgroundPhone != this && backgroundPhone != callerPhone)
-                    {
-                        float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
-                        float localDist = (backgroundPhone.transform.position - headphonePos.position).sqrMagnitude;
-                        if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
-                        {
-                            modifiedVoices.Add(backgroundPhone);
-                            backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
-                        }
-                        else
-                        {
-                            if (modifiedVoices.Contains(backgroundPhone))
-                            {
-                                modifiedVoices.Remove(backgroundPhone);
-                                backgroundPhone.RemovePhoneVoiceEffect();
-                            }
-                        }
-                    }
-                }
-            }
         }
 
-        public override void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
+        public void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
         {
             if (switchboardOperator == null)
             {
@@ -903,7 +859,7 @@ namespace Scoops.gameobjects
             }
         }
 
-        public override void RemovePhoneVoiceEffect()
+        public void RemovePhoneVoiceEffect()
         {
             if (switchboardOperator == null)
             {

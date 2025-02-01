@@ -65,13 +65,13 @@ public class PlayerPhonePatch
         GameObject.Instantiate(phoneAudioPrefab, __instance.transform.Find("Audios"));
 
         GameObject localPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LocalPhoneModel");
-        GameObject localPhoneModel = GameObject.Instantiate(localPhoneModelPrefab, __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+        GameObject localPhoneModel = GameObject.Instantiate(localPhoneModelPrefab, __instance.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L"), false);
 
         GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerPhoneModel");
-        GameObject serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, __instance.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L"), false);
+        GameObject serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, __instance.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L"), false);
 
         Transform ArmsRig = __instance.localArmsTransform.Find("RigArms");
-        Transform ServerArmsRig = __instance.meshContainer.Find("metarig").Find("Rig 1");
+        Transform ServerArmsRig = __instance.meshContainer.Find("metarig/Rig 1");
         GameObject rightArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("RightArmPhone");
         GameObject leftArmPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("LeftArmPhone");
         GameObject leftArmServerPhoneRigPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("ServerLeftArmPhone");
@@ -81,16 +81,16 @@ public class PlayerPhonePatch
         GameObject leftArmPhoneRig = GameObject.Instantiate(leftArmPhoneRigPrefab, ArmsRig, false);
         GameObject serverLeftArmPhoneRig = GameObject.Instantiate(leftArmServerPhoneRigPrefab, ServerArmsRig, false);
 
-        GameObject serverLeftArmPhoneTarget = GameObject.Instantiate(leftArmServerPhoneTargetPrefab, __instance.lowerSpine.Find("spine.002").Find("spine.003"), false);
+        GameObject serverLeftArmPhoneTarget = GameObject.Instantiate(leftArmServerPhoneTargetPrefab, __instance.lowerSpine.Find("spine.002/spine.003"), false);
 
-        rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.R").Find("arm.R_upper");
-        rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.R").Find("arm.R_upper").Find("arm.R_lower").Find("hand.R");
+        rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.R/arm.R_upper");
+        rightArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.R/arm.R_upper/arm.R_lower/hand.R");
 
-        leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper");
-        leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+        leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.localArmsTransform.Find("shoulder.L/arm.L_upper");
+        leftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L");
 
-        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper");
-        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.lowerSpine.Find("spine.002").Find("spine.003").Find("shoulder.L").Find("arm.L_upper").Find("arm.L_lower").Find("hand.L");
+        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.root = __instance.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper");
+        serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.tip = __instance.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L");
         serverLeftArmPhoneRig.GetComponent<ChainIKConstraint>().data.target = serverLeftArmPhoneTarget.transform.Find("ServerPhoneTarget");
 
         rightArmPhoneRig.GetComponent<ChainIKConstraint>().MarkDirty();

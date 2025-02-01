@@ -122,6 +122,17 @@ namespace Scoops.misc
                 this.localPhoneDialNumbers.Add(child.gameObject);
                 this.dialNumbersDefaultPos.Add(child.localPosition);
             }
+
+            if (GameNetworkManager.Instance.localPlayerController == player)
+            {
+                this.playPos = localPhoneModel.transform;
+                this.recordPos = localPhoneModel.transform;
+            }
+            else
+            {
+                this.playPos = serverPhoneModel.transform;
+                this.recordPos = serverPhoneModel.transform;
+            }
         }
 
         public override string GetPhoneName()
@@ -718,7 +729,6 @@ namespace Scoops.misc
                 {
                     //hang up our active first!
                     PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                    RemovePhoneVoiceEffect(activeCaller);
                 }
                 activeCall = incomingCall;
                 activeCaller = incomingCaller;
@@ -1166,7 +1176,7 @@ namespace Scoops.misc
             player.SwitchToItemSlot(slot, null);
         }
 
-        public override void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
+        public void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
         {
             if (player == null)
             {
@@ -1234,7 +1244,7 @@ namespace Scoops.misc
             }
         }
 
-        public override void RemovePhoneVoiceEffect()
+        public void RemovePhoneVoiceEffect()
         {
             if (player == null)
             {

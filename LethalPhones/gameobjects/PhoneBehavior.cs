@@ -28,6 +28,9 @@ namespace Scoops.misc
         public ulong activeCaller = 0;
         public ulong incomingCaller = 0;
 
+        public Transform recordPos;
+        public Transform playPos;
+
         protected AudioSource ringAudio;
         protected AudioSource thisAudio;
         protected AudioSource target;
@@ -35,11 +38,6 @@ namespace Scoops.misc
         protected string incomingCall = null;
         protected string activeCall = null;
         protected string outgoingCall = null;
-
-        protected List<AudioSource> untrackedAudioSources = new List<AudioSource>();
-        protected List<AudioSourceStorage> audioSourcesInRange = new List<AudioSourceStorage>();
-
-        protected HashSet<PhoneBehavior> modifiedVoices = new HashSet<PhoneBehavior>();
 
         protected Queue<int> dialedNumbers = new Queue<int>(4);
 
@@ -66,7 +64,10 @@ namespace Scoops.misc
             this.thisAudio = GetComponent<AudioSource>();
             this.target = transform.Find("Target").gameObject.GetComponent<AudioSource>();
 
-            this.GetAllAudioSourcesToUpdate();
+            this.recordPos = transform;
+            this.playPos = transform;
+
+            AudioSourceManager.RegisterPhone(this);
         }
 
         public virtual void Update()
@@ -82,21 +83,8 @@ namespace Scoops.misc
                     target.Stop();
                 }
 
-                if (audioSourcesInRange.Count > 0)
-                {
-                    ResetAllAudioSources();
-                }
-                if (modifiedVoices.Count > 0)
-                {
-                    ResetAllPlayerVoices();
-                }
-
                 spectatorClear = false;
             }
-
-            this.GetAllAudioSourcesToUpdate();
-            this.UpdateAllAudioSources();
-            this.UpdatePlayerVoices();
 
             if (IsOwner)
             {
@@ -129,6 +117,26 @@ namespace Scoops.misc
         public bool IsBusy()
         {
             return outgoingCall != null || incomingCall != null || activeCall != null;
+        }
+
+        public bool IsActive()
+        {
+            return activeCall != null;
+        }
+
+        public float GetCallQuality()
+        {
+            return connectionQuality.Value;
+        }
+
+        public bool GetStaticMod()
+        {
+            return staticMode && hardStatic;
+        }
+
+        public PhoneBehavior GetCallerPhone()
+        {
+            return GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
         }
 
         public void CallRandomNumber()
@@ -173,120 +181,6 @@ namespace Scoops.misc
             return null;
         }
 
-        protected virtual void GetAllAudioSourcesToUpdate()
-        {
-            if (PhoneNetworkHandler.Instance.localPhone == null)
-            {
-                return;
-            }
-            if (activeCall == null || activeCaller == 0)
-            {
-                return;
-            }
-
-            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
-            if (callerPhone == null)
-            {
-                return;
-            }
-
-            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated() && !(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == localPlayer))
-            {
-                float listenDist = (localPlayer.transform.position - callerPhone.transform.position).sqrMagnitude;
-                if (listenDist > (Config.eavesdropDist.Value * Config.eavesdropDist.Value))
-                {
-                    return;
-                }
-            }
-
-            untrackedAudioSources = AudioSourceManager.Instance.GetAllAudioSourcesInRange(transform.position);
-            foreach (AudioSource source in untrackedAudioSources)
-            {
-                if (source != null && source.spatialBlend != 0f)
-                {
-                    AudioSourceStorage storage = new AudioSourceStorage(source);
-                    storage.InitAudio();
-                    audioSourcesInRange.Add(storage);
-                }
-            }
-        }
-
-        protected virtual void UpdateAllAudioSources()
-        {
-            if (PhoneNetworkHandler.Instance.localPhone == null || GameNetworkManager.Instance.localPlayerController == null)
-            {
-                return;
-            }
-            if (activeCall == null || activeCaller == 0)
-            {
-                return;
-            }
-
-            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
-            if (callerPhone == null)
-            {
-                return;
-            }
-
-            float listenDist = 0f;
-            float listenAngle = 0f;
-            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-
-            if (callerPhone != PhoneNetworkHandler.Instance.localPhone && !callerPhone.IsBeingSpectated() && !(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == localPlayer))
-            {
-                listenDist = Vector3.Distance(localPlayer.transform.position, callerPhone.transform.position);
-                if (listenDist > Config.eavesdropDist.Value)
-                {
-                    // We are out of range, get these sources cleared
-                    ResetAllAudioSources();
-                    return;
-                }
-                Vector3 directionTo = callerPhone.transform.position - localPlayer.transform.position;
-                directionTo = directionTo / listenDist;
-                listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
-            }
-
-            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
-
-            for (int j = audioSourcesInRange.Count - 1; j >= 0; j--)
-            {
-                AudioSourceStorage storage = audioSourcesInRange[j];
-                AudioSource source = storage.audioSource;
-                if (source != null)
-                {
-                    float callerDist = Vector3.Distance(source.transform.position, callerPhone.transform.position);
-                    float ownerDist = (source.transform.position - this.transform.position).sqrMagnitude;
-                    float ownerToCallerDist = (callerPhone.transform.position - this.transform.position).sqrMagnitude;
-
-                    if (ownerToCallerDist <= (Config.recordingStartDist.Value * Config.recordingStartDist.Value) || (callerDist * callerDist) < ownerDist || ownerDist > (source.maxDistance * source.maxDistance))
-                    {
-                        storage.Reset();
-                        audioSourcesInRange.RemoveAt(j);
-                    }
-                    else
-                    {
-                        storage.ApplyPhone(ownerDist, worseConnection, listenDist, listenAngle, staticMode && hardStatic);
-                    }
-                }
-                else
-                {
-                    audioSourcesInRange.RemoveAt(j);
-                }
-            }
-        }
-
-        protected void ResetAllAudioSources()
-        {
-            foreach (AudioSourceStorage storage in this.audioSourcesInRange)
-            {
-                storage.Reset();
-            }
-
-            this.audioSourcesInRange.Clear();
-        }
-
         public virtual bool IsBeingSpectated()
         {
             return false;
@@ -318,8 +212,6 @@ namespace Scoops.misc
                     listenDist = Vector3.Distance(localPlayer.transform.position, transform.position);
                     if (listenDist > Config.eavesdropDist.Value)
                     {
-                        // We are out of range, get these sources cleared
-                        ResetAllPlayerVoices();
                         return;
                     }
                     Vector3 directionTo = transform.position - localPlayer.transform.position;
@@ -340,62 +232,6 @@ namespace Scoops.misc
             {
                 UpdateStatic(worseConnection, listenDist);
             }
-
-            float dist = Vector3.Distance(callerPhone.transform.position, transform.position);
-
-            if (dist > Config.recordingStartDist.Value)
-            {
-                modifiedVoices.Add(callerPhone);
-                callerPhone.ApplyPhoneVoiceEffect(0f, listenDist, listenAngle, worseConnection);
-            }
-            else
-            {
-                if (modifiedVoices.Contains(callerPhone))
-                {
-                    modifiedVoices.Remove(callerPhone);
-                    callerPhone.RemovePhoneVoiceEffect();
-                }
-            }
-
-            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
-            {
-                PlayerControllerB background = StartOfRound.Instance.allPlayerScripts[i];
-                PlayerPhone backgroundPhone = background.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-                if (background != null && backgroundPhone != null && background.isPlayerControlled && !background.isPlayerDead && !background.IsLocalPlayer)
-                {
-                    if (background != GameNetworkManager.Instance.localPlayerController && backgroundPhone != this && backgroundPhone != callerPhone)
-                    {
-                        if (!(callerPhone is SwitchboardPhone && ((SwitchboardPhone)callerPhone).switchboardOperator == background))
-                        {
-                            float callDist = Vector3.Distance(backgroundPhone.transform.position, callerPhone.transform.position);
-                            float localDist = (backgroundPhone.transform.position - GameNetworkManager.Instance.localPlayerController.transform.position).sqrMagnitude;
-                            if (localDist > (Config.recordingStartDist.Value * Config.recordingStartDist.Value) && callDist < Config.backgroundVoiceDist.Value)
-                            {
-                                modifiedVoices.Add(backgroundPhone);
-                                backgroundPhone.ApplyPhoneVoiceEffect(callDist, listenDist, listenAngle, worseConnection);
-                            }
-                            else
-                            {
-                                if (modifiedVoices.Contains(backgroundPhone))
-                                {
-                                    modifiedVoices.Remove(backgroundPhone);
-                                    backgroundPhone.RemovePhoneVoiceEffect();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        protected void ResetAllPlayerVoices()
-        {
-            foreach (PhoneBehavior modifiedPhone in modifiedVoices)
-            {
-                modifiedPhone.RemovePhoneVoiceEffect();
-            }
-
-            this.modifiedVoices.Clear();
         }
 
         public virtual void UpdateCallValues()
@@ -838,25 +674,6 @@ namespace Scoops.misc
             thisAudio.Stop();
         }
 
-        public virtual void ApplyPhoneVoiceEffect(float distance = 0f, float listeningDistance = 0f, float listeningAngle = 0f, float connectionQuality = 1f)
-        {
-            // Does nothing
-        }
-
-        public virtual void RemovePhoneVoiceEffect(ulong phoneId)
-        {
-            PhoneBehavior otherPhone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
-            if (otherPhone != null)
-            {
-                otherPhone.RemovePhoneVoiceEffect();
-            }
-        }
-
-        public virtual void RemovePhoneVoiceEffect()
-        {
-            // Nothing by default
-        }
-
         protected IEnumerator PhoneRingCoroutine(int repeats)
         {
             for (int i = 0; i < repeats; i++)
@@ -868,27 +685,13 @@ namespace Scoops.misc
 
         public override void OnDestroy()
         {
+            AudioSourceManager.DeregisterPhone(this);
+
             if (target != null)
             {
                 if (target.isPlaying)
                 {
                     target.Stop();
-                }
-            }
-
-            if (audioSourcesInRange != null)
-            {
-                if (audioSourcesInRange.Count > 0)
-                {
-                    ResetAllAudioSources();
-                }
-            }
-
-            if (modifiedVoices != null)
-            {
-                if (modifiedVoices.Count > 0)
-                {
-                    ResetAllPlayerVoices();
                 }
             }
 

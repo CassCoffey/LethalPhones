@@ -5,6 +5,8 @@ namespace Scoops
     public class Config
     {
         public static ConfigEntry<float> ringtoneVolume;
+        public static ConfigEntry<float> recordingDist;
+        public static ConfigEntry<float> listeningDist;
         public static ConfigEntry<float> recordingStartDist;
         public static ConfigEntry<float> backgroundVoiceDist;
         public static ConfigEntry<float> eavesdropDist;
@@ -62,6 +64,20 @@ namespace Scoops
                     -0.4f,
                     "All background noises on calls have their volume adjusted by this value."
             );
+
+            recordingDist = cfg.Bind(
+                    "General",
+                    "recordingDist",
+                    200f,
+                    "The distance at which phones are able to record audio."
+            );
+            listeningDist = cfg.Bind(
+                    "General",
+                    "listeningDist",
+                    20f,
+                    "The distance at which you can hear audio from a phone."
+            );
+
             recordingStartDist = cfg.Bind(
                     "General",
                     "recordingStartDist",
