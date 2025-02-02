@@ -147,7 +147,7 @@ namespace Scoops.misc
         {
             if (!active && Config.hangupOnPutaway.Value)
             {
-                HangupButtonPressed();
+                CancelAllCalls();
             }
             
             if (active)
@@ -672,6 +672,34 @@ namespace Scoops.misc
             UpdateCallingUI();
         }
 
+        public void CancelAllCalls()
+        {
+            if (incomingCall != null || activeCall != null || outgoingCall != null)
+            {
+                PlayHangupSoundServerRpc();
+                UpdateCallingUI();
+            }
+            if (incomingCall != null)
+            {
+                // We're being called, cancel
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                StopRingingServerRpc();
+                incomingCall = null;
+            }
+            if (activeCall != null)
+            {
+                // We're on a call, hang up
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                activeCall = null;
+            }
+            if (outgoingCall != null)
+            {
+                // We're calling, cancel
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                outgoingCall = null;
+            }
+        }
+
         public void HangupButtonPressed()
         {
             if (!toggled)
@@ -679,13 +707,21 @@ namespace Scoops.misc
                 return;
             }
 
-            if (activeCall != null)
+            if (incomingCall != null)
+            {
+                // We're being called, cancel
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                StopRingingServerRpc();
+                PlayHangupSoundServerRpc();
+                incomingCall = null;
+                UpdateCallingUI();
+            }
+            else if (activeCall != null)
             {
                 // We're on a call, hang up
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
                 PlayHangupSoundServerRpc();
                 activeCall = null;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
             }
             else if (outgoingCall != null)
@@ -695,16 +731,7 @@ namespace Scoops.misc
                 PlayHangupSoundServerRpc();
                 outgoingCall = null;
                 UpdateCallingUI();
-            } 
-            else if (incomingCall != null) 
-            {
-                // We're being called, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
-                StopRingingServerRpc();
-                PlayHangupSound();
-                incomingCall = null;
-                UpdateCallingUI();
-            } 
+            }
             else
             {
                 // Clear numbers

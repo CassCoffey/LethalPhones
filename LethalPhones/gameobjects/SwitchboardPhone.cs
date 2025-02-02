@@ -488,13 +488,21 @@ namespace Scoops.gameobjects
 
         public void HangupButtonPressed()
         {
-            if (activeCall != null)
+            if (incomingCall != null)
+            {
+                // We're being called, cancel
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                StopRingingServerRpc();
+                PlayHangupSoundServerRpc();
+                incomingCall = null;
+                UpdateCallingUI();
+            } 
+            else if (activeCall != null)
             {
                 // We're on a call, hang up
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
                 PlayHangupSoundServerRpc();
                 activeCall = null;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
             }
             else if (outgoingCall != null)
@@ -503,15 +511,6 @@ namespace Scoops.gameobjects
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
                 PlayHangupSoundServerRpc();
                 outgoingCall = null;
-                UpdateCallingUI();
-            }
-            else if (incomingCall != null)
-            {
-                // We're being called, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
-                StopRingingServerRpc();
-                PlayHangupSound();
-                incomingCall = null;
                 UpdateCallingUI();
             }
 
