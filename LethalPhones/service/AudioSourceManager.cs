@@ -139,12 +139,6 @@ namespace Scoops.service
             float maxListenDistSqr = Config.listeningDist.Value;
             maxListenDistSqr *= maxListenDistSqr;
 
-            Debug.Log("---");
-            Debug.Log("Listening Pos - " + listenerPos.position);
-            Debug.Log("Play Pos - " + playPos.position);
-            Debug.Log("Head Pos - " + GameNetworkManager.Instance.localPlayerController.playerGlobalHead.position);
-            Debug.Log("---");
-
             // Recalculate volume from distance information
             if (audioSource.rolloffMode == AudioRolloffMode.Linear)
             {
@@ -167,19 +161,22 @@ namespace Scoops.service
             // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
             audioSource.volume += voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
 
+            float recordMod = AudioSourceManager.Instance.listenerCurve.Evaluate(recordDist / audioSource.maxDistance);
+
             if (audioSource.GetComponent<AudioLowPassFilter>())
             {
-                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 2899f;
-                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 3f;
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(3000f, 750f, recordMod);
+                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(10f, 3f, recordConnectionQuality);
             }
             if (audioSource.GetComponent<AudioHighPassFilter>())
             {
-                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = 1f;
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2500f, 2000f, recordConnectionQuality);
+                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(3f, 2f, recordConnectionQuality);
             }
 
             if (listenDist > 1f)
             {
-                float listenMod = AudioSourceManager.Instance.listenerCurve.Evaluate(listenDist / maxListenDistSqr);
+                float listenMod = AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01((listenDist / maxListenDistSqr) + 0.1f));
                 audioSource.volume *= listenMod;
                 if (audioSource.GetComponent<AudioLowPassFilter>())
                 {
@@ -316,7 +313,7 @@ namespace Scoops.service
             listenerCurve = AnimationCurve.Linear(0, 1, 1, 0);
             listenerCurve.ClearKeys();
             listenerCurve.AddKey(.1f, 1f);
-            listenerCurve.AddKey(.3f, .3f);
+            listenerCurve.AddKey(.3f, .2f);
             listenerCurve.AddKey(1f, 0f);
 
             listenerCurve.keys[0].inTangent = -3.5f;
@@ -343,7 +340,10 @@ namespace Scoops.service
 
         public void Update()
         {
-            if (localPlayer == null) localPlayer = GameNetworkManager.Instance.localPlayerController;
+            if (localPlayer == null)
+            {
+                localPlayer = GameNetworkManager.Instance.localPlayerController;
+            }
 
             if (localPlayer != null)
             {

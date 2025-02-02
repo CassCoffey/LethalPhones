@@ -123,18 +123,19 @@ namespace Scoops.misc
                 this.dialNumbersDefaultPos.Add(child.localPosition);
             }
 
-            if (player.IsLocalPlayer)
+            if (IsOwner)
             {
-                //problem is here
-                Debug.Log("This is the local player so I'm putting the phone on their head");
-                this.playPos = player.playerGlobalHead.transform;
+                Debug.Log("Local player phone play pos set to head");
+                this.playPos = player.playerGlobalHead;
                 this.recordPos = localPhoneModel.transform;
-            }
+            } 
             else
             {
                 this.playPos = serverPhoneModel.transform;
                 this.recordPos = serverPhoneModel.transform;
             }
+
+            
         }
 
         public override string GetPhoneName()

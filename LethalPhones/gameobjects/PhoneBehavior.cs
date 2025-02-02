@@ -330,6 +330,12 @@ namespace Scoops.misc
             Transform listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.transform : localPlayer.transform;
             float distSqr = (listenerPos.position - playPos.position).sqrMagnitude;
 
+            Vector3 directionTo = playPos.position - listenerPos.position;
+            float listenAngle = Vector3.Dot(directionTo.normalized, listenerPos.right);
+
+            float maxListenDistSqr = Config.listeningDist.Value;
+            maxListenDistSqr *= maxListenDistSqr;
+
             if (worseConnection <= 0.5f)
             {
                 staticChance = Mathf.InverseLerp(0.5f, 0f, worseConnection);
@@ -337,10 +343,11 @@ namespace Scoops.misc
                 if (staticMode)
                 {
                     float listenerMod = 1f;
-                    if (distSqr != 0f)
+
+                    if (distSqr > 1f)
                     {
-                        listenerMod = Mathf.InverseLerp(Config.listeningDist.Value * Config.listeningDist.Value, 0f, distSqr);
-                        target.panStereo = 0f;
+                        listenerMod = AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01((distSqr / maxListenDistSqr) + 0.2f));
+                        target.panStereo = listenAngle;
                     } 
                     else
                     {
