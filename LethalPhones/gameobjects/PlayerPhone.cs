@@ -123,9 +123,11 @@ namespace Scoops.misc
                 this.dialNumbersDefaultPos.Add(child.localPosition);
             }
 
-            if (GameNetworkManager.Instance.localPlayerController == player)
+            if (player.IsLocalPlayer)
             {
-                this.playPos = localPhoneModel.transform;
+                //problem is here
+                Debug.Log("This is the local player so I'm putting the phone on their head");
+                this.playPos = player.playerGlobalHead.transform;
                 this.recordPos = localPhoneModel.transform;
             }
             else

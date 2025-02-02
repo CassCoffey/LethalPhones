@@ -7,8 +7,8 @@ namespace Scoops
         public static ConfigEntry<float> ringtoneVolume;
         public static ConfigEntry<float> recordingDist;
         public static ConfigEntry<float> listeningDist;
-        public static ConfigEntry<float> backgroundSoundMod;
-        public static ConfigEntry<float> voiceSoundMod;
+        public static ConfigEntry<float> backgroundSoundAdjust;
+        public static ConfigEntry<float> voiceSoundAdjust;
         public static ConfigEntry<float> deathHangupTime;
         public static ConfigEntry<bool> hideHands;
         public static ConfigEntry<bool> disableRingtones;
@@ -49,15 +49,15 @@ namespace Scoops
                     0.6f,
                     "The volume of phone ringtones (0-1)."
             );
-            voiceSoundMod = cfg.Bind(
+            voiceSoundAdjust = cfg.Bind(
                     "General",
-                    "voiceSoundMod",
+                    "voiceSoundAdjust",
                     0f,
                     "All voices on calls have their volume adjusted by this value."
             );
-            backgroundSoundMod = cfg.Bind(
+            backgroundSoundAdjust = cfg.Bind(
                     "General",
-                    "backgroundSoundMod",
+                    "backgroundSoundAdjust",
                     -0.2f,
                     "All background noises on calls have their volume adjusted by this value."
             );

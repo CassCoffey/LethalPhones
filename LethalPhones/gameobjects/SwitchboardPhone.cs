@@ -419,7 +419,7 @@ namespace Scoops.gameobjects
         private void ToggleOperator(bool active)
         {
             transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = !active;
-            headphonePos = active ? switchboardOperator.playerGlobalHead : transform.Find("HeadphoneCube");
+            headphonePos = active ? switchboardOperator.playerGlobalHead.transform : transform.Find("HeadphoneCube");
             recordPos = headphonePos;
             playPos = headphonePos;
 

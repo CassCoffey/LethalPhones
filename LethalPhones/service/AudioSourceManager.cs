@@ -134,10 +134,16 @@ namespace Scoops.service
 
             Vector3 directionTo = playPos.position - listenerPos.position;
             float listenDist = directionTo.sqrMagnitude;
-            float listenAngle = Vector3.Dot(directionTo, listenerPos.right);
+            float listenAngle = Vector3.Dot(directionTo.normalized, listenerPos.right);
 
             float maxListenDistSqr = Config.listeningDist.Value;
             maxListenDistSqr *= maxListenDistSqr;
+
+            Debug.Log("---");
+            Debug.Log("Listening Pos - " + listenerPos.position);
+            Debug.Log("Play Pos - " + playPos.position);
+            Debug.Log("Head Pos - " + GameNetworkManager.Instance.localPlayerController.playerGlobalHead.position);
+            Debug.Log("---");
 
             // Recalculate volume from distance information
             if (audioSource.rolloffMode == AudioRolloffMode.Linear)
@@ -159,24 +165,32 @@ namespace Scoops.service
 
             audioSource.volume = (origVolume * mod);
             // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
-            audioSource.volume += voice ? Config.voiceSoundMod.Value : Config.backgroundSoundMod.Value;
+            audioSource.volume += voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
 
             if (audioSource.GetComponent<AudioLowPassFilter>())
             {
-                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(6000f, 3000f, recordConnectionQuality);
-                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(6f, 3f, recordConnectionQuality);
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 2899f;
+                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 3f;
             }
             if (audioSource.GetComponent<AudioHighPassFilter>())
             {
-                //audioSource.GetComponent<AudioHighPassFilter>().cutoffFrequency = 1613f;
-                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(3f, 1f, recordConnectionQuality);
+                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = 1f;
             }
 
-            if (listenDist != 0f)
+            if (listenDist > 1f)
             {
-                float listenMod = Mathf.InverseLerp(maxListenDistSqr, 0f, listenDist);
-                audioSource.volume = audioSource.volume * listenMod;
+                float listenMod = AudioSourceManager.Instance.listenerCurve.Evaluate(listenDist / maxListenDistSqr);
+                audioSource.volume *= listenMod;
+                if (audioSource.GetComponent<AudioLowPassFilter>())
+                {
+                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 750f;
+                }
                 audioSource.panStereo = listenAngle;
+            }
+
+            if (voice && player.voiceMuffledByEnemy && audioSource.GetComponent<AudioLowPassFilter>())
+            {
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 500;
             }
         }
 
@@ -272,6 +286,8 @@ namespace Scoops.service
     {
         public static AudioSourceManager Instance { get; private set; }
 
+        public AnimationCurve listenerCurve;
+
         private List<AudioSourceStorage> allAudioSources = new List<AudioSourceStorage>();
         private List<AudioSourceStorage> trackedAudioSources = new List<AudioSourceStorage>();
 
@@ -296,6 +312,33 @@ namespace Scoops.service
             // pre-square the config values
             listenDistSqr = Config.listeningDist.Value * Config.listeningDist.Value;
             recordDistSqr = Config.recordingDist.Value * Config.recordingDist.Value;
+
+            listenerCurve = AnimationCurve.Linear(0, 1, 1, 0);
+            listenerCurve.ClearKeys();
+            listenerCurve.AddKey(.1f, 1f);
+            listenerCurve.AddKey(.3f, .3f);
+            listenerCurve.AddKey(1f, 0f);
+
+            listenerCurve.keys[0].inTangent = -3.5f;
+            listenerCurve.keys[0].outTangent = -3.5f;
+            listenerCurve.keys[0].tangentModeInternal = 0;
+            listenerCurve.keys[0].weightedMode = WeightedMode.None;
+            listenerCurve.keys[0].inWeight = 0f;
+            listenerCurve.keys[0].outWeight = 0f;
+
+            listenerCurve.keys[0].inTangent = -1.25f;
+            listenerCurve.keys[0].outTangent = -1.25f;
+            listenerCurve.keys[0].tangentModeInternal = 136;
+            listenerCurve.keys[0].weightedMode = WeightedMode.None;
+            listenerCurve.keys[0].inWeight = 0.3333f;
+            listenerCurve.keys[0].outWeight = 0.3333f;
+
+            listenerCurve.keys[0].inTangent = -0.3f;
+            listenerCurve.keys[0].outTangent = -0.3f;
+            listenerCurve.keys[0].tangentModeInternal = 0;
+            listenerCurve.keys[0].weightedMode = WeightedMode.None;
+            listenerCurve.keys[0].inWeight = 0f;
+            listenerCurve.keys[0].outWeight = 0f;
         }
 
         public void Update()
@@ -304,7 +347,7 @@ namespace Scoops.service
 
             if (localPlayer != null)
             {
-                listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.transform : localPlayer.transform;
+                listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.playerGlobalHead.transform : localPlayer.playerGlobalHead.transform;
 
                 // Update the audio redirect info for all audio source storages
                 UpdateAudioSourceStorages();
