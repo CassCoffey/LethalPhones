@@ -2,6 +2,7 @@
 using HarmonyLib;
 using Scoops.misc;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Scoops.service
@@ -10,6 +11,8 @@ namespace Scoops.service
     {
         public bool modified = false;
         public bool voice = false;
+
+        public PlayerControllerB player = null;
 
         public Transform recordPos;
         public Transform playPos;
@@ -75,126 +78,155 @@ namespace Scoops.service
 
         public void Update()
         {
-            if (recordPos != null && playPos != null && listenerPos != null)
+            if (audioSource != null)
             {
-                ApplyPhone();
+                if (recordPos != null && playPos != null && listenerPos != null)
+                {
+                    if (!modified) InitPhone();
+                    ApplyPhone();
+                }
+                else if (modified)
+                {
+                    Reset();
+                }
             }
-            else if (modified)
+        }
+
+        public void InitPhone()
+        {
+            modified = true;
+
+            // Remove spatialization so that the audio can be heard from anywhere
+            audioSource.spatialBlend = 0f;
+
+            if (audioSource.GetComponent<AudioLowPassFilter>())
             {
-                Reset();
+                audioSource.GetComponent<AudioLowPassFilter>().enabled = true;
+            }
+            if (audioSource.GetComponent<AudioHighPassFilter>())
+            {
+                audioSource.GetComponent<AudioHighPassFilter>().enabled = true;
+            }
+            if (audioSource.GetComponent<OccludeAudio>())
+            {
+                audioSource.GetComponent<OccludeAudio>().enabled = false;
             }
         }
 
         public void ApplyPhone()
         {
-            modified = true;
-
-            if (audioSource != null)
+            if (recordStaticMode)
             {
-                // Remove spatialization so that the audio can be heard from anywhere
-                audioSource.spatialBlend = 0f;
+                // No audio if playing static
+                audioSource.volume = 0f;
+                return;
+            }
 
-                float mod = 0f;
+            // Apply Voice Audio Source specific changes
+            if (voice)
+            {
+                player.currentVoiceChatIngameSettings.set2D = true;
+            }
 
-                float recordDist = Vector3.Distance(recordPos.position, sourcePos.position);
+            float mod = 0f;
 
-                Vector3 directionTo = playPos.position - listenerPos.position;
-                float listenDist = directionTo.sqrMagnitude;
-                float listenAngle = Vector3.Dot(directionTo, listenerPos.right);
+            float recordDist = Vector3.Distance(recordPos.position, sourcePos.position);
 
-                float maxListenDistSqr = Config.listeningDist.Value;
-                maxListenDistSqr *= maxListenDistSqr;
+            Vector3 directionTo = playPos.position - listenerPos.position;
+            float listenDist = directionTo.sqrMagnitude;
+            float listenAngle = Vector3.Dot(directionTo, listenerPos.right);
 
-                // Recalculate volume from distance information
-                if (audioSource.rolloffMode == AudioRolloffMode.Linear)
+            float maxListenDistSqr = Config.listeningDist.Value;
+            maxListenDistSqr *= maxListenDistSqr;
+
+            // Recalculate volume from distance information
+            if (audioSource.rolloffMode == AudioRolloffMode.Linear)
+            {
+                mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.maxDistance, audioSource.minDistance, recordDist));
+            }
+            else if (audioSource.rolloffMode == AudioRolloffMode.Custom)
+            {
+                AnimationCurve audioRolloffCurve = audioSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
+                if (audioRolloffCurve != null)
                 {
-                    mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.maxDistance, audioSource.minDistance, recordDist));
+                    mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(recordDist / audioSource.maxDistance));
                 }
-                else if (audioSource.rolloffMode == AudioRolloffMode.Custom)
-                {
-                    AnimationCurve audioRolloffCurve = audioSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
-                    if (audioRolloffCurve != null)
-                    {
-                        Debug.Log("We are evaluating an audio source using a custom rolloff curve.");
-                        Debug.Log("AudioSource - " + audioSource.gameObject.name);
-                        Debug.Log("Evaluation Time - " + recordDist);
-                        Debug.Log("Curve Length - " + audioRolloffCurve.keys[audioRolloffCurve.length].m_Time);
-                        mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(recordDist));
-                    }
-                }
-                else
-                {
-                    mod = Mathf.Clamp01((audioSource.minDistance * (1 / (1 + (recordDist - 1)))));
-                }
+            }
+            else
+            {
+                mod = Mathf.Clamp01((audioSource.minDistance * (1 / (1 + (recordDist - 1)))));
+            }
 
-                audioSource.volume = (origVolume * mod);// + Config.backgroundSoundMod.Value;
+            audioSource.volume = (origVolume * mod);
+            // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
+            audioSource.volume += voice ? Config.voiceSoundMod.Value : Config.backgroundSoundMod.Value;
 
-                if (recordStaticMode)
-                {
-                    audioSource.volume = 0f;
-                }
+            if (audioSource.GetComponent<AudioLowPassFilter>())
+            {
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(6000f, 3000f, recordConnectionQuality);
+                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(6f, 3f, recordConnectionQuality);
+            }
+            if (audioSource.GetComponent<AudioHighPassFilter>())
+            {
+                //audioSource.GetComponent<AudioHighPassFilter>().cutoffFrequency = 1613f;
+                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(3f, 1f, recordConnectionQuality);
+            }
 
-                if (audioSource.GetComponent<AudioLowPassFilter>())
-                {
-                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2899f, recordConnectionQuality);
-                    audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(5f, 3f, recordConnectionQuality);
-                }
-                if (audioSource.GetComponent<AudioHighPassFilter>())
-                {
-                    audioSource.GetComponent<AudioHighPassFilter>().cutoffFrequency = 1613f;
-                    audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(2f, 1f, recordConnectionQuality);
-                }
-
-                if (listenDist != 0f)
-                {
-                    float listenMod = Mathf.InverseLerp(maxListenDistSqr, 0f, listenDist);
-                    audioSource.volume = audioSource.volume * listenMod;
-                    //if (audioSource.GetComponent<AudioLowPassFilter>()) audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 750f;
-                    audioSource.panStereo = listenAngle;
-                }
+            if (listenDist != 0f)
+            {
+                float listenMod = Mathf.InverseLerp(maxListenDistSqr, 0f, listenDist);
+                audioSource.volume = audioSource.volume * listenMod;
+                audioSource.panStereo = listenAngle;
             }
         }
 
         public void Reset()
         {
-            if (audioSource != null)
+            GameObject audioSourceHolder = audioSource.gameObject;
+
+            if (voice)
             {
-                GameObject audioSourceHolder = audioSource.gameObject;
+                player.currentVoiceChatIngameSettings.set2D = false;
+            }
 
-                audioSource.panStereo = origPan;
-                audioSource.spatialBlend = origSpatial;
-                audioSource.volume = origVolume;
+            audioSource.panStereo = origPan;
+            audioSource.spatialBlend = origSpatial;
+            audioSource.volume = origVolume;
 
-                if (hadOcclude && audioSourceHolder.GetComponent<OccludeAudio>())
+            if (hadOcclude && audioSourceHolder.GetComponent<OccludeAudio>())
+            {
+                audioSourceHolder.GetComponent<OccludeAudio>().enabled = true;
+
+                if (voice)
                 {
-                    audioSourceHolder.GetComponent<OccludeAudio>().enabled = true;
+                    audioSourceHolder.GetComponent<OccludeAudio>().overridingLowPass = player.voiceMuffledByEnemy;
+                }
+            }
+
+            if (audioSourceHolder.GetComponent<AudioLowPassFilter>())
+            {
+                if (hadLowPass)
+                {
+                    audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = origLowPass;
+                    audioSourceHolder.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = origLowPassResQ;
+                }
+                else
+                {
+                    audioSourceHolder.GetComponent<AudioLowPassFilter>().enabled = false;
                 }
 
-                if (audioSourceHolder.GetComponent<AudioLowPassFilter>())
-                {
-                    if (hadLowPass)
-                    {
-                        audioSourceHolder.GetComponent<AudioLowPassFilter>().cutoffFrequency = origLowPass;
-                        audioSourceHolder.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = origLowPassResQ;
-                    }
-                    else
-                    {
-                        audioSourceHolder.GetComponent<AudioLowPassFilter>().enabled = false;
-                    }
+            }
 
+            if (audioSourceHolder.GetComponent<AudioHighPassFilter>())
+            {
+                if (hadHighPass)
+                {
+                    audioSourceHolder.GetComponent<AudioHighPassFilter>().cutoffFrequency = origHighPass;
+                    audioSourceHolder.GetComponent<AudioHighPassFilter>().highpassResonanceQ = origHighPassResQ;
                 }
-
-                if (audioSourceHolder.GetComponent<AudioHighPassFilter>())
+                else
                 {
-                    if (hadHighPass)
-                    {
-                        audioSourceHolder.GetComponent<AudioHighPassFilter>().cutoffFrequency = origHighPass;
-                        audioSourceHolder.GetComponent<AudioHighPassFilter>().highpassResonanceQ = origHighPassResQ;
-                    }
-                    else
-                    {
-                        audioSourceHolder.GetComponent<AudioHighPassFilter>().enabled = false;
-                    }
+                    audioSourceHolder.GetComponent<AudioHighPassFilter>().enabled = false;
                 }
             }
 
@@ -207,11 +239,17 @@ namespace Scoops.service
     [DefaultExecutionOrder(int.MaxValue)]
     public class AudioSourceHook : MonoBehaviour
     {
-        AudioSourceStorage storage;
+        private AudioSourceStorage storage;
 
         public void Start()
         {
             storage = AudioSourceManager.RegisterAudioSource(GetComponent<AudioSource>());
+        }
+
+        public void SetVoice(PlayerControllerB player)
+        {
+            storage.voice = true;
+            storage.player = player;
         }
 
         public void Update()
@@ -221,7 +259,11 @@ namespace Scoops.service
 
         public void OnDestroy()
         {
-            AudioSourceManager.DeregisterAudioSource(storage);
+            if (storage != null)
+            {
+                storage.Reset();
+                AudioSourceManager.DeregisterAudioSource(storage);
+            }
         }
     }
 
@@ -260,11 +302,13 @@ namespace Scoops.service
         {
             if (localPlayer == null) localPlayer = GameNetworkManager.Instance.localPlayerController;
 
-            // Where are we listening from? Normally the local player, but if they're spectating, use that player instead
-            listenerPos = localPlayer.isPlayerDead ? localPlayer.spectatedPlayerScript.transform : localPlayer.transform;
+            if (localPlayer != null)
+            {
+                listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.transform : localPlayer.transform;
 
-            // Update the audio redirect info for all audio source storages
-            UpdateAudioSourceStorages();
+                // Update the audio redirect info for all audio source storages
+                UpdateAudioSourceStorages();
+            }
         }
 
         private void UpdateAudioSourceStorages()
@@ -356,6 +400,20 @@ namespace Scoops.service
             if (Instance == null) return;
 
             Instance.allPhones.Remove(phone);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.RefreshPlayerVoicePlaybackObjects))]
+        static void PlayerVoiceRefresh(PlayerVoiceIngameSettings __instance)
+        {
+            // Apply voice params to all player voice audio sources
+            foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (player.currentVoiceChatAudioSource != null)
+                {
+                    AudioSourceHook hook = player.currentVoiceChatAudioSource.GetComponent<AudioSourceHook>();
+                    hook.SetVoice(player);
+                }
+            }
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]

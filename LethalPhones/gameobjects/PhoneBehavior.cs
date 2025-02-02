@@ -86,6 +86,8 @@ namespace Scoops.misc
                 spectatorClear = false;
             }
 
+            UpdateStatic();
+
             if (IsOwner)
             {
                 if (this.connectionInterval >= 0.75f)
@@ -184,54 +186,6 @@ namespace Scoops.misc
         public virtual bool IsBeingSpectated()
         {
             return false;
-        }
-
-        protected virtual void UpdatePlayerVoices()
-        {
-            if (GameNetworkManager.Instance == null || GameNetworkManager.Instance.localPlayerController == null)
-            {
-                return;
-            }
-            if (activeCaller == 0 || activeCall == null)
-            {
-                return;
-            }
-            if (IsOwner && this != PhoneNetworkHandler.Instance.localPhone)
-            {
-                // Some server owned garbage
-                return;
-            }
-
-            float listenDist = 0f;
-            float listenAngle = 0f;
-            if (!IsOwner)
-            {
-                if (!IsBeingSpectated())
-                {
-                    PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-                    listenDist = Vector3.Distance(localPlayer.transform.position, transform.position);
-                    if (listenDist > Config.eavesdropDist.Value)
-                    {
-                        return;
-                    }
-                    Vector3 directionTo = transform.position - localPlayer.transform.position;
-                    directionTo = directionTo / listenDist;
-                    listenAngle = Vector3.Dot(directionTo, localPlayer.transform.right);
-                }
-            }
-
-            PhoneBehavior callerPhone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
-            if (callerPhone == PhoneNetworkHandler.Instance.localPhone)
-            {
-                return;
-            }
-
-            float worseConnection = callerPhone.connectionQuality.Value < this.connectionQuality.Value ? callerPhone.connectionQuality.Value : this.connectionQuality.Value;
-
-            if (IsOwner || listenDist > 0f)
-            {
-                UpdateStatic(worseConnection, listenDist);
-            }
         }
 
         public virtual void UpdateCallValues()
@@ -364,18 +318,28 @@ namespace Scoops.misc
             }
         }
 
-        protected void UpdateStatic(float quality, float dist = 0f)
+        protected void UpdateStatic()
         {
-            if (quality <= 0.5f)
+            if (activeCall == null) return;
+
+            PhoneBehavior callerPhone = GetCallerPhone();
+            float worseConnection = callerPhone.GetCallQuality() < GetCallQuality() ? callerPhone.GetCallQuality() : GetCallQuality();
+
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            Transform listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.transform : localPlayer.transform;
+            float distSqr = (listenerPos.position - playPos.position).sqrMagnitude;
+
+            if (worseConnection <= 0.5f)
             {
-                staticChance = Mathf.InverseLerp(0.5f, 0f, quality);
+                staticChance = Mathf.InverseLerp(0.5f, 0f, worseConnection);
 
                 if (staticMode)
                 {
                     float listenerMod = 1f;
-                    if (dist != 0f)
+                    if (distSqr != 0f)
                     {
-                        listenerMod = Mathf.InverseLerp(Config.eavesdropDist.Value, 0f, dist);
+                        listenerMod = Mathf.InverseLerp(Config.listeningDist.Value * Config.listeningDist.Value, 0f, distSqr);
                         target.panStereo = 0f;
                     } 
                     else

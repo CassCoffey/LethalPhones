@@ -7,9 +7,6 @@ namespace Scoops
         public static ConfigEntry<float> ringtoneVolume;
         public static ConfigEntry<float> recordingDist;
         public static ConfigEntry<float> listeningDist;
-        public static ConfigEntry<float> recordingStartDist;
-        public static ConfigEntry<float> backgroundVoiceDist;
-        public static ConfigEntry<float> eavesdropDist;
         public static ConfigEntry<float> backgroundSoundMod;
         public static ConfigEntry<float> voiceSoundMod;
         public static ConfigEntry<float> deathHangupTime;
@@ -55,16 +52,15 @@ namespace Scoops
             voiceSoundMod = cfg.Bind(
                     "General",
                     "voiceSoundMod",
-                    -0.2f,
+                    0f,
                     "All voices on calls have their volume adjusted by this value."
             );
             backgroundSoundMod = cfg.Bind(
                     "General",
                     "backgroundSoundMod",
-                    -0.4f,
+                    -0.2f,
                     "All background noises on calls have their volume adjusted by this value."
             );
-
             recordingDist = cfg.Bind(
                     "General",
                     "recordingDist",
@@ -74,27 +70,8 @@ namespace Scoops
             listeningDist = cfg.Bind(
                     "General",
                     "listeningDist",
-                    20f,
-                    "The distance at which you can hear audio from a phone."
-            );
-
-            recordingStartDist = cfg.Bind(
-                    "General",
-                    "recordingStartDist",
                     15f,
-                    "Disables phones while in this distance to the person you're calling."
-            );
-            backgroundVoiceDist = cfg.Bind(
-                    "General",
-                    "backgroundVoiceDist",
-                    20f,
-                    "The distance at which you can hear other players in the background of a call."
-            );
-            eavesdropDist = cfg.Bind(
-                    "General",
-                    "eavesdropDist",
-                    5f,
-                    "The distance at which you can listen in on someone else's call."
+                    "The distance at which you can hear audio from a phone."
             );
             deathHangupTime = cfg.Bind(
                     "General",
