@@ -107,18 +107,6 @@ public class PlayerPhonePatch
         }
     }
 
-    [HarmonyPatch("SpectateNextPlayer")]
-    [HarmonyPostfix]
-    private static void SpectatedNextPlayer(ref PlayerControllerB __instance)
-    {
-        PlayerPhone[] allPhones = GameObject.FindObjectsByType<PlayerPhone>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-
-        for (int i = 0; i < allPhones.Length; i++)
-        {
-            allPhones[i].spectatorClear = true;
-        }
-    }
-
     [HarmonyPatch("ConnectClientToPlayerObject")]
     [HarmonyPostfix]
     private static void InitPhone(ref PlayerControllerB __instance)

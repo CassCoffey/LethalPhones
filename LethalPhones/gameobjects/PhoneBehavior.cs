@@ -23,8 +23,6 @@ namespace Scoops.misc
         public string phoneCharmId;
         public string phoneRingtoneId;
 
-        public bool spectatorClear = false;
-
         public ulong activeCaller = 0;
         public ulong incomingCaller = 0;
 
@@ -61,13 +59,6 @@ namespace Scoops.misc
 
         public virtual void Update()
         {
-            if (this.activeCall == null || spectatorClear)
-            {
-                if (!spectatorClear) activeCaller = 0;
-
-                spectatorClear = false;
-            }
-
             localInterference = ConnectionQualityManager.GetLocalInterference(this);
 
             if (temporaryInterference > 0f)
