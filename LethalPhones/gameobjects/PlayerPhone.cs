@@ -260,6 +260,8 @@ namespace Scoops.misc
 
             base.Update();
 
+            UpdateConnectionQualityUI();
+
             previousToggled = toggled;
         }
 
@@ -979,42 +981,37 @@ namespace Scoops.misc
             return (GameNetworkManager.Instance.localPlayerController.isPlayerDead && GameNetworkManager.Instance.localPlayerController.spectatedPlayerScript == player);
         }
 
-        protected override void ManageConnectionQuality()
-        {
-            base.ManageConnectionQuality();
-
-            UpdateConnectionQualityUI();
-        }
-
         private void UpdateConnectionQualityUI()
         {
-            if (connectionQuality.Value <= 0.25f)
-            {
-                connectionQualityNoUI.enabled = true;
-                connectionQualityLowUI.enabled = false;
-                connectionQualityMedUI.enabled = false;
-                connectionQualityHighUI.enabled = false;
-            }
-            else if (connectionQuality.Value <= 0.5f)
+            float interference = Mathf.Clamp01(localInterference + ConnectionQualityManager.AtmosphericInterference + temporaryInterference);
+
+            if (interference <= 0.25f)
             {
                 connectionQualityNoUI.enabled = false;
-                connectionQualityLowUI.enabled = true;
+                connectionQualityLowUI.enabled = false;
                 connectionQualityMedUI.enabled = false;
-                connectionQualityHighUI.enabled = false;
+                connectionQualityHighUI.enabled = true;
             }
-            else if (connectionQuality.Value <= 0.75f)
+            else if (interference <= 0.5f)
             {
                 connectionQualityNoUI.enabled = false;
                 connectionQualityLowUI.enabled = false;
                 connectionQualityMedUI.enabled = true;
                 connectionQualityHighUI.enabled = false;
             }
-            else
+            else if (interference <= 0.75f)
             {
                 connectionQualityNoUI.enabled = false;
+                connectionQualityLowUI.enabled = true;
+                connectionQualityMedUI.enabled = false;
+                connectionQualityHighUI.enabled = false;
+            }
+            else
+            {
+                connectionQualityNoUI.enabled = true;
                 connectionQualityLowUI.enabled = false;
                 connectionQualityMedUI.enabled = false;
-                connectionQualityHighUI.enabled = true;
+                connectionQualityHighUI.enabled = false;
             }
         }
 
@@ -1215,7 +1212,7 @@ namespace Scoops.misc
                 {
                     if (phone.activeCall != null)
                     {
-                        playerController.insanitySpeedMultiplier = -3f * phone.connectionQuality.Value;
+                        playerController.insanitySpeedMultiplier = -3f * (1f - Mathf.Clamp01(phone.GetTotalInterference()));
                         playerController.isPlayerAlone = false;
                     }
                 }

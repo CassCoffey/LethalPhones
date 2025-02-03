@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 4016554134
+CRC: 1630465619
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: d0bcb9d833c2c357d385dc0154c0c916
+    Hash: 8fb760adb775b81edba8764421eb357e
   TypeTreeHash:
     serializedVersion: 2
-    Hash: c648b25490683fff86905ca3ff02e7a3
+    Hash: 262d42a00b2ae0415a4428efef30ff5a
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: d0bcb9d833c2c357d385dc0154c0c916
+    Hash: 8fb760adb775b81edba8764421eb357e
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -94,11 +94,7 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 164
   Script: {instanceID: 0}
-- Class: 165
-  Script: {instanceID: 0}
 - Class: 169
-  Script: {instanceID: 0}
-- Class: 170
   Script: {instanceID: 0}
 - Class: 213
   Script: {instanceID: 0}
@@ -193,16 +189,15 @@ Assets:
 - Assets/Textures/icons8-no-connection-96.png
 - Assets/Materials/OffLight.mat
 - Assets/Textures/icons8-shake-phone-96.png
-- Assets/Sounds/PhoneStaticTwo.wav
 - Assets/ClipboardPhoneBook.prefab
+- Assets/Sounds/PhoneStatic.wav
 - Assets/Textures/icons8-incoming-call-96.png
-- Assets/Textures/icons8-medium-connection-96.png
 - Assets/Sounds/RotaryDialForwardOptionOne.wav
 - Assets/Sounds/RotaryDialBackOptionOne.wav
+- Assets/Textures/icons8-medium-connection-96.png
 - Assets/LocalPhoneModel.prefab
 - Assets/ServerPhoneModel.prefab
 - Assets/Sounds/SwitchboardRing.wav
-- Assets/Sounds/PhoneStaticThree.wav
 - Assets/Sounds/PhoneRing_Vibrate.wav
 - Assets/MaskPhonePrefab.prefab
 - Assets/HeadsetMicrophone.prefab
@@ -216,7 +211,6 @@ Assets:
 - Assets/Sounds/PhoneFlipClosed.wav
 - Assets/Sounds/PhoneRing_Caller.wav
 - Assets/Textures/icons8-voicemail-96.png
-- Assets/Sounds/PhoneStaticOne.wav
 - Assets/Sounds/RotaryStopperOptionOne.wav
 - Assets/Sounds/PhonePickup.wav
 - Assets/Sounds/PhoneFlipOpen.wav

@@ -33,7 +33,8 @@ namespace Scoops.misc
 
         protected AudioSource ringAudio;
         protected AudioSource thisAudio;
-        protected AudioSource target;
+        protected AudioSource staticAudio;
+        public AudioSourceStorage staticStorage;
 
         protected string incomingCall = null;
         protected string activeCall = null;
@@ -42,27 +43,15 @@ namespace Scoops.misc
         protected Queue<int> dialedNumbers = new Queue<int>(4);
 
         protected float updateInterval;
-        protected float connectionInterval = 0f;
-        protected bool staticMode = false;
-        protected bool hardStatic = false;
-        protected float staticChance = 0f;
-
-        public float targetConnectionQuality = 1f;
-        public float currentConnectionQuality = 1f;
-        public NetworkVariable<float> connectionQuality = new NetworkVariable<float>(1f);
+        protected float localInterference;
+        protected float temporaryInterference;
 
         protected IEnumerator activePhoneRingCoroutine;
-
-        protected static LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
-        protected static LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
-
-        protected static string[] registryBadWeathers = { "flooded", "rainy", "foggy", "dust clouds", "heatwave", "snowfall" };
-        protected static string[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog", "solar flare" };
 
         public virtual void Start()
         {
             this.thisAudio = GetComponent<AudioSource>();
-            this.target = transform.Find("Target").gameObject.GetComponent<AudioSource>();
+            this.staticAudio = transform.Find("Target").gameObject.GetComponent<AudioSource>();
 
             this.recordPos = transform;
             this.playPos = transform;
@@ -76,38 +65,20 @@ namespace Scoops.misc
             {
                 if (!spectatorClear) activeCaller = 0;
 
-                staticChance = 0f;
-
-                if (target.isPlaying)
-                {
-                    target.Stop();
-                }
-
                 spectatorClear = false;
             }
 
-            UpdateStatic();
+            localInterference = ConnectionQualityManager.GetLocalInterference(this);
 
-            if (IsOwner)
+            if (temporaryInterference > 0f)
             {
-                if (this.connectionInterval >= 0.75f)
-                {
-                    this.connectionInterval = 0f;
-                    ManageConnectionQuality();
-                }
-                else
-                {
-                    this.connectionInterval += Time.deltaTime;
-                }
+                // Should take 30 seconds to repair a full interference bar
+                temporaryInterference -= (1f / 30f) * Time.deltaTime;
 
-                if (this.updateInterval >= 0f)
+                if (temporaryInterference < 0f)
                 {
-                    this.updateInterval -= Time.deltaTime;
-                    return;
+                    temporaryInterference = 0f;
                 }
-                this.updateInterval = 1f;
-
-                this.UpdateConnectionQualityServerRpc(currentConnectionQuality);
             }
         }
 
@@ -126,14 +97,14 @@ namespace Scoops.misc
             return activeCall != null;
         }
 
-        public float GetCallQuality()
+        public float GetTotalInterference()
         {
-            return connectionQuality.Value;
+            return localInterference + ConnectionQualityManager.AtmosphericInterference + temporaryInterference;
         }
 
-        public bool GetStaticMod()
+        public AudioSource GetStaticAudioSource()
         {
-            return staticMode && hardStatic;
+            return staticAudio;
         }
 
         public PhoneBehavior GetCallerPhone()
@@ -210,7 +181,7 @@ namespace Scoops.misc
 
         public virtual bool PhoneInsideFactory()
         {
-            return true;
+            return false;
         }
 
         public virtual bool PhoneInsideShip()
@@ -218,197 +189,14 @@ namespace Scoops.misc
             return false;
         }
 
-        public void InfluenceConnectionQuality(float change)
-        {
-            currentConnectionQuality = Mathf.Clamp01(currentConnectionQuality + change);
-        }
-
-        protected virtual void ManageConnectionQuality()
-        {
-            targetConnectionQuality = 1f;
-            if (WeatherRegistryCompat.Enabled)
-            {
-                string currWeather = WeatherRegistryCompat.CurrentWeatherName().ToLower();
-                if (registryBadWeathers.Contains(currWeather))
-                {
-                    targetConnectionQuality -= 0.25f;
-                }
-                if (registryWorseWeathers.Contains(currWeather))
-                {
-                    targetConnectionQuality -= 0.5f;
-                }
-            } 
-            else
-            {
-                if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
-                {
-                    targetConnectionQuality -= 0.25f;
-                }
-                if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
-                {
-                    targetConnectionQuality -= 0.5f;
-                }
-            }
-
-            if (PhoneInsideFactory())
-            {
-                targetConnectionQuality -= 0.1f;
-                float entranceDist = 300f;
-
-                EntranceTeleport[] entranceArray = UnityEngine.Object.FindObjectsByType<EntranceTeleport>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-                for (int i = 0; i < entranceArray.Length; i++)
-                {
-                    if (!entranceArray[i].isEntranceToBuilding)
-                    {
-                        float newDist = Vector3.Distance(entranceArray[i].transform.position, transform.position);
-                        if (newDist < entranceDist)
-                        {
-                            entranceDist = newDist;
-                        }
-                    }
-                }
-
-                targetConnectionQuality -= Mathf.Lerp(0f, 0.4f, Mathf.InverseLerp(0f, 300f, entranceDist));
-            }
-
-            float apparatusDist = 300f;
-
-            LungProp[] apparatusArray = UnityEngine.Object.FindObjectsByType<LungProp>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            for (int i = 0; i < apparatusArray.Length; i++)
-            {
-                float newDist = Vector3.Distance(apparatusArray[i].transform.position, transform.position);
-                if (apparatusArray[i].isLungDocked)
-                {
-                    newDist += 10f;
-                }
-                if (newDist < apparatusDist)
-                {
-                    apparatusDist = newDist;
-                }
-            }
-
-            if (apparatusDist <= 50f)
-            {
-                targetConnectionQuality -= Mathf.Lerp(0.5f, 0f, Mathf.InverseLerp(0f, 50f, apparatusDist));
-            }
-
-            targetConnectionQuality = Mathf.Clamp01(targetConnectionQuality);
-
-            if (targetConnectionQuality < currentConnectionQuality)
-            {
-                currentConnectionQuality = targetConnectionQuality;
-            }
-            else if (targetConnectionQuality > currentConnectionQuality)
-            {
-                currentConnectionQuality += 0.005f;
-            }
-
-            if (staticChance > 0f)
-            {
-                // we are in the static zone
-                float staticChanceMod = Mathf.Lerp(0.15f, 0.85f, staticChance);
-
-                staticMode = UnityEngine.Random.Range(0f, 1f) < staticChanceMod;
-                hardStatic = UnityEngine.Random.Range(0f, 1f) < staticChanceMod;
-            }
-            else
-            {
-                staticMode = false;
-                hardStatic = false;
-            }
-        }
-
-        protected void UpdateStatic()
-        {
-            if (activeCall == null) return;
-
-            PhoneBehavior callerPhone = GetCallerPhone();
-            float worseConnection = callerPhone.GetCallQuality() < GetCallQuality() ? callerPhone.GetCallQuality() : GetCallQuality();
-
-            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-
-            Transform listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.transform : localPlayer.transform;
-            float distSqr = (listenerPos.position - playPos.position).sqrMagnitude;
-
-            Vector3 directionTo = playPos.position - listenerPos.position;
-            float listenAngle = Vector3.Dot(directionTo.normalized, listenerPos.right);
-
-            float maxListenDistSqr = Config.listeningDist.Value;
-            maxListenDistSqr *= maxListenDistSqr;
-
-            if (worseConnection <= 0.5f)
-            {
-                staticChance = Mathf.InverseLerp(0.5f, 0f, worseConnection);
-
-                if (staticMode)
-                {
-                    float listenerMod = 1f;
-
-                    if (distSqr > 1f)
-                    {
-                        listenerMod = AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01((distSqr / maxListenDistSqr) + 0.2f));
-                        target.panStereo = listenAngle;
-                    } 
-                    else
-                    {
-                        target.panStereo = -0.4f;
-                    }
-
-                    if (hardStatic)
-                    {
-                        target.GetComponent<AudioLowPassFilter>().cutoffFrequency = 2899f;
-                        target.volume = 1f * listenerMod;
-                    }
-                    else
-                    {
-                        target.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(1000f, 2800f, staticChance);
-                        target.volume = Mathf.Clamp01(staticChance + 0.75f) * listenerMod;
-                    }
-
-                    if (!target.isPlaying)
-                    {
-                        switch (UnityEngine.Random.Range(1, 4))
-                        {
-                            case (1):
-                                target.clip = PhoneAssetManager.phoneStaticOne;
-                                break;
-
-                            case (2):
-                                target.clip = PhoneAssetManager.phoneStaticTwo;
-                                break;
-
-                            case (3):
-                                target.clip = PhoneAssetManager.phoneStaticThree;
-                                break;
-
-                            default:
-                                break;
-                        }
-
-                        target.Play();
-                    }
-                }
-                else
-                {
-                    if (target.isPlaying) target.Stop();
-                }
-            } 
-            else
-            {
-                staticChance = 0f;
-                if (target.isPlaying) target.Stop();
-            }
-        }
-
         public void PropogateInformation()
         {
             PropogateInformationClientRpc(this.phoneNumber, this.phoneSkinId, this.phoneCharmId, this.phoneRingtoneId);
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        protected void UpdateConnectionQualityServerRpc(float currentConnectionQuality)
+        public void ApplyTemporaryInterference(float change)
         {
-            connectionQuality.Value = currentConnectionQuality;
+            temporaryInterference += change;
         }
 
         [ClientRpc]
@@ -658,11 +446,11 @@ namespace Scoops.misc
         {
             AudioSourceManager.DeregisterPhone(this);
 
-            if (target != null)
+            if (staticAudio != null)
             {
-                if (target.isPlaying)
+                if (staticAudio.isPlaying)
                 {
-                    target.Stop();
+                    staticAudio.Stop();
                 }
             }
 

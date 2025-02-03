@@ -1,5 +1,6 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
+using LethalLib.Modules;
 using Scoops.misc;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -11,6 +12,7 @@ namespace Scoops.service
     {
         public bool modified = false;
         public bool voice = false;
+        public bool staticAudio = false;
 
         public PlayerControllerB player = null;
 
@@ -19,10 +21,11 @@ namespace Scoops.service
         public Transform listenerPos;
         public Transform sourcePos;
 
-        public float recordConnectionQuality;
-        public bool recordStaticMode;
+        public float recordInterference;
 
         public AudioSource audioSource;
+
+        private float recordDist;
 
         private float origVolume;
         private float origSpatial;
@@ -44,8 +47,7 @@ namespace Scoops.service
             this.listenerPos = null;
             this.sourcePos = audioSource.transform;
 
-            this.recordConnectionQuality = 1f;
-            this.recordStaticMode = false;
+            this.recordInterference = 0f;
 
             this.origVolume = audioSource.volume;
             this.origSpatial = audioSource.spatialBlend;
@@ -83,7 +85,9 @@ namespace Scoops.service
                 if (recordPos != null && playPos != null && listenerPos != null)
                 {
                     if (!modified) InitPhone();
-                    ApplyPhone();
+                    ApplyPhoneVolume();
+                    ApplyPhoneEffect();
+                    ApplyPhoneLocation();
                 }
                 else if (modified)
                 {
@@ -96,6 +100,11 @@ namespace Scoops.service
         {
             modified = true;
 
+            if (staticAudio && !audioSource.isPlaying)
+            {
+                audioSource.Play();
+            }
+
             // Remove spatialization so that the audio can be heard from anywhere
             audioSource.spatialBlend = 0f;
 
@@ -103,41 +112,46 @@ namespace Scoops.service
             {
                 audioSource.GetComponent<AudioLowPassFilter>().enabled = true;
             }
-            if (audioSource.GetComponent<AudioHighPassFilter>())
-            {
-                audioSource.GetComponent<AudioHighPassFilter>().enabled = true;
-            }
             if (audioSource.GetComponent<OccludeAudio>())
             {
                 audioSource.GetComponent<OccludeAudio>().enabled = false;
             }
+
+            if (!staticAudio)
+            {
+                if (audioSource.GetComponent<AudioHighPassFilter>())
+                {
+                    audioSource.GetComponent<AudioHighPassFilter>().enabled = true;
+                }
+            }
         }
 
-        public void ApplyPhone()
+        public void ApplyPhoneVolume()
         {
-            if (recordStaticMode)
+            float staticStart = ConnectionQualityManager.STATIC_START_INTERFERENCE;
+
+            if (staticAudio)
             {
-                // No audio if playing static
+                audioSource.volume = recordInterference * Config.staticSoundAdjust.Value;
+                // Static is the inverse of other volumes
+                if (recordInterference > staticStart)
+                {
+                    float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
+                    audioSource.volume *= volumeInterference;
+                }
+                recordDist = 0f;
+                return;
+            }
+            // Short circuit if max interference
+            if (recordInterference == 1f)
+            {
                 audioSource.volume = 0f;
                 return;
             }
 
-            // Apply Voice Audio Source specific changes
-            if (voice)
-            {
-                player.currentVoiceChatIngameSettings.set2D = true;
-            }
-
             float mod = 0f;
 
-            float recordDist = Vector3.Distance(recordPos.position, sourcePos.position);
-
-            Vector3 directionTo = playPos.position - listenerPos.position;
-            float listenDist = directionTo.sqrMagnitude;
-            float listenAngle = Vector3.Dot(directionTo.normalized, listenerPos.right);
-
-            float maxListenDistSqr = Config.listeningDist.Value;
-            maxListenDistSqr *= maxListenDistSqr;
+            recordDist = Vector3.Distance(recordPos.position, sourcePos.position);
 
             // Recalculate volume from distance information
             if (audioSource.rolloffMode == AudioRolloffMode.Linear)
@@ -159,20 +173,61 @@ namespace Scoops.service
 
             audioSource.volume = (origVolume * mod);
             // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
-            audioSource.volume += voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
+            audioSource.volume *= voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
+
+            // Lower volume during interference
+            if (recordInterference > staticStart)
+            {
+                float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
+                audioSource.volume *= (1f - volumeInterference);
+            }
+        }
+
+        public void ApplyPhoneEffect()
+        {
+            // Static bypasses audio effects
+            if (staticAudio)
+            {
+                if (audioSource.GetComponent<AudioLowPassFilter>())
+                {
+                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 3000f;
+                    audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = 3f;
+                }
+                return;
+            }
+            // Apply Voice Audio Source specific changes
+            if (voice)
+            {
+                player.currentVoiceChatIngameSettings.set2D = true;
+            }
 
             float recordMod = AudioSourceManager.Instance.listenerCurve.Evaluate(recordDist / audioSource.maxDistance);
 
             if (audioSource.GetComponent<AudioLowPassFilter>())
             {
                 audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(3000f, 750f, recordMod);
-                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(10f, 3f, recordConnectionQuality);
+                audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(3f, 10f, recordInterference);
             }
             if (audioSource.GetComponent<AudioHighPassFilter>())
             {
-                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2500f, 2000f, recordConnectionQuality);
-                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(3f, 2f, recordConnectionQuality);
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2500f, recordInterference);
+                audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(2f, 3f, recordInterference);
             }
+
+            if (voice && player.voiceMuffledByEnemy && audioSource.GetComponent<AudioLowPassFilter>())
+            {
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 500;
+            }
+        }
+
+        public void ApplyPhoneLocation()
+        {
+            Vector3 directionTo = playPos.position - listenerPos.position;
+            float listenDist = directionTo.sqrMagnitude;
+            float listenAngle = Vector3.Dot(directionTo.normalized, listenerPos.right);
+
+            float maxListenDistSqr = Config.listeningDist.Value;
+            maxListenDistSqr *= maxListenDistSqr;
 
             if (listenDist > 1f)
             {
@@ -184,11 +239,6 @@ namespace Scoops.service
                 }
                 audioSource.panStereo = listenAngle;
             }
-
-            if (voice && player.voiceMuffledByEnemy && audioSource.GetComponent<AudioLowPassFilter>())
-            {
-                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 500;
-            }
         }
 
         public void Reset()
@@ -198,6 +248,11 @@ namespace Scoops.service
             if (voice)
             {
                 player.currentVoiceChatIngameSettings.set2D = false;
+            }
+
+            if (staticAudio && audioSource.isPlaying)
+            {
+                audioSource.Stop();
             }
 
             audioSource.panStereo = origPan;
@@ -252,15 +307,28 @@ namespace Scoops.service
     {
         private AudioSourceStorage storage;
 
+        private bool staticAudio = false;
+
         public void Start()
         {
             storage = AudioSourceManager.RegisterAudioSource(GetComponent<AudioSource>());
+            storage.staticAudio = staticAudio;
         }
 
         public void SetVoice(PlayerControllerB player)
         {
             storage.voice = true;
             storage.player = player;
+        }
+
+        public void SetStaticAudio()
+        {
+            staticAudio = true;
+
+            if (storage != null)
+            {
+                storage.staticAudio = true;
+            }
         }
 
         public void Update()
@@ -285,8 +353,8 @@ namespace Scoops.service
 
         public AnimationCurve listenerCurve;
 
-        private List<AudioSourceStorage> allAudioSources = new List<AudioSourceStorage>();
         private List<AudioSourceStorage> trackedAudioSources = new List<AudioSourceStorage>();
+        private List<AudioSourceStorage> staticNoiseAudioSources = new List<AudioSourceStorage>();
 
         private List<PhoneBehavior> allPhones = new List<PhoneBehavior>();
 
@@ -296,7 +364,7 @@ namespace Scoops.service
         private float listenDistSqr;
         private float recordDistSqr;
 
-        public void Start()
+        public void Init()
         {
             // Add a hook script to every audio source in the game
             AudioSource[] loadedAudioSources = Resources.FindObjectsOfTypeAll<AudioSource>();
@@ -362,50 +430,67 @@ namespace Scoops.service
                 storage.playPos = null;
                 storage.listenerPos = null;
 
-                storage.recordConnectionQuality = 1f;
-                storage.recordStaticMode = false;
+                storage.recordInterference = 0f;
 
-                // Max distance is set in the config, if the audio source has a shorter max dist, use that
-                float closestDistSqr = recordDistSqr;
-                float maxDistSqr = storage.audioSource.maxDistance * storage.audioSource.maxDistance;
-                if (maxDistSqr < closestDistSqr)
+                PhoneBehavior phone = ClosestActivePhone(storage);
+                if (phone != null)
                 {
-                    closestDistSqr = maxDistSqr;
+                    PhoneBehavior callerPhone = phone.GetCallerPhone();
+
+                    storage.recordPos = callerPhone.recordPos;
+                    storage.playPos = phone.playPos;
+                    storage.listenerPos = listenerPos;
+
+                    float phoneInterference = phone.GetTotalInterference();
+                    float callerPhoneInterference = callerPhone.GetTotalInterference();
+
+                    float worseInterference = phoneInterference < callerPhoneInterference ? callerPhoneInterference : phoneInterference;
+                    worseInterference = Mathf.Clamp01(worseInterference);
+
+                    storage.recordInterference = worseInterference;
                 }
+            }
+        }
 
-                // Only continue if there are actually calls happening within range
-                foreach (PhoneBehavior phone in allPhones)
+        private PhoneBehavior ClosestActivePhone(AudioSourceStorage storage)
+        {
+            PhoneBehavior closestPhone = null;
+
+            // Max distance is set in the config, if the audio source has a shorter max dist, use that
+            float closestDistSqr = recordDistSqr;
+            float maxDistSqr = storage.audioSource.maxDistance * storage.audioSource.maxDistance;
+            if (maxDistSqr < closestDistSqr)
+            {
+                closestDistSqr = maxDistSqr;
+            }
+
+            // Only continue if there are actually calls happening within range
+            foreach (PhoneBehavior phone in allPhones)
+            {
+                if (phone.IsActive())
                 {
-                    if (phone.IsActive())
+                    PhoneBehavior callerPhone = phone.GetCallerPhone();
+
+                    float listenerDistToPhone = (phone.playPos.position - listenerPos.position).sqrMagnitude;
+                    float listenerDistToCaller = (callerPhone.playPos.position - listenerPos.position).sqrMagnitude;
+
+                    // Need the player to be in range of a phone, but not also in range of the phone it's calling
+                    if (listenerDistToPhone <= listenDistSqr && listenerDistToCaller > listenDistSqr)
                     {
-                        PhoneBehavior callerPhone = phone.GetCallerPhone();
+                        float audioDistToCaller = (callerPhone.recordPos.position - storage.sourcePos.position).sqrMagnitude;
+                        float audioDistToListener = (listenerPos.position - storage.sourcePos.position).sqrMagnitude;
 
-                        float listenerDistToPhone = (phone.playPos.position - listenerPos.position).sqrMagnitude;
-                        float listenerDistToCaller = (callerPhone.playPos.position - listenerPos.position).sqrMagnitude;
-
-                        // Need the player to be in range of a phone, but not also in range of the phone it's calling
-                        if (listenerDistToPhone <= listenDistSqr && listenerDistToCaller > listenDistSqr)
+                        // Need to be closer than the existing closest phone and the max recording dist
+                        // Also need to be closer to the phone than the local player
+                        if (audioDistToCaller <= closestDistSqr && audioDistToCaller < audioDistToListener)
                         {
-                            float audioDistToCaller = (callerPhone.recordPos.position - storage.sourcePos.position).sqrMagnitude;
-                            float audioDistToListener = (listenerPos.position - storage.sourcePos.position).sqrMagnitude;
-
-                            // Need to be closer than the existing closest phone and the max recording dist
-                            // Also need to be closer to the phone than the local player
-                            if (audioDistToCaller <= closestDistSqr && audioDistToCaller < audioDistToListener)
-                            {
-                                storage.recordPos = callerPhone.recordPos;
-                                storage.playPos = phone.playPos;
-                                storage.listenerPos = listenerPos;
-
-                                float worseConnection = callerPhone.GetCallQuality() < phone.GetCallQuality() ? callerPhone.GetCallQuality() : phone.GetCallQuality();
-
-                                storage.recordConnectionQuality = worseConnection;
-                                storage.recordStaticMode = phone.GetStaticMod();
-                            }
+                            closestPhone = phone;
                         }
                     }
                 }
             }
+
+            return closestPhone;
         }
 
         public static AudioSourceStorage RegisterAudioSource(AudioSource source)
@@ -414,7 +499,6 @@ namespace Scoops.service
 
             AudioSourceStorage newStorage = new AudioSourceStorage(source);
 
-            Instance.allAudioSources.Add(newStorage);
             if (source.spatialBlend != 0f)
             {
                 Instance.trackedAudioSources.Add(newStorage);
@@ -427,7 +511,6 @@ namespace Scoops.service
         {
             if (Instance == null || source == null) return;
 
-            Instance.allAudioSources.Remove(source);
             Instance.trackedAudioSources.Remove(source);
         }
 
@@ -436,6 +519,13 @@ namespace Scoops.service
             if (Instance == null) return;
 
             Instance.allPhones.Add(phone);
+
+            // Set static audio storage for new phone
+            if (phone.GetStaticAudioSource() != null)
+            {
+                AudioSourceHook hook = phone.GetStaticAudioSource().GetComponent<AudioSourceHook>();
+                hook.SetStaticAudio();
+            }
         }
 
         public static void DeregisterPhone(PhoneBehavior phone)
@@ -466,6 +556,7 @@ namespace Scoops.service
             {
                 GameObject audioSourceManagerObject = new GameObject("PhoneAudioSourceManager");
                 AudioSourceManager manager = audioSourceManagerObject.AddComponent<AudioSourceManager>();
+                manager.Init();
 
                 Instance = manager;
             }

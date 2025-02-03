@@ -22,7 +22,7 @@ namespace Scoops.patch
             PlayerPhone phone = PhoneNetworkHandler.Instance.localPhone;
             if (phone != null)
             {
-                phone.InfluenceConnectionQuality(-1f);
+                phone.ApplyTemporaryInterference(1f);
             }
         }
     }

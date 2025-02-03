@@ -11,7 +11,11 @@ namespace Scoops.compatability
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static string CurrentWeatherName()
         {
-            return WeatherManager.GetCurrentLevelWeather().name;
+            if (WeatherManager.GetCurrentLevelWeather() != null)
+            {
+                return WeatherManager.GetCurrentLevelWeather().name;
+            }
+            return "null";
         }
     }
 }

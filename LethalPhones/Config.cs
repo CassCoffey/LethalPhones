@@ -9,6 +9,7 @@ namespace Scoops
         public static ConfigEntry<float> listeningDist;
         public static ConfigEntry<float> backgroundSoundAdjust;
         public static ConfigEntry<float> voiceSoundAdjust;
+        public static ConfigEntry<float> staticSoundAdjust;
         public static ConfigEntry<float> deathHangupTime;
         public static ConfigEntry<bool> hideHands;
         public static ConfigEntry<bool> disableRingtones;
@@ -52,14 +53,20 @@ namespace Scoops
             voiceSoundAdjust = cfg.Bind(
                     "General",
                     "voiceSoundAdjust",
-                    0f,
-                    "All voices on calls have their volume adjusted by this value."
+                    1f,
+                    "All voices on calls have their volume multiplied by this value."
             );
             backgroundSoundAdjust = cfg.Bind(
                     "General",
                     "backgroundSoundAdjust",
-                    -0.2f,
-                    "All background noises on calls have their volume adjusted by this value."
+                    0.8f,
+                    "All background noises on calls have their volume multiplied by this value."
+            );
+            staticSoundAdjust = cfg.Bind(
+                    "General",
+                    "staticSoundAdjust",
+                    0.6f,
+                    "All static noises on calls have their volume multiplied by this value."
             );
             recordingDist = cfg.Bind(
                     "General",

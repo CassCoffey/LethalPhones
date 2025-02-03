@@ -156,8 +156,8 @@ public class PlayerPhonePatch
             return;
         }
 
-        float changeAmount = 0f - Mathf.Clamp01(damageNumber / 50f);
-        PhoneManager.localPhone.InfluenceConnectionQuality(changeAmount);
+        float changeAmount = Mathf.Clamp01(damageNumber / 75f);
+        PhoneManager.localPhone.ApplyTemporaryInterference(changeAmount);
     }
 
     [HarmonyPatch("DisablePlayerModel")]

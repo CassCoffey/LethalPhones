@@ -25,9 +25,6 @@ namespace Scoops.service
         public static AudioClip phoneBusy;
         public static AudioClip phoneRingVibrate;
         public static AudioClip phoneSwitch;
-        public static AudioClip phoneStaticOne;
-        public static AudioClip phoneStaticTwo;
-        public static AudioClip phoneStaticThree;
 
         public static Material greenLight;
         public static Material redLight;
@@ -79,9 +76,6 @@ namespace Scoops.service
             phoneBusy = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneBusy");
             phoneRingVibrate = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneRing_Vibrate");
             phoneSwitch = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneSwitch");
-            phoneStaticOne = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticOne");
-            phoneStaticTwo = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticTwo");
-            phoneStaticThree = (AudioClip)Plugin.LethalPhoneAssets.LoadAsset("PhoneStaticThree");
 
             greenLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("GreenLight");
             redLight = (Material)Plugin.LethalPhoneAssets.LoadAsset("RedLight");

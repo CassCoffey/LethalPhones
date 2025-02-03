@@ -10,6 +10,7 @@ using System.Text;
 using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 using Unity.Netcode;
 using UnityEngine;
+using LethalLib.Modules;
 
 namespace Scoops.gameobjects
 {
@@ -98,6 +99,11 @@ namespace Scoops.gameobjects
             {
                 MirageCompat.UnmuteEnemy(enemy);
             }
+        }
+
+        public override bool PhoneInsideFactory()
+        {
+            return true;
         }
 
         protected virtual IEnumerator PickupDelayCoroutine(float time)
