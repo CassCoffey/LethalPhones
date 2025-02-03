@@ -635,7 +635,6 @@ namespace Scoops.misc
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
                 activeCall = null;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
             }
             if (outgoingCall != null)
             {

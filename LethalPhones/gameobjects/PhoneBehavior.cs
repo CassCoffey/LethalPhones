@@ -241,7 +241,6 @@ namespace Scoops.misc
             {
                 PlayHangupSoundServerRpc();
                 activeCall = null;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
 
                 if (transferNumber != phoneNumber)
@@ -282,7 +281,6 @@ namespace Scoops.misc
             {
                 PlayHangupSound();
                 activeCall = null;
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 UpdateCallingUI();
             }
             else if (outgoingCall == cancellerNumber)
@@ -452,11 +450,6 @@ namespace Scoops.misc
                 {
                     staticAudio.Stop();
                 }
-            }
-
-            if (StartOfRound.Instance != null)
-            {
-                StartOfRound.Instance.UpdatePlayerVoiceEffects();
             }
         }
     }

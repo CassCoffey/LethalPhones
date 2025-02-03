@@ -50,7 +50,6 @@ namespace Scoops.gameobjects
                 {
                     PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
                     activeCall = null;
-                    StartOfRound.Instance.UpdatePlayerVoiceEffects();
                 }
                 if (outgoingCall != null)
                 {
