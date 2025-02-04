@@ -16,11 +16,13 @@ namespace Scoops.misc
 
         public void Start()
         {
-            // We need an update!
-            PhoneNetworkHandler.Instance.UpdateClipboardText();
-
             clipboardRenderer = transform.Find("Board").GetComponent<Renderer>();
             textArea = transform.Find("Paper/PaperCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>();
+
+            PhoneNetworkHandler.Instance.phoneListUpdateEvent.AddListener(UpdateText);
+
+            // We need an update!
+            PhoneNetworkHandler.Instance.RequestPhoneListUpdates();
         }
 
         //tbh I do not like this
@@ -32,8 +34,7 @@ namespace Scoops.misc
             }
         }
 
-        [ClientRpc]
-        public void UpdateTextClientRpc(ulong[] phoneIds)
+        public void UpdateText()
         {
             if (textArea == null)
             {
@@ -42,10 +43,12 @@ namespace Scoops.misc
 
             string newClipboardText = "";
 
-            foreach (ulong phoneId in phoneIds)
+            foreach (PhoneBehavior phone in PhoneNetworkHandler.allPhoneBehaviors)
             {
-                PlayerPhone playerPhone = GetNetworkObject(phoneId).GetComponent<PlayerPhone>();
-                newClipboardText += playerPhone.phoneNumber + " - " + playerPhone.GetPhoneName() + "\n";
+                if (phone is PlayerPhone)
+                {
+                    newClipboardText += phone.phoneNumber + " - " + phone.GetPhoneName() + "\n";
+                }
             }
 
             textArea.text = newClipboardText;

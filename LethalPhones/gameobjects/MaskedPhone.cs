@@ -139,7 +139,7 @@ namespace Scoops.misc
 
                 if (serverPersonalPhoneNumberUI != null)
                 {
-                    serverPersonalPhoneNumberUI.text = phoneNumber;
+                    serverPersonalPhoneNumberUI.text = phoneNumber.ToString("D4");
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace Scoops.misc
         {
             if (IsOwner && !masked.isEnemyDead)
             {
-                if (outgoingCall == null && activeCall == null)
+                if (outgoingCall.Value == -1 && activeCall.Value == -1)
                 {
                     // put the phone away
                     if (armsActive)
@@ -163,10 +163,10 @@ namespace Scoops.misc
                         ToggleServerPhoneModelServerRpc(false);
                     }
                 }
-                else if (activeCall != null && !preppingHangup)
+                else if (activeCall.Value != -1 && !preppingHangup)
                 {
                     preppingHangup = true;
-                    activeCallHangupCoroutine = CallHangupCoroutine(activeCall, 30f);
+                    activeCallHangupCoroutine = CallHangupCoroutine(activeCall.Value, 30f);
                     StartCoroutine(activeCallHangupCoroutine);
                 }
             }
@@ -209,15 +209,14 @@ namespace Scoops.misc
             preppingPickup = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall != null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
+            if (!IsBusy() && !enemy.isEnemyDead)
             {
-                activeCall = incomingCall;
-                activeCaller = incomingCaller;
-                incomingCall = null;
-                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
+                activeCall.Value = incomingCall.Value;
+                activeCaller.Value = incomingCaller.Value;
+                incomingCall.Value = -1;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayPickupSoundServerRpc();
-                UpdateCallValues();
                 ToggleServerPhoneModelServerRpc(true);
             }
 
@@ -229,29 +228,28 @@ namespace Scoops.misc
             preppingCall = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall == null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
+            if (!IsBusy() && !enemy.isEnemyDead)
             {
-                CallRandomNumber();
-                if (outgoingCall != null)
+                short number = GetRandomExistingPhoneNumber();
+                if (number != -1)
                 {
-                    activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall);
+                    outgoingCall.Value = number;
+                    activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall.Value);
                     StartCoroutine(activeCallTimeoutCoroutine);
-                    UpdateCallValues();
                     ToggleServerPhoneModelServerRpc(true);
                 }
             }
             preppingCall = false;
         }
 
-        protected override IEnumerator CallTimeoutCoroutine(string number)
+        protected override IEnumerator CallTimeoutCoroutine(short number)
         {
             yield return new WaitForSeconds(14f);
 
-            if (outgoingCall == number)
+            if (outgoingCall.Value == number)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                outgoingCall = null;
-                UpdateCallValues();
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                outgoingCall.Value = -1;
                 ToggleServerPhoneModelServerRpc(false);
             }
         }

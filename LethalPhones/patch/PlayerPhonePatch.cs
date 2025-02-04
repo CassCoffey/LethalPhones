@@ -12,7 +12,6 @@ using Scoops.misc;
 using System.Reflection;
 using System.Reflection.Emit;
 using Scoops.customization;
-using LethalLib.Modules;
 
 namespace Scoops.patch;
 
@@ -112,8 +111,19 @@ public class PlayerPhonePatch
     private static void InitPhone(ref PlayerControllerB __instance)
     {
         PhoneManager = PhoneNetworkHandler.Instance;
-        NetworkObject phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<NetworkObject>();
+        PhoneBehavior phone = __instance.transform.Find("PhonePrefab(Clone)").GetComponent<PhoneBehavior>();
         PhoneManager.CreateNewPhone(phone.NetworkObjectId, CustomizationManager.SelectedSkin, CustomizationManager.SelectedCharm, CustomizationManager.SelectedRingtone);
+
+        if (GameNetworkManager.Instance.localPlayerController == __instance)
+        {
+            phone.playPos = __instance.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)");//__instance.playerGlobalHead;
+            phone.recordPos = __instance.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)");
+        }
+        else
+        {
+            phone.playPos = __instance.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)");
+            phone.recordPos = __instance.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)");
+        }
 
         Plugin.InputActionInstance.TogglePhoneKey.performed += OnTogglePhoneKeyPressed;
         Plugin.InputActionInstance.PickupPhoneKey.performed += OnPickupPhoneKeyPressed;

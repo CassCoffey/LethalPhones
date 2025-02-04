@@ -12,19 +12,23 @@ using System.Numerics;
 using Unity.Netcode;
 using Unity.Profiling;
 using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
 
 namespace Scoops.misc
 {
     public class PhoneBehavior : NetworkBehaviour
     {
-        public string phoneNumber;
+        protected NetworkVariable<short> incomingCall = new NetworkVariable<short>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        protected NetworkVariable<short> outgoingCall = new NetworkVariable<short>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        protected NetworkVariable<short> activeCall = new NetworkVariable<short>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        protected NetworkVariable<ulong> incomingCaller = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        protected NetworkVariable<ulong> outgoingCaller = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        protected NetworkVariable<ulong> activeCaller = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        public short phoneNumber;
         public string phoneSkinId;
         public string phoneCharmId;
         public string phoneRingtoneId;
-
-        public ulong activeCaller = 0;
-        public ulong incomingCaller = 0;
 
         public Transform recordPos;
         public Transform playPos;
@@ -33,10 +37,6 @@ namespace Scoops.misc
         protected AudioSource thisAudio;
         protected AudioSource staticAudio;
         public AudioSourceStorage staticStorage;
-
-        protected string incomingCall = null;
-        protected string activeCall = null;
-        protected string outgoingCall = null;
 
         protected Queue<int> dialedNumbers = new Queue<int>(4);
 
@@ -80,12 +80,12 @@ namespace Scoops.misc
 
         public bool IsBusy()
         {
-            return outgoingCall != null || incomingCall != null || activeCall != null;
+            return outgoingCall.Value != -1 || incomingCall.Value != -1 || activeCall.Value != -1;
         }
 
         public bool IsActive()
         {
-            return activeCall != null;
+            return activeCall.Value != -1;
         }
 
         public float GetTotalInterference()
@@ -100,59 +100,24 @@ namespace Scoops.misc
 
         public PhoneBehavior GetCallerPhone()
         {
-            return GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
+            return GetNetworkObject(activeCaller.Value).GetComponent<PhoneBehavior>();
         }
 
-        public void CallRandomNumber()
+        public short GetRandomExistingPhoneNumber()
         {
-            string number = GetRandomExistingPhoneNumber();
-            if (number == null || number == "")
+            if (PhoneNetworkHandler.allPhoneBehaviors.Count > 0)
             {
-                return;
-            }
-
-            outgoingCall = number;
-
-            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
-        }
-
-        public virtual void CallNumber(string number)
-        {
-            outgoingCall = number;
-            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
-        }
-
-        public string GetRandomExistingPhoneNumber()
-        {
-            PhoneBehavior[] allPhones = GameObject.FindObjectsByType<PhoneBehavior>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            List<PhoneBehavior> allValidPhones = new List<PhoneBehavior>();
-
-            for (int i = 0; i < allPhones.Length; i++)
-            {
-                if (allPhones[i] != this && allPhones[i].phoneNumber != null && allPhones[i].phoneNumber != "")
-                {
-                    allValidPhones.Add(allPhones[i]);
-                }
-            }
-
-            if (allValidPhones.Count > 0)
-            {
-                PhoneBehavior randPhone = allValidPhones[UnityEngine.Random.Range(0, allValidPhones.Count)];
+                PhoneBehavior randPhone = PhoneNetworkHandler.allPhoneBehaviors[UnityEngine.Random.Range(0, PhoneNetworkHandler.allPhoneBehaviors.Count)];
 
                 return randPhone.phoneNumber;
             }
 
-            return null;
+            return -1;
         }
 
         public virtual bool IsBeingSpectated()
         {
             return false;
-        }
-
-        public virtual void UpdateCallValues()
-        {
-            // Nothing by default
         }
 
         protected virtual void ApplySkin(string skinId)
@@ -187,11 +152,29 @@ namespace Scoops.misc
 
         public void ApplyTemporaryInterference(float change)
         {
-            temporaryInterference += change;
+            ApplyTemporaryInterferenceServerRpc(change);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void ApplyTemporaryInterferenceServerRpc(float change)
+        {
+            ApplyTemporaryInterferenceClientRpc(change);
         }
 
         [ClientRpc]
-        public virtual void SetNewPhoneNumberClientRpc(string number)
+        public void ApplyTemporaryInterferenceClientRpc(float change)
+        {
+            temporaryInterference += change;
+        }
+
+        public virtual void CallNumber(short number)
+        {
+            outgoingCall.Value = number;
+            PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(number, NetworkObjectId);
+        }
+
+        [ClientRpc]
+        public virtual void SetNewPhoneNumberClientRpc(short number)
         {
             this.phoneNumber = number;
         }
@@ -199,18 +182,23 @@ namespace Scoops.misc
         [ClientRpc]
         public virtual void InvalidCallClientRpc(string reason)
         {
-            outgoingCall = null;
+            if (!IsOwner) return;
+
+            outgoingCall.Value = -1;
         }
 
         [ClientRpc]
-        public void RecieveCallClientRpc(ulong callerId, string callerNumber)
+        public void RecieveCallClientRpc(ulong callerId, short callerNumber)
         {
-            if (incomingCall == null)
+            if (incomingCall.Value == -1)
             {
                 StartRinging();
 
-                incomingCall = callerNumber;
-                incomingCaller = callerId;
+                if (IsOwner)
+                {
+                    incomingCall.Value = callerNumber;
+                    incomingCaller.Value = callerId;
+                }
                 dialedNumbers.Clear();
                 UpdateCallingUI();
             }
@@ -221,36 +209,30 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void TransferCallClientRpc(ulong callerId, string callerNumber, string transferNumber)
+        public void TransferCallClientRpc(ulong callerId, short callerNumber, short transferNumber)
         {
-            if (!IsOwner)
+            if (activeCall.Value == callerNumber)
             {
-                return;
-            }
+                PlayHangupSound();
 
-            if (activeCall == callerNumber)
-            {
-                PlayHangupSoundServerRpc();
-                activeCall = null;
-                UpdateCallingUI();
-
-                if (transferNumber != phoneNumber)
+                if (IsOwner)
                 {
-                    CallNumber(transferNumber);
+                    activeCall.Value = -1;
+
+                    if (transferNumber != phoneNumber)
+                    {
+                        CallNumber(transferNumber);
+                    }
                 }
 
-                UpdateCallValues();
-            }
-            else
-            {
-                // No you can't transfer a call you're not on.
+                UpdateCallingUI();
             }
         }
 
         [ClientRpc]
-        public void CallAcceptedClientRpc(ulong accepterId, string accepterNumber)
+        public void CallAcceptedClientRpc(ulong accepterId, short accepterNumber)
         {
-            if (outgoingCall != accepterNumber)
+            if (outgoingCall.Value != accepterNumber)
             {
                 // Whoops, how did we get this call? Send back a no.
                 return;
@@ -259,34 +241,47 @@ namespace Scoops.misc
             StopOutgoingRinging();
             PlayPickupSound();
 
-            outgoingCall = null;
-            activeCall = accepterNumber;
-            activeCaller = accepterId;
+            if (IsOwner)
+            {
+                outgoingCall.Value = -1;
+                activeCall.Value = accepterNumber;
+                activeCaller.Value = accepterId;
+            }
+            
             UpdateCallingUI();
         }
 
         [ClientRpc]
-        public void HangupCallClientRpc(ulong cancellerId, string cancellerNumber)
+        public void HangupCallClientRpc(ulong cancellerId, short cancellerNumber)
         {
-            if (activeCall == cancellerNumber)
+            if (activeCall.Value == cancellerNumber)
             {
                 PlayHangupSound();
-                activeCall = null;
+                if (IsOwner)
+                {
+                    activeCall.Value = -1;
+                }
                 UpdateCallingUI();
             }
-            else if (outgoingCall == cancellerNumber)
+            else if (outgoingCall.Value == cancellerNumber)
             {
                 // Line busy
                 PlayHangupSound();
-                outgoingCall = null;
+                if (IsOwner)
+                {
+                    outgoingCall.Value = -1;
+                }
                 UpdateCallingUI();
             }
-            else if (incomingCall == cancellerNumber)
+            else if (incomingCall.Value == cancellerNumber)
             {
                 // incoming call cancelled
                 StopRinging();
                 thisAudio.Stop();
-                incomingCall = null;
+                if (IsOwner)
+                {
+                    incomingCall.Value = -1;
+                }
                 UpdateCallingUI();
             }
             else
@@ -374,7 +369,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public void PropogateInformationClientRpc(string number, string skinId, string charmId, string ringtoneId)
+        public void PropogateInformationClientRpc(short number, string skinId, string charmId, string ringtoneId)
         {
             this.phoneNumber = number;
 

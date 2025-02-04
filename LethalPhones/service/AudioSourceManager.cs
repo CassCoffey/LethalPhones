@@ -132,12 +132,12 @@ namespace Scoops.service
 
             if (staticAudio)
             {
-                audioSource.volume = recordInterference * Config.staticSoundAdjust.Value;
+                audioSource.volume = 0f;
                 // Static is the inverse of other volumes
                 if (recordInterference > staticStart)
                 {
                     float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
-                    audioSource.volume *= volumeInterference;
+                    audioSource.volume = volumeInterference * Config.staticSoundAdjust.Value;
                 }
                 recordDist = 0f;
                 return;
@@ -205,7 +205,7 @@ namespace Scoops.service
 
             if (audioSource.GetComponent<AudioLowPassFilter>())
             {
-                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(3000f, 750f, recordMod);
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 3000f;
                 audioSource.GetComponent<AudioLowPassFilter>().lowpassResonanceQ = Mathf.Lerp(3f, 10f, recordInterference);
             }
             if (audioSource.GetComponent<AudioHighPassFilter>())
@@ -229,9 +229,20 @@ namespace Scoops.service
             float maxListenDistSqr = Config.listeningDist.Value;
             maxListenDistSqr *= maxListenDistSqr;
 
-            if (listenDist > 1f)
+            if (recordDist > 0.1f)
             {
-                float listenMod = AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01((listenDist / maxListenDistSqr) + 0.1f));
+                float recordMod = Mathf.Clamp01(AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01(recordDist / Config.recordingDist.Value)));
+                audioSource.volume *= recordMod;
+                if (audioSource.GetComponent<AudioLowPassFilter>())
+                {
+                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(700f, 3000f, recordMod);
+                }
+            }
+
+            if (listenDist > 0f)
+            {
+                Debug.Log("Listening Distance - " + listenDist);
+                float listenMod = Mathf.Clamp01(AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01(listenDist / maxListenDistSqr)) - 0.3f);
                 audioSource.volume *= listenMod;
                 if (audioSource.GetComponent<AudioLowPassFilter>())
                 {
@@ -415,7 +426,7 @@ namespace Scoops.service
 
             if (localPlayer != null)
             {
-                listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.playerGlobalHead.transform : localPlayer.playerGlobalHead.transform;
+                listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.playerGlobalHead : localPlayer.playerGlobalHead;
 
                 // Update the audio redirect info for all audio source storages
                 UpdateAudioSourceStorages();

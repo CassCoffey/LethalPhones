@@ -62,12 +62,15 @@ namespace Scoops.service
 
                         foreach (EntranceTeleport entrance in Instance.entranceArray)
                         {
-                            if (!entrance.isEntranceToBuilding)
+                            if (entrance != null)
                             {
-                                float newDist = (entrance.transform.position - phone.recordPos.position).sqrMagnitude;
-                                if (newDist < entranceDist)
+                                if (!entrance.isEntranceToBuilding)
                                 {
-                                    entranceDist = newDist;
+                                    float newDist = (entrance.transform.position - phone.recordPos.position).sqrMagnitude;
+                                    if (newDist < entranceDist)
+                                    {
+                                        entranceDist = newDist;
+                                    }
                                 }
                             }
                         }
@@ -83,15 +86,18 @@ namespace Scoops.service
 
                     foreach (LungProp apparatus in Instance.apparatusArray)
                     {
-                        float newDist = (apparatus.transform.position - phone.recordPos.position).sqrMagnitude;
-                        if (apparatus.isLungDocked)
+                        if (apparatus != null)
                         {
-                            newDist += 10f * 10f;
-                        }
-                        if (newDist < apparatusDist)
-                        {
-                            apparatusDist = newDist;
-                            apparatusFound = true;
+                            float newDist = (apparatus.transform.position - phone.recordPos.position).sqrMagnitude;
+                            if (apparatus.isLungDocked)
+                            {
+                                newDist += 10f * 10f;
+                            }
+                            if (newDist < apparatusDist)
+                            {
+                                apparatusDist = newDist;
+                                apparatusFound = true;
+                            }
                         }
                     }
 

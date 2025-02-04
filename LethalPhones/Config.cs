@@ -53,13 +53,13 @@ namespace Scoops
             voiceSoundAdjust = cfg.Bind(
                     "General",
                     "voiceSoundAdjust",
-                    1f,
+                    0.8f,
                     "All voices on calls have their volume multiplied by this value."
             );
             backgroundSoundAdjust = cfg.Bind(
                     "General",
                     "backgroundSoundAdjust",
-                    0.8f,
+                    1f,
                     "All background noises on calls have their volume multiplied by this value."
             );
             staticSoundAdjust = cfg.Bind(
@@ -71,13 +71,13 @@ namespace Scoops
             recordingDist = cfg.Bind(
                     "General",
                     "recordingDist",
-                    200f,
+                    15f,
                     "The distance at which phones are able to record audio."
             );
             listeningDist = cfg.Bind(
                     "General",
                     "listeningDist",
-                    15f,
+                    10f,
                     "The distance at which you can hear audio from a phone."
             );
             deathHangupTime = cfg.Bind(

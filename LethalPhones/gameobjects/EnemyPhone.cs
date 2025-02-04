@@ -46,20 +46,20 @@ namespace Scoops.gameobjects
 
             if (IsOwner)
             {
-                if (activeCall != null)
+                if (activeCall.Value != -1)
                 {
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                    activeCall = null;
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+                    activeCall.Value = -1;
                 }
-                if (outgoingCall != null)
+                if (outgoingCall.Value != -1)
                 {
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                    outgoingCall = null;
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                    outgoingCall.Value = -1;
                 }
-                if (incomingCall != null)
+                if (incomingCall.Value != -1)
                 {
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
-                    incomingCall = null;
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall.Value, NetworkObjectId);
+                    incomingCall.Value = -1;
                 }
 
                 PhoneNetworkHandler.Instance.RemoveNumber(phoneNumber);
@@ -70,9 +70,9 @@ namespace Scoops.gameobjects
         {
             if (IsOwner && !enemy.isEnemyDead)
             {
-                if (outgoingCall == null && activeCall == null)
+                if (outgoingCall.Value == -1 && activeCall.Value == -1)
                 {
-                    if (incomingCall == null)
+                    if (incomingCall.Value == -1)
                     {
                         // we NEED to be on a call or we'll DIE
                         if (!preppingCall)
@@ -94,7 +94,7 @@ namespace Scoops.gameobjects
 
         public void LateUpdate()
         {
-            if (MirageCompat.Enabled && activeCall != null)
+            if (MirageCompat.Enabled && activeCall.Value != -1)
             {
                 MirageCompat.UnmuteEnemy(enemy);
             }
@@ -110,15 +110,14 @@ namespace Scoops.gameobjects
             preppingPickup = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall != null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
+            if (!IsBusy() && !enemy.isEnemyDead)
             {
-                activeCall = incomingCall;
-                activeCaller = incomingCaller;
-                incomingCall = null;
-                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
+                activeCall.Value = incomingCall.Value;
+                activeCaller.Value = incomingCaller.Value;
+                incomingCall.Value = -1;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayPickupSoundServerRpc();
-                UpdateCallValues();
             }
 
             preppingPickup = false;
@@ -129,68 +128,42 @@ namespace Scoops.gameobjects
             preppingCall = true;
             yield return new WaitForSeconds(time);
 
-            if (incomingCall == null && outgoingCall == null && activeCall == null && !enemy.isEnemyDead)
+            if (!IsBusy() && !enemy.isEnemyDead)
             {
-                CallRandomNumber();
-                if (outgoingCall != null)
+                short number = GetRandomExistingPhoneNumber();
+
+                if (number != -1)
                 {
-                    activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall);
+                    outgoingCall.Value = number;
+                    PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                    activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall.Value);
                     StartCoroutine(activeCallTimeoutCoroutine);
-                    UpdateCallValues();
                 }
             }
             preppingCall = false;
         }
 
-        protected virtual IEnumerator CallTimeoutCoroutine(string number)
+        protected virtual IEnumerator CallTimeoutCoroutine(short number)
         {
             yield return new WaitForSeconds(14f);
 
-            if (outgoingCall == number)
+            if (outgoingCall.Value == number)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                outgoingCall = null;
-                UpdateCallValues();
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                outgoingCall.Value = -1;
             }
         }
 
-        protected virtual IEnumerator CallHangupCoroutine(string number, float time)
+        protected virtual IEnumerator CallHangupCoroutine(short number, float time)
         {
             yield return new WaitForSeconds(time);
 
-            if (activeCall == number)
+            if (activeCall.Value == number)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                activeCall = null;
-                UpdateCallValues();
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+                activeCall.Value = -1;
             }
             preppingHangup = false;
-        }
-
-        public override void UpdateCallValues()
-        {
-            UpdateCallValuesServerRpc(
-                   outgoingCall == null ? -1 : int.Parse(outgoingCall),
-                   incomingCall == null ? -1 : int.Parse(incomingCall),
-                   activeCall == null ? -1 : int.Parse(activeCall),
-                   incomingCaller,
-                   activeCaller);
-        }
-
-        [ServerRpc]
-        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong activeCallerUpdate)
-        {
-            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate);
-        }
-
-        [ClientRpc]
-        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong activeCallerUpdate)
-        {
-            outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
-            incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
-            activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
-            incomingCaller = incomingCallerUpdate;
-            activeCaller = activeCallerUpdate;
         }
     }
 }

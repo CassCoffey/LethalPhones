@@ -12,6 +12,7 @@ using System.Text;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Scoops.service
 {
@@ -23,11 +24,15 @@ namespace Scoops.service
 
         public static NetworkVariable<bool> Locked = new NetworkVariable<bool>();
 
-        private Dictionary<string, ulong> phoneNumberDict;
-        private Dictionary<string, PhoneBehavior> phoneObjectDict;
+        public static List<PhoneBehavior> allPhoneBehaviors = new List<PhoneBehavior>();
+
+        private Dictionary<short, ulong> phoneNumberDict;
+        private Dictionary<short, PhoneBehavior> phoneObjectDict;
 
         public PlayerPhone localPhone;
         public SwitchboardPhone switchboard;
+
+        public UnityEvent phoneListUpdateEvent;
 
         public void Start()
         {
@@ -61,8 +66,8 @@ namespace Scoops.service
 
             Instance = this;
 
-            phoneNumberDict = new Dictionary<string, ulong>();
-            phoneObjectDict = new Dictionary<string, PhoneBehavior>();
+            phoneNumberDict = new Dictionary<short, ulong>();
+            phoneObjectDict = new Dictionary<short, PhoneBehavior>();
 
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
@@ -104,11 +109,12 @@ namespace Scoops.service
         public void RequestClientUpdates()
         {
             UpdateAllClientsServerRpc();
+            UpdateAllPhonesListServerRpc();
         }
 
-        public void RequestSwitchboardUpdates()
+        public void RequestPhoneListUpdates()
         {
-            UpdateAllClientsServerRpc();
+            UpdateAllPhonesListServerRpc();
         }
 
         public void SpawnClipboard()
@@ -123,11 +129,11 @@ namespace Scoops.service
             if (Config.enableStartClipboard.Value && PhonebookClipboard == null)
             {
                 SpawnClipboard();
-                UpdateClipboardText();
+                UpdateAllPhonesList();
             }
         }
 
-        public void UpdateClipboardText()
+        public void UpdateAllPhonesList()
         {
             List<ulong> phones = new List<ulong>();
 
@@ -140,36 +146,42 @@ namespace Scoops.service
                 }
             }
 
-            foreach (Clipboard clipboard in FindObjectsOfType<Clipboard>())
-            {
-                clipboard.UpdateTextClientRpc(phones.ToArray());
-            }
+            UpdateAllPhonesListClientRpc(phones.ToArray());
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void RequestSwitchboardUpdatesServerRpc()
+        public void UpdateAllPhonesListServerRpc()
         {
-            UpdateSwitchboardPhones();
+            UpdateAllPhonesList();
         }
 
-        public void UpdateSwitchboardPhones()
+        [ClientRpc]
+        public void UpdateAllPhonesListClientRpc(ulong[] phoneIds)
         {
-            List<ulong> phones = new List<ulong>();
-            List<PhoneBehavior> phoneBehaviors = phoneObjectDict.Values.ToList<PhoneBehavior>();
-
-            if (phoneBehaviors.Count > 1)
+            if (allPhoneBehaviors == null)
             {
-                phoneBehaviors.Sort((e,f) => { return e.phoneNumber.CompareTo(f.phoneNumber); });
+                allPhoneBehaviors = new List<PhoneBehavior>();
             }
 
-            foreach (PhoneBehavior phone in phoneBehaviors)
+            allPhoneBehaviors.Clear();
+
+            foreach (ulong phoneId in phoneIds)
             {
-                if (!(phone is MaskedPhone || phone is SwitchboardPhone)) {
-                    phones.Add(phone.NetworkObjectId);
-                }
+                PhoneBehavior phone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
+                allPhoneBehaviors.Add(phone);
             }
 
-            switchboard.UpdatePhoneListClientRpc(phones.ToArray());
+            phoneListUpdateEvent.Invoke();
+        }
+
+
+        [ServerRpc(RequireOwnership = false)]
+        public void UpdateAllClientsServerRpc()
+        {
+            foreach (PhoneBehavior phoneObj in phoneObjectDict.Values)
+            {
+                phoneObj.PropogateInformation();
+            }
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -181,7 +193,7 @@ namespace Scoops.service
                 return;
             }
 
-            string number = Config.switchboardNumber.Value;
+            short number = short.Parse(Config.switchboardNumber.Value);
 
             switchboard = GetNetworkObject(SwitchboardId).GetComponent<SwitchboardPhone>();
             Plugin.Log.LogInfo($"New switchboard for object: " + SwitchboardId);
@@ -193,8 +205,6 @@ namespace Scoops.service
             switchboard.SetNewPhoneNumberClientRpc(number);
 
             RequestClientUpdates();
-
-            UpdateSwitchboardPhones();
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -210,11 +220,11 @@ namespace Scoops.service
                 return;
             }
 
-            int phoneNumber = Random.Range(0, maxNumber);
+            short phoneNumber = (short)Random.Range(0, maxNumber);
             string phoneString = phoneNumber.ToString("D4");
-            while (phoneNumberDict.ContainsKey(phoneNumber.ToString()) || phoneNumber.ToString() == Config.switchboardNumber.Value)
+            while (phoneNumberDict.ContainsKey(phoneNumber) || phoneString == Config.switchboardNumber.Value)
             {
-                phoneNumber = Random.Range(0, maxNumber);
+                phoneNumber = (short)Random.Range(0, maxNumber);
                 phoneString = phoneNumber.ToString("D4");
             }
 
@@ -222,21 +232,16 @@ namespace Scoops.service
             Plugin.Log.LogInfo($"New phone for object: " + phoneId);
 
             phone.GetComponent<NetworkObject>().ChangeOwnership(clientId);
-            phoneNumberDict.Add(phoneString, phone.NetworkObjectId);
-            phoneObjectDict.Add(phoneString, phone);
+            phoneNumberDict.Add(phoneNumber, phone.NetworkObjectId);
+            phoneObjectDict.Add(phoneNumber, phone);
 
             phone.phoneSkinId = skinId;
             phone.phoneCharmId = charmId;
             phone.phoneRingtoneId = ringtoneId;
 
-            phone.SetNewPhoneNumberClientRpc(phoneString);
+            phone.SetNewPhoneNumberClientRpc(phoneNumber);
 
             RequestClientUpdates();
-
-            if (switchboard != null)
-            {
-                UpdateSwitchboardPhones();
-            }
         }
 
         public void DeletePlayerPhone(int playerId)
@@ -244,63 +249,50 @@ namespace Scoops.service
             PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
             Plugin.Log.LogInfo("Deleting phone for player: " + playerController.name);
             PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
-            string number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
+            short number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
             if (!NetworkManager.Singleton.ShutdownInProgress)
             {
                 phone.GetComponent<NetworkObject>().RemoveOwnership();
             }
             RemoveNumber(number);
-
-            if (switchboard != null)
-            {
-                UpdateSwitchboardPhones();
-            }
         }
 
         public void DeletePhone(ulong phoneId)
         {
             Plugin.Log.LogInfo("Deleting phone with ID: " + phoneId);
             PhoneBehavior phone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
-            string number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
+            short number = phoneNumberDict.FirstOrDefault(x => x.Value == phone.NetworkObjectId).Key;
             if (!NetworkManager.Singleton.ShutdownInProgress)
             {
                 phone.GetComponent<NetworkObject>().RemoveOwnership();
             }
             RemoveNumber(number);
-
-            if (switchboard != null)
-            {
-                UpdateSwitchboardPhones();
-            }
         }
 
         public void DeleteSwitchboard()
         {
             Plugin.Log.LogInfo("Deleting switchboard");
-            string number = switchboard.phoneNumber;
+            short number = switchboard.phoneNumber;
 
             RemoveNumber(number);
             switchboard = null;
         }
 
-        public void RemoveNumber(string number)
+        public void RemoveNumber(short number)
         {
-            if (number != null)
+            if (number != -1)
             {
                 Plugin.Log.LogInfo("Removing number: " + number);
 
                 phoneObjectDict.Remove(number);
                 phoneNumberDict.Remove(number);
 
-                if (switchboard != null)
-                {
-                    UpdateSwitchboardPhones();
-                }
+                UpdateAllPhonesList();
             }
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void MakeOutgoingCallServerRpc(string number, ulong senderId, ServerRpcParams serverRpcParams = default)
+        public void MakeOutgoingCallServerRpc(short number, ulong senderId, ServerRpcParams serverRpcParams = default)
         {
             // No calling until phones are unlocked
             if (Locked.Value)
@@ -308,7 +300,7 @@ namespace Scoops.service
                 return;
             }
 
-            string senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderId).Key;
+            short senderPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == senderId).Key;
 
             if (phoneNumberDict.ContainsKey(number))
             {
@@ -323,55 +315,39 @@ namespace Scoops.service
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void AcceptIncomingCallServerRpc(string number, ulong accepterId, ServerRpcParams serverRpcParams = default)
+        public void AcceptIncomingCallServerRpc(short number, ulong accepterId, ServerRpcParams serverRpcParams = default)
         {
-            string accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterId).Key;
+            short accepterPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == accepterId).Key;
 
             phoneObjectDict[number].CallAcceptedClientRpc(accepterId, accepterPhoneNumber);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void HangUpCallServerRpc(string number, ulong cancellerId, ServerRpcParams serverRpcParams = default)
+        public void HangUpCallServerRpc(short number, ulong cancellerId, ServerRpcParams serverRpcParams = default)
         {
             if (phoneNumberDict.ContainsKey(number))
             {
-                string cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerId).Key;
+                short cancellerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == cancellerId).Key;
 
                 phoneObjectDict[number].HangupCallClientRpc(cancellerId, cancellerPhoneNumber);
             }
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void TransferCallServerRpc(string number, string transferNumber, ulong transferrerId, ServerRpcParams serverRpcParams = default)
+        public void TransferCallServerRpc(short number, short transferNumber, ulong transferrerId, ServerRpcParams serverRpcParams = default)
         {
             if (phoneNumberDict.ContainsKey(number) && phoneNumberDict.ContainsKey(transferNumber))
             {
-                string transferrerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == transferrerId).Key;
+                short transferrerPhoneNumber = phoneNumberDict.FirstOrDefault(x => x.Value == transferrerId).Key;
 
                 phoneObjectDict[number].TransferCallClientRpc(transferrerId, transferrerPhoneNumber, transferNumber);
             }
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void LineBusyServerRpc(string number, ServerRpcParams serverRpcParams = default)
+        public void LineBusyServerRpc(short number, ServerRpcParams serverRpcParams = default)
         {
             phoneObjectDict[number].InvalidCallClientRpc("Line Busy");
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void UpdateAllClientsServerRpc()
-        {
-            foreach (PhoneBehavior phoneObj in phoneObjectDict.Values)
-            {
-                phoneObj.PropogateInformation();
-            }
-
-            UpdateClipboardText();
-
-            if (switchboard != null)
-            {
-                UpdateSwitchboardPhones();
-            }
         }
     }
 }

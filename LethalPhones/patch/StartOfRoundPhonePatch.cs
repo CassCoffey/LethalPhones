@@ -36,8 +36,6 @@ namespace Scoops.patch
                 return;
             }
             PhoneNetworkHandler.Instance.DeletePlayerPhone(playerObjectNumber);
-
-            PhoneNetworkHandler.Instance.UpdateClipboardText();
         }
 
         [HarmonyPatch("PassTimeToNextDay")]

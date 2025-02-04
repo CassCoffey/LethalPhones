@@ -18,6 +18,9 @@ namespace Scoops.misc
 {
     public class PlayerPhone : PhoneBehavior
     {
+        public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
+        private NetworkVariable<phoneVolume> currentVolume = new NetworkVariable<phoneVolume>(phoneVolume.Ring, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         public PlayerControllerB player;
         public GameObject localPhoneModel;
         public Transform localPhoneInteractionNode;
@@ -62,9 +65,6 @@ namespace Scoops.misc
 
         private Transform serverArmsRig;
         private ChainIKConstraint serverLeftArmRig;
-
-        public enum phoneVolume { Ring = 1, Silent = 2, Vibrate = 3 };
-        private phoneVolume currentVolume = phoneVolume.Ring;
 
         protected IEnumerator activeCallTimeoutCoroutine;
 
@@ -122,20 +122,6 @@ namespace Scoops.misc
                 this.localPhoneDialNumbers.Add(child.gameObject);
                 this.dialNumbersDefaultPos.Add(child.localPosition);
             }
-
-            if (IsOwner)
-            {
-                Debug.Log("Local player phone play pos set to head");
-                this.playPos = player.playerGlobalHead;
-                this.recordPos = localPhoneModel.transform;
-            } 
-            else
-            {
-                this.playPos = serverPhoneModel.transform;
-                this.recordPos = serverPhoneModel.transform;
-            }
-
-            
         }
 
         public override string GetPhoneName()
@@ -158,7 +144,7 @@ namespace Scoops.misc
                 phoneEquipAnimProgress = 0f;
 
                 SetPhoneLocalModelActive(active);
-                personalPhoneNumberUI.text = phoneNumber;
+                personalPhoneNumberUI.text = phoneNumber.ToString("D4");
                 
                 if (player.twoHanded || player.isHoldingObject)
                 {
@@ -587,7 +573,7 @@ namespace Scoops.misc
 
                 if (serverPersonalPhoneNumberUI != null)
                 {
-                    serverPersonalPhoneNumberUI.text = phoneNumber;
+                    serverPersonalPhoneNumberUI.text = phoneNumber.ToString("D4");
                 }
             }
         }
@@ -613,7 +599,6 @@ namespace Scoops.misc
                 dialedNumbers.Clear();
                 StartCoroutine(DelayDeathHangup());
                 UpdateCallingUI();
-                UpdateCallValues();
             }
         }
 
@@ -631,24 +616,23 @@ namespace Scoops.misc
         {
             yield return new WaitForSeconds(Config.deathHangupTime.Value);
 
-            if (activeCall != null)
+            if (activeCall.Value != -1)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                activeCall = null;
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+                activeCall.Value = -1;
             }
-            if (outgoingCall != null)
+            if (outgoingCall.Value != -1)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                outgoingCall = null;
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                outgoingCall.Value = -1;
             }
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
-                incomingCall = null;
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall.Value, NetworkObjectId);
+                incomingCall.Value = -1;
             }
 
             UpdateCallingUI();
-            UpdateCallValues();
         }
 
         public string GetFullDialNumber()
@@ -658,7 +642,7 @@ namespace Scoops.misc
 
         public void DialNumber(int number)
         {
-            if (activeCall != null || incomingCall != null || outgoingCall != null)
+            if (IsBusy())
             {
                 return;
             }
@@ -675,30 +659,31 @@ namespace Scoops.misc
 
         public void CancelAllCalls()
         {
-            if (incomingCall != null || activeCall != null || outgoingCall != null)
+            if (IsBusy())
             {
                 PlayHangupSoundServerRpc();
-                UpdateCallingUI();
             }
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 // We're being called, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
-                incomingCall = null;
+                incomingCall.Value = -1;
             }
-            if (activeCall != null)
+            if (activeCall.Value != -1)
             {
                 // We're on a call, hang up
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                activeCall = null;
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+                activeCall.Value = -1;
             }
-            if (outgoingCall != null)
+            if (outgoingCall.Value != -1)
             {
                 // We're calling, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                outgoingCall = null;
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                outgoingCall.Value = -1;
             }
+
+            UpdateCallingUI();
         }
 
         public void HangupButtonPressed()
@@ -708,29 +693,29 @@ namespace Scoops.misc
                 return;
             }
 
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 // We're being called, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayHangupSoundServerRpc();
-                incomingCall = null;
+                incomingCall.Value = -1;
                 UpdateCallingUI();
             }
-            else if (activeCall != null)
+            else if (activeCall.Value != -1)
             {
                 // We're on a call, hang up
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
                 PlayHangupSoundServerRpc();
-                activeCall = null;
+                activeCall.Value = -1;
                 UpdateCallingUI();
             }
-            else if (outgoingCall != null)
+            else if (outgoingCall.Value != -1)
             {
                 // We're calling, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
                 PlayHangupSoundServerRpc();
-                outgoingCall = null;
+                outgoingCall.Value = -1;
                 UpdateCallingUI();
             }
             else
@@ -738,11 +723,6 @@ namespace Scoops.misc
                 // Clear numbers
                 dialedNumbers.Clear();
                 UpdateCallingUI();
-            }
-
-            if (IsOwner)
-            {
-                UpdateCallValues();
             }
         }
 
@@ -753,18 +733,18 @@ namespace Scoops.misc
                 return;
             }
 
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 // We have an incoming call, pick up
-                if (activeCall != null)
+                if (activeCall.Value != -1)
                 {
                     //hang up our active first!
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
                 }
-                activeCall = incomingCall;
-                activeCaller = incomingCaller;
-                incomingCall = null;
-                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
+                activeCall.Value = incomingCall.Value;
+                activeCaller.Value = incomingCaller.Value;
+                incomingCall.Value = -1;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayPickupSoundServerRpc();
 
@@ -787,24 +767,24 @@ namespace Scoops.misc
             thisAudio.Stop();
             thisAudio.PlayOneShot(PhoneAssetManager.phoneSwitch);
 
-            switch (currentVolume)
+            switch (currentVolume.Value)
             {
                 case phoneVolume.Ring:
-                    currentVolume = phoneVolume.Vibrate;
+                    currentVolume.Value = phoneVolume.Vibrate;
                     volumeRingUI.enabled = false;
                     volumeVibrateUI.enabled = true;
                     volumeSilentUI.enabled = false;
                     localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>().SetBlendShapeWeight(0, 50f);
                     break;
                 case phoneVolume.Vibrate:
-                    currentVolume = phoneVolume.Silent;
+                    currentVolume.Value = phoneVolume.Silent;
                     volumeRingUI.enabled = false;
                     volumeVibrateUI.enabled = false;
                     volumeSilentUI.enabled = true;
                     localPhoneModel.transform.Find("LocalPhoneModel").GetComponent<SkinnedMeshRenderer>().SetBlendShapeWeight(0, 100f);
                     break;
                 case phoneVolume.Silent:
-                    currentVolume = phoneVolume.Ring;
+                    currentVolume.Value = phoneVolume.Ring;
                     volumeRingUI.enabled = true;
                     volumeVibrateUI.enabled = false;
                     volumeSilentUI.enabled = false;
@@ -813,17 +793,12 @@ namespace Scoops.misc
                 default:
                     break;
             }
-
-            if (IsOwner)
-            {
-                UpdateCallValues();
-            }
         }
 
-        public override void CallNumber(string number)
+        public override void CallNumber(short number)
         {
             StartOutgoingRingingServerRpc();
-            outgoingCall = number;
+            outgoingCall.Value = number;
             dialedNumbers.Clear();
 
             UpdateCallingUI();
@@ -833,21 +808,17 @@ namespace Scoops.misc
             if (activeCallTimeoutCoroutine != null) StopCoroutine(activeCallTimeoutCoroutine);
             activeCallTimeoutCoroutine = CallTimeoutCoroutine(number);
             StartCoroutine(activeCallTimeoutCoroutine);
-
-            if (IsOwner)
-            {
-                UpdateCallValues();
-            }
         }
 
         public void CallDialedNumber()
         {
-            string number = GetFullDialNumber();
+            string numberString = GetFullDialNumber();
             if (dialedNumbers.Count != 4)
             {
-                Plugin.Log.LogInfo("Not enough digits: " + number);
+                Plugin.Log.LogInfo("Not enough digits: " + numberString);
                 return;
             }
+            short number = short.Parse(numberString);
             if (number == phoneNumber)
             {
                 Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
@@ -861,21 +832,21 @@ namespace Scoops.misc
 
         protected override void UpdateCallingUI()
         {
-            incomingCallUI.enabled = (incomingCall != null);
+            incomingCallUI.enabled = (incomingCall.Value != -1);
 
-            if (activeCall != null)
+            if (activeCall.Value != -1)
             {
-                dialingNumberUI.text = activeCall;
+                dialingNumberUI.text = activeCall.Value.ToString("D4");
                 phoneStatusUI.text = "Connected";
             }
-            else if (outgoingCall != null)
+            else if (outgoingCall.Value != -1)
             {
-                dialingNumberUI.text = outgoingCall;
+                dialingNumberUI.text = outgoingCall.Value.ToString("D4");
                 phoneStatusUI.text = "Dialing...";
             }
-            else if (incomingCall != null)
+            else if (incomingCall.Value != -1)
             {
-                dialingNumberUI.text = incomingCall;
+                dialingNumberUI.text = incomingCall.Value.ToString("D4");
                 phoneStatusUI.text = "Incoming...";
             }
             else
@@ -1015,7 +986,7 @@ namespace Scoops.misc
         }
 
         [ClientRpc]
-        public override void SetNewPhoneNumberClientRpc(string number)
+        public override void SetNewPhoneNumberClientRpc(short number)
         {
             if (player == null)
             {
@@ -1036,39 +1007,10 @@ namespace Scoops.misc
             StartCoroutine(PhoneBusyCoroutine(reason));
         }
 
-        public override void UpdateCallValues()
-        {
-            UpdateCallValuesServerRpc(
-                   outgoingCall == null ? -1 : int.Parse(outgoingCall),
-                   incomingCall == null ? -1 : int.Parse(incomingCall),
-                   activeCall == null ? -1 : int.Parse(activeCall),
-                   incomingCaller,
-                   activeCaller,
-                   (int)currentVolume);
-        }
-
-        [ServerRpc]
-        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong activeCallerUpdate, int volumeUpdate)
-        {
-            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, activeCallerUpdate, volumeUpdate);
-        }
-
-        [ClientRpc]
-        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong activeCallerUpdate, int volumeUpdate)
-        {
-            // A little messy? I don't like this.
-            outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
-            incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
-            activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
-            incomingCaller = incomingCallerUpdate;
-            activeCaller = activeCallerUpdate;
-            currentVolume = (phoneVolume)volumeUpdate;
-        }
-
         protected override void StartRinging()
         {
             ringAudio.Stop();
-            switch (currentVolume)
+            switch (currentVolume.Value)
             {
                 case phoneVolume.Ring:
                     activePhoneRingCoroutine = PhoneRingCoroutine(4);
@@ -1096,15 +1038,15 @@ namespace Scoops.misc
             }
         }
 
-        private IEnumerator CallTimeoutCoroutine(string number)
+        private IEnumerator CallTimeoutCoroutine(short number)
         {
             yield return new WaitForSeconds(15f);
 
-            if (outgoingCall == number)
+            if (outgoingCall.Value == number)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
                 StopOutgoingRingingServerRpc();
-                outgoingCall = null;
+                outgoingCall.Value = -1;
                 StartCoroutine(TemporaryStatusCoroutine("No Answer"));
                 StartCoroutine(BusyHangupCoroutine());
             }
@@ -1114,9 +1056,13 @@ namespace Scoops.misc
         {
             yield return new WaitForSeconds(2f);
 
-            outgoingCall = null;
+            if (IsOwner)
+            {
+                outgoingCall.Value = -1;
+                StartCoroutine(TemporaryStatusCoroutine(status));
+            }
+            
             PlayBusySound();
-            StartCoroutine(TemporaryStatusCoroutine(status));
             StartCoroutine(BusyHangupCoroutine());
         }
 
@@ -1211,8 +1157,12 @@ namespace Scoops.misc
                 {
                     if (phone.activeCall != null)
                     {
-                        playerController.insanitySpeedMultiplier = -3f * (1f - Mathf.Clamp01(phone.GetTotalInterference()));
-                        playerController.isPlayerAlone = false;
+                        float totalInterference = Mathf.Clamp01(phone.GetTotalInterference());
+                        playerController.insanitySpeedMultiplier = -3f * (1f - totalInterference);
+                        if (totalInterference != 1f)
+                        {
+                            playerController.isPlayerAlone = false;
+                        }
                     }
                 }
             }

@@ -30,10 +30,6 @@ namespace Scoops.gameobjects
         private Transform operatorInfo;
         private Transform inboundInfo;
 
-        private Transform headphonePos;
-
-        private ulong outgoingCaller;
-
         private PhoneBehavior selectedPhone = null;
 
         private float uiUpdateCounter = 0f;
@@ -69,7 +65,8 @@ namespace Scoops.gameobjects
             operatorInfo = transform.Find("SwitchboardScreen/SwitchboardPanel/OperatorPanel");
             inboundInfo = transform.Find("SwitchboardScreen/SwitchboardPanel/NumbersPanel/InboundPanel");
 
-            headphonePos = transform.Find("HeadphoneCube");
+            recordPos = transform.Find("HeadphoneCube");
+            playPos = recordPos;
 
             allPhones = new List<PhoneBehavior>();
 
@@ -84,15 +81,15 @@ namespace Scoops.gameobjects
 
             transform.Find("GreenButtonCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
             {
-                CallButtonPressed();
+                CallButtonPressedServerRpc();
             });
             transform.Find("YellowButtonCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
             {
-                TransferButtonPressed();
+                TransferButtonPressedServerRpc();
             });
             transform.Find("RedButtonCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
             {
-                HangupButtonPressed();
+                HangupButtonPressedServerRpc();
             });
 
             transform.Find("RingerCube").GetComponent<InteractTrigger>().onInteract.AddListener((PlayerControllerB player) =>
@@ -107,13 +104,12 @@ namespace Scoops.gameobjects
 
             transform.Find("SwitchboardMesh/SwitchboardTape/TapeCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>().text = Config.switchboardNumber.Value;
 
+            PhoneNetworkHandler.Instance.phoneListUpdateEvent.AddListener(UpdatePhoneList);
+
             if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.RegisterSwitchboard(this.NetworkObjectId);
-            } 
-            else
-            {
-                PhoneNetworkHandler.Instance.RequestSwitchboardUpdates();
+                PhoneNetworkHandler.Instance.RequestPhoneListUpdates();
             }
 
             UpdateCallingUI();
@@ -169,20 +165,20 @@ namespace Scoops.gameobjects
 
             if (IsOwner)
             {
-                if (activeCall != null)
+                if (activeCall.Value != -1)
                 {
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
-                    activeCall = null;
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+                    activeCall.Value = -1;
                 }
-                if (outgoingCall != null)
+                if (outgoingCall.Value != -1)
                 {
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
-                    outgoingCall = null;
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                    outgoingCall.Value = -1;
                 }
-                if (incomingCall != null)
+                if (incomingCall.Value != -1)
                 {
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
-                    incomingCall = null;
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall.Value, NetworkObjectId);
+                    incomingCall.Value = -1;
                 }
             }
 
@@ -232,7 +228,7 @@ namespace Scoops.gameobjects
 
         private void ChangeSelectionLocal(int change)
         {
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 return;
             }
@@ -272,12 +268,12 @@ namespace Scoops.gameobjects
             {
                 Material[] mats = headsetMic.GetComponent<Renderer>().materials;
 
-                if ((activeCall != null || incomingCall != null || outgoingCall != null) && mats[1] != PhoneAssetManager.greenLight)
+                if (IsBusy() && mats[1] != PhoneAssetManager.greenLight)
                 {
                     mats[1] = PhoneAssetManager.greenLight;
                     headsetMic.GetComponent<Renderer>().SetMaterialArray(mats);
                 }
-                else if (!(activeCall != null || incomingCall != null || outgoingCall != null) &&  mats[1] != PhoneAssetManager.offLight)
+                else if (!IsBusy() &&  mats[1] != PhoneAssetManager.offLight)
                 {
                     mats[1] = PhoneAssetManager.offLight;
                     headsetMic.GetComponent<Renderer>().SetMaterialArray(mats);
@@ -287,19 +283,19 @@ namespace Scoops.gameobjects
 
         private void UpdateActiveCallerUI()
         {
-            if (activeCall != null)
+            if (activeCall.Value != -1)
             {
-                PhoneBehavior phone = GetNetworkObject(activeCaller).GetComponent<PhoneBehavior>();
+                PhoneBehavior phone = GetNetworkObject(activeCaller.Value).GetComponent<PhoneBehavior>();
 
                 activeCallerInfo.Find("CallerText").GetComponent<TextMeshProUGUI>().text = "CONNECTED: " + phone.GetPhoneName();
-                activeCallerInfo.Find("NumberText").GetComponent<TextMeshProUGUI>().text = activeCall;
+                activeCallerInfo.Find("NumberText").GetComponent<TextMeshProUGUI>().text = activeCall.Value.ToString("D4");
             }
-            else if (outgoingCall != null)
+            else if (outgoingCall.Value != -1)
             {
-                PhoneBehavior phone = GetNetworkObject(outgoingCaller).GetComponent<PhoneBehavior>();
+                PhoneBehavior phone = GetNetworkObject(outgoingCaller.Value).GetComponent<PhoneBehavior>();
 
                 activeCallerInfo.Find("CallerText").GetComponent<TextMeshProUGUI>().text = "DIALING: " + phone.GetPhoneName();
-                activeCallerInfo.Find("NumberText").GetComponent<TextMeshProUGUI>().text = outgoingCall;
+                activeCallerInfo.Find("NumberText").GetComponent<TextMeshProUGUI>().text = outgoingCall.Value.ToString("D4");
             }
             else
             {
@@ -322,11 +318,11 @@ namespace Scoops.gameobjects
 
         private void UpdateInboundUI()
         {
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
-                PhoneBehavior phone = GetNetworkObject(incomingCaller).GetComponent<PhoneBehavior>();
+                PhoneBehavior phone = GetNetworkObject(incomingCaller.Value).GetComponent<PhoneBehavior>();
 
-                inboundInfo.Find("InboundPanelBack/InboundCallNumber").GetComponent<TextMeshProUGUI>().text = phone.phoneNumber;
+                inboundInfo.Find("InboundPanelBack/InboundCallNumber").GetComponent<TextMeshProUGUI>().text = phone.phoneNumber.ToString("D4");
                 inboundInfo.Find("InboundPanelBack/InboundCallName").GetComponent<TextMeshProUGUI>().text = phone.GetPhoneName();
 
                 inboundInfo.gameObject.SetActive(true);
@@ -358,7 +354,7 @@ namespace Scoops.gameobjects
                 }
 
                 phoneInfoArray[i].Find("NameText").GetComponent<TextMeshProUGUI>().text = allPhones[index].GetPhoneName();
-                phoneInfoArray[i].Find("NumberText").GetComponent<TextMeshProUGUI>().text = allPhones[index].phoneNumber;
+                phoneInfoArray[i].Find("NumberText").GetComponent<TextMeshProUGUI>().text = allPhones[index].phoneNumber.ToString("D4");
                 UpdateInfoStatusIndicator(phoneInfoArray[i].Find("StatusIndicator").GetComponent<Image>(), allPhones[index]);
             }
         }
@@ -367,7 +363,7 @@ namespace Scoops.gameobjects
         {
             if (phone.IsBusy())
             {
-                if (activeCall == phone.phoneNumber)
+                if (activeCall.Value == phone.phoneNumber)
                 {
                     statusIndicator.color = Color.green;
                 }
@@ -382,11 +378,11 @@ namespace Scoops.gameobjects
             }
         }
 
-        public override void CallNumber(string number)
+        public override void CallNumber(short number)
         {
             StartOutgoingRingingServerRpc();
-            outgoingCall = number;
-            outgoingCaller = selectedPhone.NetworkObjectId;
+            outgoingCall.Value = number;
+            outgoingCaller.Value = selectedPhone.NetworkObjectId;
 
             UpdateCallingUI();
 
@@ -399,10 +395,10 @@ namespace Scoops.gameobjects
 
         public void CallSelectedNumber()
         {
-            string number = selectedPhone.phoneNumber;
+            short number = selectedPhone.phoneNumber;
             if (number == phoneNumber)
             {
-                Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
+                Plugin.Log.LogInfo("You cannot call yourself yet.");
                 UpdateCallingUI();
                 return;
             }
@@ -418,9 +414,8 @@ namespace Scoops.gameobjects
         private void ToggleOperator(bool active)
         {
             transform.Find("SwitchboardHeadphones").GetComponent<Renderer>().enabled = !active;
-            headphonePos = active ? switchboardOperator.playerGlobalHead : transform.Find("HeadphoneCube");
-            recordPos = headphonePos;
-            playPos = headphonePos;
+            recordPos = active ? switchboardOperator.playerGlobalHead : transform.Find("HeadphoneCube");
+            playPos = recordPos;
 
             if (active && switchboardOperator == GameNetworkManager.Instance.localPlayerController)
             {
@@ -485,81 +480,78 @@ namespace Scoops.gameobjects
             }
         }
 
-        public void HangupButtonPressed()
+        [ServerRpc(RequireOwnership = false)]
+        public void HangupButtonPressedServerRpc()
         {
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 // We're being called, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(incomingCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayHangupSoundServerRpc();
-                incomingCall = null;
+                incomingCall.Value = -1;
                 UpdateCallingUI();
             } 
-            else if (activeCall != null)
+            else if (activeCall.Value != -1)
             {
                 // We're on a call, hang up
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
                 PlayHangupSoundServerRpc();
-                activeCall = null;
+                activeCall.Value = -1;
                 UpdateCallingUI();
             }
-            else if (outgoingCall != null)
+            else if (outgoingCall.Value != -1)
             {
                 // We're calling, cancel
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
                 PlayHangupSoundServerRpc();
-                outgoingCall = null;
+                outgoingCall.Value = -1;
                 UpdateCallingUI();
             }
-
-            UpdateCallValues();
         }
 
-        public void CallButtonPressed()
+        [ServerRpc(RequireOwnership = false)]
+        public void CallButtonPressedServerRpc()
         {
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 // We have an incoming call, pick up
-                if (activeCall != null)
+                if (activeCall.Value != -1)
                 {
                     //hang up our active first!
-                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall, NetworkObjectId);
+                    PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
                 }
-                activeCall = incomingCall;
-                activeCaller = incomingCaller;
-                incomingCall = null;
-                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall, NetworkObjectId);
+                activeCall.Value = incomingCall.Value;
+                activeCaller.Value = incomingCaller.Value;
+                incomingCall.Value = -1;
+                PhoneNetworkHandler.Instance.AcceptIncomingCallServerRpc(activeCall.Value, NetworkObjectId);
                 StopRingingServerRpc();
                 PlayPickupSoundServerRpc();
 
                 UpdateCallingUI();
             }
-            else if (outgoingCall == null && activeCall == null)
+            else if (outgoingCall.Value == -1 && activeCall.Value == -1)
             {
                 // No calls of any sort are happening, make a new one
                 CallSelectedNumber();
             }
-
-            UpdateCallValues();
         }
 
-        public void TransferButtonPressed()
+        [ServerRpc(RequireOwnership = false)]
+        public void TransferButtonPressedServerRpc()
         {
-            if (activeCall != null)
+            if (activeCall.Value != -1)
             {
                 // hang up our call and have them auto-call the transfer
-                PhoneNetworkHandler.Instance.TransferCallServerRpc(activeCall, selectedPhone.phoneNumber, NetworkObjectId);
+                PhoneNetworkHandler.Instance.TransferCallServerRpc(activeCall.Value, selectedPhone.phoneNumber, NetworkObjectId);
                 PlayHangupSoundServerRpc();
-                activeCall = null;
+                activeCall.Value = -1;
                 UpdateCallingUI();
-            } 
+            }
             else
             {
                 // Do nothing
             }
-
-            UpdateCallValues();
         }
 
         public void VolumeSwitch()
@@ -567,28 +559,15 @@ namespace Scoops.gameobjects
             VolumeSwitchServerRpc();
         }
 
-        public override void UpdateCallValues()
-        {
-            UpdateCallValuesServerRpc(
-                   outgoingCall == null ? -1 : int.Parse(outgoingCall),
-                   incomingCall == null ? -1 : int.Parse(incomingCall),
-                   activeCall == null ? -1 : int.Parse(activeCall),
-                   incomingCaller,
-                   outgoingCaller,
-                   activeCaller);
-        }
-
-        private IEnumerator CallTimeoutCoroutine(string number)
+        private IEnumerator CallTimeoutCoroutine(short number)
         {
             yield return new WaitForSeconds(15f);
 
-            if (outgoingCall == number)
+            if (outgoingCall.Value == number)
             {
-                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall, NetworkObjectId);
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
                 StopOutgoingRingingServerRpc();
-                outgoingCall = null;
-                //StartCoroutine(TemporaryStatusCoroutine("No Answer"));
-                //StartCoroutine(BusyHangupCoroutine());
+                outgoingCall.Value = -1;
             }
         }
 
@@ -613,11 +592,51 @@ namespace Scoops.gameobjects
             transform.Find("SwitchboardMesh").GetComponent<Animator>().Play("RingerRest");
         }
 
+        private void UpdatePhoneList()
+        {
+            if (allPhones == null)
+            {
+                allPhones = new List<PhoneBehavior>();
+            }
+
+            allPhones.Clear();
+
+            foreach (PhoneBehavior phone in PhoneNetworkHandler.allPhoneBehaviors)
+            {
+                if (!(phone is MaskedPhone || phone is SwitchboardPhone))
+                {
+                    allPhones.Add(phone);
+                }
+            }
+
+            if (allPhones.Count > 1)
+            {
+                allPhones.Sort((e, f) => { return e.phoneNumber.CompareTo(f.phoneNumber); });
+            }
+
+            if (IsOwner && allPhones.Count > 0)
+            {
+                if (!allPhones.Contains(selectedPhone))
+                {
+                    selectedPhone = allPhones[0];
+                    selectedIndex.Value = 0;
+                    localSelectedIndex = 0;
+                }
+                else
+                {
+                    localSelectedIndex = allPhones.IndexOf(selectedPhone);
+                    selectedIndex.Value = localSelectedIndex;
+                }
+
+                UpdateInfoList();
+            }
+        }
+
         [ServerRpc(RequireOwnership = false)]
         public void ChangeSelectionServerRpc(int change)
         {
             // no input during inbound call
-            if (incomingCall != null)
+            if (incomingCall.Value != -1)
             {
                 return;
             }
@@ -673,58 +692,6 @@ namespace Scoops.gameobjects
                     switchboardOperatorId.Value = this.NetworkObjectId;
                     ToggleOperator(false);
                 }
-            }
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void UpdateCallValuesServerRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong outgoingCallerUpdate, ulong activeCallerUpdate)
-        {
-            UpdateCallValuesClientRpc(outgoingCallUpdate, incomingCallUpdate, activeCallUpdate, incomingCallerUpdate, outgoingCallerUpdate, activeCallerUpdate);
-        }
-
-        [ClientRpc]
-        public void UpdateCallValuesClientRpc(int outgoingCallUpdate, int incomingCallUpdate, int activeCallUpdate, ulong incomingCallerUpdate, ulong outgoingCallerUpdate, ulong activeCallerUpdate)
-        {
-            // A little messy? I don't like this.
-            outgoingCall = outgoingCallUpdate == -1 ? null : outgoingCallUpdate.ToString("D4");
-            incomingCall = incomingCallUpdate == -1 ? null : incomingCallUpdate.ToString("D4");
-            activeCall = activeCallUpdate == -1 ? null : activeCallUpdate.ToString("D4");
-            incomingCaller = incomingCallerUpdate;
-            outgoingCaller = outgoingCallerUpdate;
-            activeCaller = activeCallerUpdate;
-        }
-
-        [ClientRpc]
-        public void UpdatePhoneListClientRpc(ulong[] phoneIds)
-        {
-            if (allPhones == null)
-            {
-                allPhones = new List<PhoneBehavior>();
-            }
-
-            allPhones.Clear();
-
-            foreach (ulong phoneId in phoneIds)
-            {
-                PhoneBehavior phone = GetNetworkObject(phoneId).GetComponent<PhoneBehavior>();
-                allPhones.Add(phone);
-            }
-
-            if (IsOwner && allPhones.Count > 0)
-            {
-                if (!allPhones.Contains(selectedPhone))
-                {
-                    selectedPhone = allPhones[0];
-                    selectedIndex.Value = 0;
-                    localSelectedIndex = 0;
-                } 
-                else
-                {
-                    localSelectedIndex = allPhones.IndexOf(selectedPhone);
-                    selectedIndex.Value = localSelectedIndex;
-                }
-
-                UpdateInfoList();
             }
         }
 
