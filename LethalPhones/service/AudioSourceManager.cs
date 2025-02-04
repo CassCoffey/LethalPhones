@@ -136,7 +136,8 @@ namespace Scoops.service
                 // Static is the inverse of other volumes
                 if (recordInterference > staticStart)
                 {
-                    float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
+                    float volumeInterference = Mathf.InverseLerp(1f - staticStart, 0f, recordInterference - staticStart);
+                    volumeInterference = 1f - (volumeInterference * volumeInterference);
                     audioSource.volume = volumeInterference * Config.staticSoundAdjust.Value;
                 }
                 recordDist = 0f;
@@ -175,13 +176,9 @@ namespace Scoops.service
             // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
             audioSource.volume *= voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
 
-            // Lower volume during interference
-            //if (recordInterference > staticStart)
-            //{
-            //    float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
-            //    audioSource.volume *= (1f - volumeInterference);
-            //}
-            audioSource.volume *= (1f - recordInterference);
+            float interferenceVolumeMod = (1f - recordInterference);
+            interferenceVolumeMod *= interferenceVolumeMod;
+            audioSource.volume *= interferenceVolumeMod;
         }
 
         public void ApplyPhoneEffect()

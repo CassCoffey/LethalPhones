@@ -93,7 +93,7 @@ namespace Scoops.misc
 
         public float GetTotalInterference()
         {
-            return localInterference + ConnectionQualityManager.AtmosphericInterference + temporaryInterference;
+            return Mathf.Clamp01(localInterference + ConnectionQualityManager.AtmosphericInterference + temporaryInterference);
         }
 
         public AudioSource GetStaticAudioSource()

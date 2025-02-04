@@ -10,6 +10,22 @@ using UnityEngine;
 
 namespace Scoops.service
 {
+    public class ConnectionModifier : MonoBehaviour
+    {
+        public float range = 50f;
+        public float interferenceMod = 0.5f;
+
+        public void Start()
+        {
+            ConnectionQualityManager.RegisterConnectionModifier(this);
+        }
+
+        public void OnDestroy()
+        {
+            ConnectionQualityManager.DeregisterConnectionModifier(this);
+        }
+    }
+
     [HarmonyPatch]
     public class ConnectionQualityManager : MonoBehaviour
     {
@@ -19,11 +35,10 @@ namespace Scoops.service
 
         public const float STATIC_START_INTERFERENCE = 0.4f;
 
-        private const float MAX_ENTRANCE_DIST = 300f * 300f;
-        private const float MAX_APPARATUS_DIST = 50f * 50f;
+        private const float MAX_ENTRANCE_DIST = 200f * 200f;
 
         private EntranceTeleport[] entranceArray = new EntranceTeleport[0];
-        private LungProp[] apparatusArray = new LungProp[0];
+        private List<ConnectionModifier> connectionModifiers = new List<ConnectionModifier>();
 
         private static LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
         private static LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
@@ -35,6 +50,24 @@ namespace Scoops.service
 
         public void Start()
         {
+            // Add a connection modifier script to every Apparatus
+            LungProp[] loadedApparatus = Resources.FindObjectsOfTypeAll<LungProp>();
+
+            foreach (LungProp apparatus in loadedApparatus)
+            {
+                ConnectionModifier modifier = apparatus.gameObject.AddComponent<ConnectionModifier>();
+                modifier.interferenceMod = 0.5f;
+            }
+
+            // Add a connection modifier script to every Radar Booster
+            RadarBoosterItem[] loadedBooster = Resources.FindObjectsOfTypeAll<RadarBoosterItem>();
+
+            foreach (RadarBoosterItem booster in loadedBooster)
+            {
+                ConnectionModifier modifier = booster.gameObject.AddComponent<ConnectionModifier>();
+                modifier.interferenceMod = -1f;
+            }
+
             atmosphericInterferenceCoroutine = StartCoroutine(ManageAtmosphericInterference());
         }
 
@@ -43,6 +76,26 @@ namespace Scoops.service
             if (atmosphericInterferenceCoroutine != null)
             {
                 StopCoroutine(atmosphericInterferenceCoroutine);
+            }
+        }
+
+        public static void RegisterConnectionModifier(ConnectionModifier modifier)
+        {
+            if (Instance != null)
+            {
+                if (Instance.connectionModifiers == null) Instance.connectionModifiers = new List<ConnectionModifier>();
+
+                Instance.connectionModifiers.Add(modifier);
+            }
+        }
+
+        public static void DeregisterConnectionModifier(ConnectionModifier modifier)
+        {
+            if (Instance != null)
+            {
+                if (Instance.connectionModifiers == null) Instance.connectionModifiers = new List<ConnectionModifier>();
+
+                Instance.connectionModifiers.Remove(modifier);
             }
         }
 
@@ -79,33 +132,20 @@ namespace Scoops.service
                     }
                 }
 
-                if (Instance.apparatusArray.Length > 0)
+                float totalModifierInterference = 0f;
+
+                foreach (ConnectionModifier modifier in Instance.connectionModifiers)
                 {
-                    float apparatusDist = MAX_APPARATUS_DIST;
-                    bool apparatusFound = false;
+                    float maxModifierDist = modifier.range * modifier.range;
+                    float modifierDist = (modifier.transform.position - phone.recordPos.position).sqrMagnitude;
 
-                    foreach (LungProp apparatus in Instance.apparatusArray)
+                    if (modifierDist <= maxModifierDist)
                     {
-                        if (apparatus != null)
-                        {
-                            float newDist = (apparatus.transform.position - phone.recordPos.position).sqrMagnitude;
-                            if (apparatus.isLungDocked)
-                            {
-                                newDist += 10f * 10f;
-                            }
-                            if (newDist < apparatusDist)
-                            {
-                                apparatusDist = newDist;
-                                apparatusFound = true;
-                            }
-                        }
-                    }
-
-                    if (apparatusFound)
-                    {
-                        interference += Mathf.Lerp(0.5f, 0f, Mathf.InverseLerp(0f, MAX_APPARATUS_DIST, apparatusDist));
+                        totalModifierInterference += modifier.interferenceMod * (1f - (modifierDist / maxModifierDist));
                     }
                 }
+                
+                interference += totalModifierInterference;
             }
 
             return interference;
@@ -122,29 +162,29 @@ namespace Scoops.service
                     string currWeather = WeatherRegistryCompat.CurrentWeatherName().ToLower();
                     if (registryBadWeathers.Contains(currWeather))
                     {
-                        interference += 0.25f;
+                        interference += 0.3f;
                     }
                     if (registryWorseWeathers.Contains(currWeather))
                     {
-                        interference += 0.5f;
+                        interference += 0.6f;
                     }
                 }
                 else
                 {
                     if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference += 0.25f;
+                        interference += 0.3f;
                     }
                     if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference += 0.5f;
+                        interference += 0.6f;
                     }
                 }
 
                 // Variance increases based on interference
                 float variance = UnityEngine.Random.Range(0f, interference) - (interference/2);
 
-                AtmosphericInterference = Mathf.Clamp01(interference + variance);
+                AtmosphericInterference = interference + variance;
                 
                 // Now we generate a delay until the next atmospheric change
                 float delay = UnityEngine.Random.Range(0.75f, 3f);
@@ -158,7 +198,6 @@ namespace Scoops.service
             if (Instance != null)
             {
                 Instance.entranceArray = UnityEngine.Object.FindObjectsByType<EntranceTeleport>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-                Instance.apparatusArray = UnityEngine.Object.FindObjectsByType<LungProp>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             }
         }
 

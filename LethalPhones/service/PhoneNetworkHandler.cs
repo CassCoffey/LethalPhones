@@ -139,11 +139,7 @@ namespace Scoops.service
 
             foreach (PhoneBehavior phone in phoneObjectDict.Values)
             {
-                if (phone is PlayerPhone)
-                {
-                    PlayerPhone playerPhone = (PlayerPhone)phone;
-                    phones.Add(playerPhone.NetworkObjectId);
-                }
+                phones.Add(phone.NetworkObjectId);
             }
 
             UpdateAllPhonesListClientRpc(phones.ToArray());

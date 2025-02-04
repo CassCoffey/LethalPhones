@@ -112,6 +112,10 @@ namespace Scoops.gameobjects
                 PhoneNetworkHandler.Instance.RequestPhoneListUpdates();
             }
 
+            // Switchboard also acts as a booster
+            ConnectionModifier modifier = gameObject.AddComponent<ConnectionModifier>();
+            modifier.interferenceMod = -1f;
+
             UpdateCallingUI();
 
             started = true;

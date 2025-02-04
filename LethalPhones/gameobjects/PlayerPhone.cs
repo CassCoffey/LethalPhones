@@ -953,7 +953,7 @@ namespace Scoops.misc
 
         private void UpdateConnectionQualityUI()
         {
-            float interference = Mathf.Clamp01(localInterference + ConnectionQualityManager.AtmosphericInterference + temporaryInterference);
+            float interference = GetTotalInterference();
 
             if (interference <= 0.25f)
             {
@@ -1157,7 +1157,7 @@ namespace Scoops.misc
                 {
                     if (phone.activeCall != null)
                     {
-                        float totalInterference = Mathf.Clamp01(phone.GetTotalInterference());
+                        float totalInterference = phone.GetTotalInterference();
                         playerController.insanitySpeedMultiplier = -3f * (1f - totalInterference);
                         if (totalInterference != 1f)
                         {
