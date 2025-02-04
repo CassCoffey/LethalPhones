@@ -1150,7 +1150,7 @@ namespace Scoops.misc
 
         public static void UpdatePhoneSanity(PlayerControllerB playerController)
         {
-            if (playerController != null)
+            if (playerController != null && playerController.transform.Find("PhonePrefab(Clone)"))
             {
                 PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
                 if (phone)

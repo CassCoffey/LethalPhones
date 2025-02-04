@@ -51,8 +51,11 @@ namespace Scoops.misc
             this.thisAudio = GetComponent<AudioSource>();
             this.staticAudio = transform.Find("Target").gameObject.GetComponent<AudioSource>();
 
-            this.recordPos = transform;
-            this.playPos = transform;
+            if (this.recordPos == null || this.playPos == null)
+            {
+                this.recordPos = transform;
+                this.playPos = transform;
+            }
 
             AudioSourceManager.RegisterPhone(this);
         }

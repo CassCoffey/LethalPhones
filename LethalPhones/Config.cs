@@ -77,7 +77,7 @@ namespace Scoops
             listeningDist = cfg.Bind(
                     "General",
                     "listeningDist",
-                    10f,
+                    5f,
                     "The distance at which you can hear audio from a phone."
             );
             deathHangupTime = cfg.Bind(

@@ -176,11 +176,12 @@ namespace Scoops.service
             audioSource.volume *= voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
 
             // Lower volume during interference
-            if (recordInterference > staticStart)
-            {
-                float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
-                audioSource.volume *= (1f - volumeInterference);
-            }
+            //if (recordInterference > staticStart)
+            //{
+            //    float volumeInterference = Mathf.InverseLerp(0f, 1f - staticStart, recordInterference - staticStart);
+            //    audioSource.volume *= (1f - volumeInterference);
+            //}
+            audioSource.volume *= (1f - recordInterference);
         }
 
         public void ApplyPhoneEffect()
@@ -201,8 +202,6 @@ namespace Scoops.service
                 player.currentVoiceChatIngameSettings.set2D = true;
             }
 
-            float recordMod = AudioSourceManager.Instance.listenerCurve.Evaluate(recordDist / audioSource.maxDistance);
-
             if (audioSource.GetComponent<AudioLowPassFilter>())
             {
                 audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 3000f;
@@ -210,7 +209,7 @@ namespace Scoops.service
             }
             if (audioSource.GetComponent<AudioHighPassFilter>())
             {
-                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2500f, recordInterference);
+                audioSource.GetComponent<AudioHighPassFilter>().cutoffFrequency = Mathf.Lerp(2000f, 2500f, recordInterference);
                 audioSource.GetComponent<AudioHighPassFilter>().highpassResonanceQ = Mathf.Lerp(2f, 3f, recordInterference);
             }
 
@@ -229,24 +228,20 @@ namespace Scoops.service
             float maxListenDistSqr = Config.listeningDist.Value;
             maxListenDistSqr *= maxListenDistSqr;
 
-            if (recordDist > 0.1f)
+            float recordMod = Mathf.Clamp01(AudioSourceManager.Instance.recorderCurve.Evaluate(Mathf.Clamp01(recordDist / Config.recordingDist.Value)));
+            audioSource.volume *= recordMod;
+            if (audioSource.GetComponent<AudioLowPassFilter>())
             {
-                float recordMod = Mathf.Clamp01(AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01(recordDist / Config.recordingDist.Value)));
-                audioSource.volume *= recordMod;
-                if (audioSource.GetComponent<AudioLowPassFilter>())
-                {
-                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(700f, 3000f, recordMod);
-                }
+                audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(1500f, 3000f, recordMod);
             }
 
             if (listenDist > 0f)
             {
-                Debug.Log("Listening Distance - " + listenDist);
-                float listenMod = Mathf.Clamp01(AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01(listenDist / maxListenDistSqr)) - 0.3f);
+                float listenMod = Mathf.Clamp01(AudioSourceManager.Instance.listenerCurve.Evaluate(Mathf.Clamp01(listenDist / maxListenDistSqr)));
                 audioSource.volume *= listenMod;
                 if (audioSource.GetComponent<AudioLowPassFilter>())
                 {
-                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = 750f;
+                    audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(1000f, 750f, Mathf.Clamp01(listenDist / maxListenDistSqr));
                 }
                 audioSource.panStereo = listenAngle;
             }
@@ -363,6 +358,7 @@ namespace Scoops.service
         public static AudioSourceManager Instance { get; private set; }
 
         public AnimationCurve listenerCurve;
+        public AnimationCurve recorderCurve;
 
         private List<AudioSourceStorage> trackedAudioSources = new List<AudioSourceStorage>();
         private List<AudioSourceStorage> staticNoiseAudioSources = new List<AudioSourceStorage>();
@@ -371,6 +367,7 @@ namespace Scoops.service
 
         private PlayerControllerB localPlayer;
         private Transform listenerPos;
+        private PhoneBehavior listenerPhone;
 
         private float listenDistSqr;
         private float recordDistSqr;
@@ -389,32 +386,38 @@ namespace Scoops.service
             listenDistSqr = Config.listeningDist.Value * Config.listeningDist.Value;
             recordDistSqr = Config.recordingDist.Value * Config.recordingDist.Value;
 
-            listenerCurve = AnimationCurve.Linear(0, 1, 1, 0);
-            listenerCurve.ClearKeys();
-            listenerCurve.AddKey(.1f, 1f);
-            listenerCurve.AddKey(.3f, .2f);
-            listenerCurve.AddKey(1f, 0f);
+            // You like magic numbers?
+            Keyframe[] listenKeys = new Keyframe[3];
 
-            listenerCurve.keys[0].inTangent = -3.5f;
-            listenerCurve.keys[0].outTangent = -3.5f;
-            listenerCurve.keys[0].tangentModeInternal = 0;
-            listenerCurve.keys[0].weightedMode = WeightedMode.None;
-            listenerCurve.keys[0].inWeight = 0f;
-            listenerCurve.keys[0].outWeight = 0f;
+            listenKeys[0] = new Keyframe(0f, 0.5f, -4, -4, 0.3333f, 0.3333f);
+            listenKeys[0].tangentMode = 34;
+            listenKeys[0].weightedMode = WeightedMode.None;
 
-            listenerCurve.keys[0].inTangent = -1.25f;
-            listenerCurve.keys[0].outTangent = -1.25f;
-            listenerCurve.keys[0].tangentModeInternal = 136;
-            listenerCurve.keys[0].weightedMode = WeightedMode.None;
-            listenerCurve.keys[0].inWeight = 0.3333f;
-            listenerCurve.keys[0].outWeight = 0.3333f;
+            listenKeys[1] = new Keyframe(0.4f, 0.1f, -0.0889f, -0.0889f, 0.3333f, 0.3333f);
+            listenKeys[1].tangentMode = 136;
+            listenKeys[1].weightedMode = WeightedMode.None;
 
-            listenerCurve.keys[0].inTangent = -0.3f;
-            listenerCurve.keys[0].outTangent = -0.3f;
-            listenerCurve.keys[0].tangentModeInternal = 0;
-            listenerCurve.keys[0].weightedMode = WeightedMode.None;
-            listenerCurve.keys[0].inWeight = 0f;
-            listenerCurve.keys[0].outWeight = 0f;
+            listenKeys[2] = new Keyframe(1f, 0f, 0, 0, 0.3333f, 0.3333f);
+            listenKeys[2].tangentMode = 0;
+            listenKeys[2].weightedMode = WeightedMode.None;
+
+            listenerCurve = new AnimationCurve(listenKeys);
+
+            Keyframe[] recordKeys = new Keyframe[3];
+
+            recordKeys[0] = new Keyframe(0.1f, 1f, -4, -4, 0.3333f, 0.3333f);
+            recordKeys[0].tangentMode = 34;
+            recordKeys[0].weightedMode = WeightedMode.None;
+
+            recordKeys[1] = new Keyframe(0.5f, 0.4f, -0.0889f, -0.0889f, 0.3333f, 0.3333f);
+            recordKeys[1].tangentMode = 136;
+            recordKeys[1].weightedMode = WeightedMode.None;
+
+            recordKeys[2] = new Keyframe(1f, 0f, 0, 0, 0.3333f, 0.3333f);
+            recordKeys[2].tangentMode = 0;
+            recordKeys[2].weightedMode = WeightedMode.None;
+
+            recorderCurve = new AnimationCurve(recordKeys);
         }
 
         public void Update()
@@ -426,7 +429,14 @@ namespace Scoops.service
 
             if (localPlayer != null)
             {
-                listenerPos = localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null ? localPlayer.spectatedPlayerScript.playerGlobalHead : localPlayer.playerGlobalHead;
+                if (localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null)
+                {
+                    listenerPos = localPlayer.spectatedPlayerScript.playerGlobalHead;
+                }
+                else
+                {
+                    listenerPos = localPlayer.playerGlobalHead;
+                }
 
                 // Update the audio redirect info for all audio source storages
                 UpdateAudioSourceStorages();

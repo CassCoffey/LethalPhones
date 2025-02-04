@@ -116,7 +116,7 @@ public class PlayerPhonePatch
 
         if (GameNetworkManager.Instance.localPlayerController == __instance)
         {
-            phone.playPos = __instance.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)");//__instance.playerGlobalHead;
+            phone.playPos = __instance.playerGlobalHead;
             phone.recordPos = __instance.localArmsTransform.Find("shoulder.L/arm.L_upper/arm.L_lower/hand.L/LocalPhoneModel(Clone)");
         }
         else
