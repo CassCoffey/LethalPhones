@@ -44,6 +44,7 @@ public static class PluginInformation
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("WeatherTweaks", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("qwbarch.Mirage", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency("OpJosMod.ReviveCompany", BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BaseUnityPlugin
 {
     public static Plugin Instance { get; set; }
@@ -116,6 +117,11 @@ public class Plugin : BaseUnityPlugin
         {
             Log.LogInfo("Loaded Mirage Compatability");
         }
+
+        if (ReviveCompanyCompat.Enabled)
+        {
+            Log.LogInfo("Loaded ReviveCompany Compatability");
+        }
     }
 
     /// <summary>
@@ -133,6 +139,10 @@ public class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(ShipTeleporterPhonePatch));
         _harmony.PatchAll(typeof(AudioSourceManager));
         _harmony.PatchAll(typeof(ConnectionQualityManager));
+        if (ReviveCompanyCompat.Enabled)
+        {
+            _harmony.PatchAll(typeof(ReviveCompanyCompat));
+        }
     }
 
     private static void NetcodePatcher()

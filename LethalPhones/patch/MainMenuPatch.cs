@@ -16,7 +16,7 @@ namespace Scoops.patch
 
         [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
-        public static void Start(MenuManager __instance)
+        public static void Start(ref MenuManager __instance)
         {
             if (__instance.isInitScene) return;
 

@@ -255,7 +255,7 @@ namespace Scoops.service
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
-        static void SpawnConnectionQualityManager(StartOfRound __instance)
+        static void SpawnConnectionQualityManager(ref StartOfRound __instance)
         {
             if (Instance == null)
             {

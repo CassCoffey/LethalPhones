@@ -63,6 +63,9 @@
       <Reference Include="Mirage.Core">
         <HintPath>..\..\..\Stuff\Modding\Lethal Company\Mirage\Mirage.Core.dll</HintPath>
       </Reference>
+      <Reference Include="OPJosMod">
+        <HintPath>..\..\..\Stuff\Modding\Lethal Company\ReviveCompany\ReviveCompany.dll</HintPath>
+      </Reference>
       <Reference Include="Unity.Animation.Rigging">
         <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
       </Reference>

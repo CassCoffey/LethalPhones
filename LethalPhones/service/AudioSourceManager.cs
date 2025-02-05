@@ -565,7 +565,7 @@ namespace Scoops.service
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.RefreshPlayerVoicePlaybackObjects))]
-        static void PlayerVoiceRefresh(PlayerVoiceIngameSettings __instance)
+        static void PlayerVoiceRefresh(ref PlayerVoiceIngameSettings __instance)
         {
             // Apply voice params to all player voice audio sources
             foreach (PlayerControllerB player in StartOfRound.Instance.allPlayerScripts)
