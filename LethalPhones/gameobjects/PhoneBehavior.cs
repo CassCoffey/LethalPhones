@@ -66,8 +66,8 @@ namespace Scoops.misc
 
             if (temporaryInterference > 0f)
             {
-                // Should take 30 seconds to repair a full interference bar
-                temporaryInterference -= (1f / 30f) * Time.deltaTime;
+                // Should take 45 seconds to repair a full interference bar
+                temporaryInterference -= (1f / Config.connectionHealTime.Value) * Time.deltaTime;
 
                 if (temporaryInterference < 0f)
                 {

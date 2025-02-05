@@ -59,11 +59,13 @@ namespace Scoops.service
         private EntranceTeleport[] entranceArray = new EntranceTeleport[0];
         private List<ConnectionModifier> connectionModifiers = new List<ConnectionModifier>();
 
-        private static LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Rainy, LevelWeatherType.Foggy, LevelWeatherType.DustClouds };
-        private static LevelWeatherType[] worseWeathers = { LevelWeatherType.Stormy };
+        private static LevelWeatherType[] badWeathers = { LevelWeatherType.Flooded, LevelWeatherType.Foggy, LevelWeatherType.DustClouds, LevelWeatherType.Eclipsed };
+        private static LevelWeatherType[] worseWeathers = { LevelWeatherType.Rainy };
+        private static LevelWeatherType[] worstWeathers = { LevelWeatherType.Stormy };
 
-        private static string[] registryBadWeathers = { "flooded", "rainy", "foggy", "dust clouds", "heatwave", "snowfall" };
-        private static string[] registryWorseWeathers = { "stormy", "blizzard", "toxic smog", "solar flare" };
+        private static string[] registryBadWeathers = { "flooded", "foggy", "dust clouds", "heatwave", "eclipsed" };
+        private static string[] registryWorseWeathers = { "rainy", "snowfall", "toxic smog" };
+        private static string[] registryWorstWeathers = { "stormy", "blizzard", "solar flare" };
 
         private Coroutine atmosphericInterferenceCoroutine;
 
@@ -76,6 +78,7 @@ namespace Scoops.service
             {
                 ConnectionModifier modifier = apparatus.gameObject.AddComponent<ConnectionModifier>();
                 modifier.interferenceMod = 0.5f;
+                modifier.range = Config.apparatusRange.Value;
             }
 
             // Add a connection modifier script to every Radar Booster
@@ -85,6 +88,7 @@ namespace Scoops.service
             {
                 ConnectionModifier modifier = booster.gameObject.AddComponent<ConnectionModifier>();
                 modifier.interferenceMod = -1f;
+                modifier.range = Config.radarBoosterRange.Value;
             }
 
             atmosphericInterferenceCoroutine = StartCoroutine(ManageAtmosphericInterference());
@@ -176,25 +180,57 @@ namespace Scoops.service
 
                 if (WeatherRegistryCompat.Enabled)
                 {
-                    string currWeather = WeatherRegistryCompat.CurrentWeatherName().ToLower();
-                    if (registryBadWeathers.Contains(currWeather))
+                    string currWeather;
+                    if (WeatherTweaksCompat.Enabled)
                     {
-                        interference += 0.3f;
+                        currWeather = WeatherTweaksCompat.CurrentWeatherName().ToLower();
+                    } 
+                    else
+                    {
+                        currWeather = WeatherRegistryCompat.CurrentWeatherName().ToLower();
                     }
-                    if (registryWorseWeathers.Contains(currWeather))
+
+                    foreach (string weather in registryWorstWeathers)
                     {
-                        interference += 0.6f;
+                        if (currWeather.Contains(weather))
+                        {
+                            interference = 0.6f;
+                        }
+                    }
+                    if (interference == 0f)
+                    {
+                        foreach (string weather in registryWorseWeathers)
+                        {
+                            if (currWeather.Contains(weather))
+                            {
+                                interference = 0.4f;
+                            }
+                        }
+                    }
+                    if (interference == 0f)
+                    {
+                        foreach (string weather in registryBadWeathers)
+                        {
+                            if (currWeather.Contains(weather))
+                            {
+                                interference = 0.25f;
+                            }
+                        }
                     }
                 }
                 else
                 {
                     if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference += 0.3f;
+                        interference = 0.25f;
                     }
                     if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference += 0.6f;
+                        interference = 0.4f;
+                    }
+                    if (worstWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
+                    {
+                        interference = 0.6f;
                     }
                 }
 

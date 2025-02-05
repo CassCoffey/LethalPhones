@@ -116,6 +116,7 @@ namespace Scoops.gameobjects
             // Switchboard also acts as a booster
             ConnectionModifier modifier = gameObject.AddComponent<ConnectionModifier>();
             modifier.interferenceMod = -1f;
+            modifier.range = Config.switchboardBoosterRange.Value;
 
             UpdateCallingUI();
 

@@ -18,6 +18,10 @@ namespace Scoops
         public static ConfigEntry<bool> removeBaseRingtones;
         public static ConfigEntry<string> customizationBlacklist;
 
+        public static ConfigEntry<float> switchboardBoosterRange;
+        public static ConfigEntry<float> radarBoosterRange;
+        public static ConfigEntry<float> apparatusRange;
+        public static ConfigEntry<float> connectionHealTime;
         public static ConfigEntry<bool> hangupOnPutaway;
         public static ConfigEntry<bool> respawnClipboard;
         public static ConfigEntry<bool> enableStartClipboard;
@@ -124,6 +128,30 @@ namespace Scoops
             );
 
             // Balance
+            switchboardBoosterRange = cfg.Bind(
+                    "Balance",
+                    "switchboardBoosterRange",
+                    50f,
+                    "The range in meters at which the switchboard increases phone connection quality."
+            );
+            radarBoosterRange = cfg.Bind(
+                    "Balance",
+                    "radarBoosterRange",
+                    75f,
+                    "The range in meters at which the radar booster increases phone connection quality while active."
+            );
+            apparatusRange = cfg.Bind(
+                    "Balance",
+                    "apparatusRange",
+                    50f,
+                    "The range in meters at which the apparatus reduces phone connection quality."
+            );
+            connectionHealTime = cfg.Bind(
+                    "Balance",
+                    "connectionHealTime",
+                    45f,
+                    "How many seconds it should take for a phones connection bar to recover from full temporary connection loss (taking damage, inverse teleporting)."
+            );
             hangupOnPutaway = cfg.Bind(
                     "Balance",
                     "hangupOnPutaway",

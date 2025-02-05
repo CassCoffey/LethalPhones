@@ -13,9 +13,10 @@ namespace Scoops.compatability
         {
             if (WeatherManager.GetCurrentLevelWeather() != null)
             {
-                return WeatherManager.GetCurrentLevelWeather().name;
+                return WeatherManager.GetCurrentLevelWeather().Name;
             }
-            return "null";
+
+            return "";
         }
     }
 }

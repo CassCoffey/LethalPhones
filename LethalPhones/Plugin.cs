@@ -42,6 +42,7 @@ public static class PluginInformation
 [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("evaisa.lethallib", BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency("WeatherTweaks", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("qwbarch.Mirage", BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BaseUnityPlugin
 {
@@ -104,6 +105,11 @@ public class Plugin : BaseUnityPlugin
         if (WeatherRegistryCompat.Enabled)
         {
             Log.LogInfo("Loaded Weather Registry Compatability");
+        }
+
+        if (WeatherTweaksCompat.Enabled)
+        {
+            Log.LogInfo("Loaded Weather Tweaks Compatability");
         }
 
         if (MirageCompat.Enabled)

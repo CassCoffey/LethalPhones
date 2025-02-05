@@ -75,6 +75,9 @@
       <Reference Include="WeatherRegistry">
         <HintPath>..\..\..\Stuff\Modding\Lethal Company\WeatherRegistry\WeatherRegistry.dll</HintPath>
       </Reference>
+      <Reference Publicize="true" Include="WeatherTweaks">
+        <HintPath>..\..\..\Stuff\Modding\Lethal Company\WeatherTweaks\WeatherTweaks.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
     <!-- https://github.com/EvaisaDev/UnityNetcodePatcher#usage-as-a-post-build-event -->
