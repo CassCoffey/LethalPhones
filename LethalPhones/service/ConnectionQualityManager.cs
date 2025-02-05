@@ -15,9 +15,28 @@ namespace Scoops.service
         public float range = 50f;
         public float interferenceMod = 0.5f;
 
+        private RadarBoosterItem radarBooster;
+
         public void Start()
         {
             ConnectionQualityManager.RegisterConnectionModifier(this);
+
+            radarBooster = GetComponent<RadarBoosterItem>();
+        }
+
+        public void Update()
+        {
+            if (radarBooster)
+            {
+                if (radarBooster.radarEnabled)
+                {
+                    interferenceMod = -1f;
+                }
+                else
+                {
+                    interferenceMod = 0f;
+                }
+            }
         }
 
         public void OnDestroy()
@@ -107,8 +126,6 @@ namespace Scoops.service
             {
                 if (phone.PhoneInsideFactory())
                 {
-                    interference += 0.1f;
-
                     if (Instance.entranceArray.Length > 0)
                     {
                         float entranceDist = MAX_ENTRANCE_DIST;

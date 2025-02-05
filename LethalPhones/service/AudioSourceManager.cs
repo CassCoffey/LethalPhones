@@ -128,57 +128,19 @@ namespace Scoops.service
 
         public void ApplyPhoneVolume()
         {
-            float staticStart = ConnectionQualityManager.STATIC_START_INTERFERENCE;
-
-            if (staticAudio)
-            {
-                audioSource.volume = 0f;
-                // Static is the inverse of other volumes
-                if (recordInterference > staticStart)
-                {
-                    float volumeInterference = Mathf.InverseLerp(1f - staticStart, 0f, recordInterference - staticStart);
-                    volumeInterference = 1f - (volumeInterference * volumeInterference);
-                    audioSource.volume = volumeInterference * Config.staticSoundAdjust.Value;
-                }
-                recordDist = 0f;
-                return;
-            }
-            // Short circuit if max interference
-            if (recordInterference == 1f)
-            {
-                audioSource.volume = 0f;
-                return;
-            }
-
-            float mod = 0f;
-
-            recordDist = Vector3.Distance(recordPos.position, sourcePos.position);
-
-            // Recalculate volume from distance information
-            if (audioSource.rolloffMode == AudioRolloffMode.Linear)
-            {
-                mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.maxDistance, audioSource.minDistance, recordDist));
-            }
-            else if (audioSource.rolloffMode == AudioRolloffMode.Custom)
-            {
-                AnimationCurve audioRolloffCurve = audioSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
-                if (audioRolloffCurve != null)
-                {
-                    mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(recordDist / audioSource.maxDistance));
-                }
-            }
-            else
-            {
-                mod = Mathf.Clamp01((audioSource.minDistance * (1 / (1 + (recordDist - 1)))));
-            }
+            float mod = GetAudioVolumeAtPos(recordPos.position);
 
             audioSource.volume = (origVolume * mod);
-            // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
-            audioSource.volume *= voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
 
-            float interferenceVolumeMod = (1f - recordInterference);
-            interferenceVolumeMod *= interferenceVolumeMod;
-            audioSource.volume *= interferenceVolumeMod;
+            // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
+            if (!staticAudio)
+            {
+                audioSource.volume *= voice ? Config.voiceSoundAdjust.Value : Config.backgroundSoundAdjust.Value;
+
+                float interferenceVolumeMod = (1f - recordInterference);
+                interferenceVolumeMod *= interferenceVolumeMod;
+                audioSource.volume *= interferenceVolumeMod;
+            }
         }
 
         public void ApplyPhoneEffect()
@@ -242,6 +204,51 @@ namespace Scoops.service
                 }
                 audioSource.panStereo = listenAngle;
             }
+        }
+
+        public float GetAudioVolumeAtPos(Vector3 recordPos)
+        {
+            float mod = 0f;
+
+            // Short circuit if max interference
+            if (!staticAudio && recordInterference == 1f)
+            {
+                return 0f;
+            }
+
+            recordDist = staticAudio ? 0f : Vector3.Distance(recordPos, sourcePos.position);
+
+            // Recalculate volume from distance information
+            if (staticAudio)
+            {
+                float staticStart = ConnectionQualityManager.STATIC_START_INTERFERENCE;
+
+                // Static is the inverse of other volumes
+                if (recordInterference > staticStart)
+                {
+                    float volumeInterference = Mathf.InverseLerp(1f - staticStart, 0f, recordInterference - staticStart);
+                    volumeInterference = 1f - (volumeInterference * volumeInterference);
+                    mod = volumeInterference * Config.staticSoundAdjust.Value;
+                }
+            }
+            else if (audioSource.rolloffMode == AudioRolloffMode.Linear)
+            {
+                mod = Mathf.Clamp01(Mathf.InverseLerp(audioSource.maxDistance, audioSource.minDistance, recordDist));
+            }
+            else if (audioSource.rolloffMode == AudioRolloffMode.Custom)
+            {
+                AnimationCurve audioRolloffCurve = audioSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
+                if (audioRolloffCurve != null)
+                {
+                    mod = Mathf.Clamp01(audioRolloffCurve.Evaluate(recordDist / audioSource.maxDistance));
+                }
+            }
+            else
+            {
+                mod = Mathf.Clamp01((audioSource.minDistance * (1 / (1 + (recordDist - 1)))));
+            }
+
+            return mod;
         }
 
         public void Reset()
@@ -428,7 +435,7 @@ namespace Scoops.service
             {
                 if (localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null)
                 {
-                    listenerPos = localPlayer.spectatedPlayerScript.playerGlobalHead;
+                    listenerPos = localPlayer.spectatedPlayerScript.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)");
                 }
                 else
                 {
@@ -455,17 +462,21 @@ namespace Scoops.service
                 {
                     PhoneBehavior callerPhone = phone.GetCallerPhone();
 
-                    storage.recordPos = callerPhone.recordPos;
-                    storage.playPos = phone.playPos;
-                    storage.listenerPos = listenerPos;
+                    float realVol = storage.GetAudioVolumeAtPos(listenerPos.position);
+                    
+                    if (realVol < 0.1f)
+                    {
+                        storage.recordPos = callerPhone.recordPos;
+                        storage.playPos = phone.playPos;
+                        storage.listenerPos = listenerPos;
 
-                    float phoneInterference = phone.GetTotalInterference();
-                    float callerPhoneInterference = callerPhone.GetTotalInterference();
+                        float phoneInterference = phone.GetTotalInterference();
+                        float callerPhoneInterference = callerPhone.GetTotalInterference();
 
-                    float worseInterference = phoneInterference < callerPhoneInterference ? callerPhoneInterference : phoneInterference;
-                    worseInterference = Mathf.Clamp01(worseInterference);
+                        float worseInterference = phoneInterference < callerPhoneInterference ? callerPhoneInterference : phoneInterference;
 
-                    storage.recordInterference = worseInterference;
+                        storage.recordInterference = worseInterference;
+                    }
                 }
             }
         }

@@ -109,8 +109,9 @@ namespace Scoops.gameobjects
             if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.RegisterSwitchboard(this.NetworkObjectId);
-                PhoneNetworkHandler.Instance.RequestPhoneListUpdates();
             }
+
+            PhoneNetworkHandler.Instance.RequestPhoneListUpdates();
 
             // Switchboard also acts as a booster
             ConnectionModifier modifier = gameObject.AddComponent<ConnectionModifier>();

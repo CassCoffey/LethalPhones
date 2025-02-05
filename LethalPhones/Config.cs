@@ -65,7 +65,7 @@ namespace Scoops
             staticSoundAdjust = cfg.Bind(
                     "General",
                     "staticSoundAdjust",
-                    0.6f,
+                    0.7f,
                     "All static noises on calls have their volume multiplied by this value."
             );
             recordingDist = cfg.Bind(
