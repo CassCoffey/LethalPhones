@@ -821,7 +821,7 @@ namespace Scoops.misc
             short number = short.Parse(numberString);
             if (number == phoneNumber)
             {
-                Plugin.Log.LogInfo("You cannot call yourself yet. Messages will be here later.");
+                Plugin.Log.LogInfo("You cannot call yourself yet.");
                 dialedNumbers.Clear();
                 UpdateCallingUI();
                 return;
