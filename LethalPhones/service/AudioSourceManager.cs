@@ -80,8 +80,9 @@ namespace Scoops.service
 
         public void Update()
         {
-            if (audioSource != null)
+            if (AudioSourceManager.Instance != null && audioSource != null)
             {
+                if (voice && player == null) return;
                 if (recordPos != null && playPos != null && listenerPos != null)
                 {
                     if (!modified) InitPhone();
@@ -129,7 +130,7 @@ namespace Scoops.service
         public void ApplyPhoneVolume()
         {
             float mod = GetAudioVolumeAtPos(recordPos.position);
-
+            
             audioSource.volume = (origVolume * mod);
 
             // If this is a voice apply the voiceSound config, otherwise apply the backgroundSound config
@@ -321,6 +322,11 @@ namespace Scoops.service
 
         public void Start()
         {
+            if (AudioSourceManager.Instance == null)
+            {
+                Destroy(this);
+                return;
+            }
             storage = AudioSourceManager.RegisterAudioSource(GetComponent<AudioSource>());
             storage.staticAudio = staticAudio;
         }
@@ -343,6 +349,11 @@ namespace Scoops.service
 
         public void Update()
         {
+            if (AudioSourceManager.Instance == null)
+            {
+                Destroy(this);
+                return;
+            }
             storage.Update();
         }
 
@@ -365,7 +376,6 @@ namespace Scoops.service
         public AnimationCurve recorderCurve;
 
         private List<AudioSourceStorage> trackedAudioSources = new List<AudioSourceStorage>();
-        private List<AudioSourceStorage> staticNoiseAudioSources = new List<AudioSourceStorage>();
 
         private List<PhoneBehavior> allPhones = new List<PhoneBehavior>();
 
@@ -383,7 +393,10 @@ namespace Scoops.service
 
             foreach (AudioSource source in loadedAudioSources)
             {
-                source.gameObject.AddComponent<AudioSourceHook>();
+                if (source.GetComponent<AudioSourceHook>() == null)
+                {
+                    source.gameObject.AddComponent<AudioSourceHook>();
+                }
             }
 
             // pre-square the config values
@@ -422,6 +435,11 @@ namespace Scoops.service
             recordKeys[2].weightedMode = WeightedMode.None;
 
             recorderCurve = new AnimationCurve(recordKeys);
+        }
+
+        public void OnDestroy()
+        {
+            Instance = null;
         }
 
         public void Update()

@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3132737421
+CRC: 571704601
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 473ea1cc7e1643ed83f3f927f5d48b12
+    Hash: d9779bf85d4c891632ce13051c986fb5
   TypeTreeHash:
     serializedVersion: 2
     Hash: 262d42a00b2ae0415a4428efef30ff5a
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 473ea1cc7e1643ed83f3f927f5d48b12
+    Hash: d9779bf85d4c891632ce13051c986fb5
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -187,6 +187,7 @@ SerializeReferenceClassIdentifiers:
   ClassName: UnityEngine.UI.SpriteState
 Assets:
 - Assets/Textures/icons8-no-connection-96.png
+- Assets/PhoneConnectionHandler.prefab
 - Assets/Materials/OffLight.mat
 - Assets/Textures/icons8-shake-phone-96.png
 - Assets/ClipboardPhoneBook.prefab

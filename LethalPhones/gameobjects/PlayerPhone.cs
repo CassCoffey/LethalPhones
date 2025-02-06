@@ -834,7 +834,12 @@ namespace Scoops.misc
         {
             incomingCallUI.enabled = (incomingCall.Value != -1);
 
-            if (activeCall.Value != -1)
+            if (incomingCall.Value != -1)
+            {
+                dialingNumberUI.text = incomingCall.Value.ToString("D4");
+                phoneStatusUI.text = "Incoming...";
+            }
+            else if (activeCall.Value != -1)
             {
                 dialingNumberUI.text = activeCall.Value.ToString("D4");
                 phoneStatusUI.text = "Connected";
@@ -843,11 +848,6 @@ namespace Scoops.misc
             {
                 dialingNumberUI.text = outgoingCall.Value.ToString("D4");
                 phoneStatusUI.text = "Dialing...";
-            }
-            else if (incomingCall.Value != -1)
-            {
-                dialingNumberUI.text = incomingCall.Value.ToString("D4");
-                phoneStatusUI.text = "Incoming...";
             }
             else
             {

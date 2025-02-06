@@ -1,11 +1,13 @@
 ﻿using HarmonyLib;
 using Scoops.compatability;
 using Scoops.misc;
+using Scoops.patch;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Scoops.service
@@ -46,13 +48,13 @@ namespace Scoops.service
     }
 
     [HarmonyPatch]
-    public class ConnectionQualityManager : MonoBehaviour
+    public class ConnectionQualityManager : NetworkBehaviour
     {
         public static ConnectionQualityManager Instance { get; private set; }
 
         public static float AtmosphericInterference = 0f;
 
-        public const float STATIC_START_INTERFERENCE = 0.4f;
+        public const float STATIC_START_INTERFERENCE = 0.3f;
 
         private const float MAX_ENTRANCE_DIST = 200f * 200f;
 
@@ -71,14 +73,21 @@ namespace Scoops.service
 
         public void Start()
         {
+            if (Instance == null) Instance = this;
+
+            StartOfRound.Instance.StartNewRoundEvent.AddListener(NewRoundStart);
+
             // Add a connection modifier script to every Apparatus
             LungProp[] loadedApparatus = Resources.FindObjectsOfTypeAll<LungProp>();
 
             foreach (LungProp apparatus in loadedApparatus)
             {
-                ConnectionModifier modifier = apparatus.gameObject.AddComponent<ConnectionModifier>();
-                modifier.interferenceMod = 0.5f;
-                modifier.range = Config.apparatusRange.Value;
+                if (apparatus.GetComponent<ConnectionModifier>() == null)
+                {
+                    ConnectionModifier modifier = apparatus.gameObject.AddComponent<ConnectionModifier>();
+                    modifier.interferenceMod = 0.5f;
+                    modifier.range = Config.apparatusRange.Value;
+                }
             }
 
             // Add a connection modifier script to every Radar Booster
@@ -86,19 +95,31 @@ namespace Scoops.service
 
             foreach (RadarBoosterItem booster in loadedBooster)
             {
-                ConnectionModifier modifier = booster.gameObject.AddComponent<ConnectionModifier>();
-                modifier.interferenceMod = -1f;
-                modifier.range = Config.radarBoosterRange.Value;
+                if (booster.GetComponent<ConnectionModifier>() == null)
+                {
+                    ConnectionModifier modifier = booster.gameObject.AddComponent<ConnectionModifier>();
+                    modifier.interferenceMod = -1f;
+                    modifier.range = Config.radarBoosterRange.Value;
+                }
             }
-
-            atmosphericInterferenceCoroutine = StartCoroutine(ManageAtmosphericInterference());
         }
 
-        public void OnDestroy()
+        public override void OnNetworkSpawn()
         {
-            if (atmosphericInterferenceCoroutine != null)
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                StopCoroutine(atmosphericInterferenceCoroutine);
+                atmosphericInterferenceCoroutine = StartCoroutine(ManageAtmosphericInterference());
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+            {
+                if (atmosphericInterferenceCoroutine != null)
+                {
+                    StopCoroutine(atmosphericInterferenceCoroutine);
+                }
             }
         }
 
@@ -194,7 +215,7 @@ namespace Scoops.service
                     {
                         if (currWeather.Contains(weather))
                         {
-                            interference = 0.6f;
+                            interference = 0.5f;
                         }
                     }
                     if (interference == 0f)
@@ -203,7 +224,7 @@ namespace Scoops.service
                         {
                             if (currWeather.Contains(weather))
                             {
-                                interference = 0.4f;
+                                interference = 0.35f;
                             }
                         }
                     }
@@ -213,7 +234,7 @@ namespace Scoops.service
                         {
                             if (currWeather.Contains(weather))
                             {
-                                interference = 0.25f;
+                                interference = 0.2f;
                             }
                         }
                     }
@@ -222,28 +243,34 @@ namespace Scoops.service
                 {
                     if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference = 0.25f;
+                        interference = 0.2f;
                     }
                     if (worseWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference = 0.4f;
+                        interference = 0.35f;
                     }
                     if (worstWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
-                        interference = 0.6f;
+                        interference = 0.5f;
                     }
                 }
 
                 // Variance increases based on interference
                 float variance = UnityEngine.Random.Range(0f, interference) - (interference/2);
 
-                AtmosphericInterference = interference + variance;
+                UpdateAtmosphericInterferenceClientRpc(interference + variance);
                 
                 // Now we generate a delay until the next atmospheric change
-                float delay = UnityEngine.Random.Range(0.75f, 3f);
+                float delay = UnityEngine.Random.Range(1.5f, 6f);
 
                 yield return new WaitForSeconds(delay);
             }
+        }
+
+        [ClientRpc]
+        public void UpdateAtmosphericInterferenceClientRpc(float interference)
+        {
+            AtmosphericInterference = interference;
         }
 
         public static void NewRoundStart()
@@ -257,14 +284,16 @@ namespace Scoops.service
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
         static void SpawnConnectionQualityManager(ref StartOfRound __instance)
         {
-            if (Instance == null)
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                GameObject connectionQualityManagerObject = new GameObject("PhoneConnectionQualityManager");
-                ConnectionQualityManager manager = connectionQualityManagerObject.AddComponent<ConnectionQualityManager>();
+                if (Instance == null)
+                {
+                    GameObject connectionQualityManagerObject = GameObject.Instantiate(NetworkObjectManager.connectionManagerPrefab, Vector3.zero, Quaternion.identity);
+                    ConnectionQualityManager manager = connectionQualityManagerObject.GetComponent<ConnectionQualityManager>();
+                    connectionQualityManagerObject.GetComponent<NetworkObject>().Spawn();
 
-                Instance = manager;
-
-                __instance.StartNewRoundEvent.AddListener(NewRoundStart);
+                    Instance = manager;
+                }
             }
         }
     }

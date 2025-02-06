@@ -47,7 +47,7 @@ namespace Scoops.misc
             {
                 if (phone is PlayerPhone)
                 {
-                    newClipboardText += phone.phoneNumber + " - " + phone.GetPhoneName() + "\n";
+                    newClipboardText += phone.phoneNumber.ToString("D4") + " - " + phone.GetPhoneName() + "\n";
                 }
             }
 

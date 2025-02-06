@@ -137,7 +137,7 @@ namespace Scoops
             radarBoosterRange = cfg.Bind(
                     "Balance",
                     "radarBoosterRange",
-                    75f,
+                    100f,
                     "The range in meters at which the radar booster increases phone connection quality while active."
             );
             apparatusRange = cfg.Bind(

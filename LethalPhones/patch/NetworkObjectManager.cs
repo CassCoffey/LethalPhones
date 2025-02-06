@@ -12,6 +12,7 @@ namespace Scoops.patch
     public class NetworkObjectManager
     {
         static GameObject networkPrefab = null;
+        public static GameObject connectionManagerPrefab = null;
         public static GameObject phonePrefab = null;
         public static GameObject bugPhonePrefab = null;
         public static GameObject maskPhonePrefab = null;
@@ -27,6 +28,14 @@ namespace Scoops.patch
                 networkPrefab.AddComponent<PhoneNetworkHandler>();
 
                 NetworkManager.Singleton.AddNetworkPrefab(networkPrefab);
+            }
+
+            if (connectionManagerPrefab == null)
+            {
+                connectionManagerPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneConnectionHandler");
+                connectionManagerPrefab.AddComponent<ConnectionQualityManager>();
+
+                NetworkManager.Singleton.AddNetworkPrefab(connectionManagerPrefab);
             }
 
             if (phonePrefab == null)
