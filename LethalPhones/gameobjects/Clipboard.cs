@@ -14,12 +14,15 @@ namespace Scoops.misc
 
         public Renderer clipboardRenderer;
 
+        public void Awake()
+        {
+            PhoneNetworkHandler.phoneListUpdateEvent.AddListener(UpdateText);
+        }
+
         public void Start()
         {
             clipboardRenderer = transform.Find("Board").GetComponent<Renderer>();
             textArea = transform.Find("Paper/PaperCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>();
-
-            PhoneNetworkHandler.Instance.phoneListUpdateEvent.AddListener(UpdateText);
 
             // We need an update!
             PhoneNetworkHandler.Instance.RequestPhoneListUpdates();

@@ -305,7 +305,9 @@ namespace Scoops.misc
                 {
                     vector.y *= -1f;
                 }
-                vector *= 0.0005f;
+                vector *= 0.000005f;
+                // Divide by deltatime since mouse movements increase with lower framerate
+                vector /= Time.deltaTime;
 
                 if (!Plugin.InputActionInstance.PickupPhoneKey.IsPressed())
                 {
@@ -375,7 +377,8 @@ namespace Scoops.misc
 
                         float rotationPower = Mathf.Clamp01(Vector2.Dot(mouseVect, perpVect2));
                         rotationPower *= vector.magnitude;
-                        rotationPower *= 7500f;
+                        rotationPower *= 750000f;
+                        rotationPower *= Time.deltaTime;
 
                         float newZ = localPhoneDial.localEulerAngles.z + rotationPower;
                         if (newZ > maxDialingZ)

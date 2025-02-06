@@ -103,7 +103,12 @@ namespace Scoops.misc
 
         public PhoneBehavior GetCallerPhone()
         {
-            return GetNetworkObject(activeCaller.Value).GetComponent<PhoneBehavior>();
+            NetworkObject otherPhone = GetNetworkObject(activeCaller.Value);
+            if (otherPhone.gameObject != null)
+            {
+                return otherPhone.GetComponent<PhoneBehavior>();
+            }
+            return null;
         }
 
         public short GetRandomExistingPhoneNumber()
@@ -440,6 +445,8 @@ namespace Scoops.misc
                     staticAudio.Stop();
                 }
             }
+
+            base.OnDestroy();
         }
     }
 }

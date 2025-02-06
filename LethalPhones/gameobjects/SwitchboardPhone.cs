@@ -40,6 +40,12 @@ namespace Scoops.gameobjects
         protected IEnumerator activeCallTimeoutCoroutine;
 
         private bool started = false;
+        private bool sentInfoRequest = false;
+
+        public void Awake()
+        {
+            PhoneNetworkHandler.phoneListUpdateEvent.AddListener(UpdatePhoneList);
+        }
 
         public override void Start()
         {
@@ -104,8 +110,6 @@ namespace Scoops.gameobjects
 
             transform.Find("SwitchboardMesh/SwitchboardTape/TapeCanvas/Text (TMP)").GetComponent<TextMeshProUGUI>().text = Config.switchboardNumber.Value;
 
-            PhoneNetworkHandler.Instance.phoneListUpdateEvent.AddListener(UpdatePhoneList);
-
             if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.RegisterSwitchboard(this.NetworkObjectId);
@@ -160,6 +164,8 @@ namespace Scoops.gameobjects
             switchboardOperatorId.OnValueChanged -= OnOperatorChanged;
             selectedIndex.OnValueChanged -= OnSelectedIndexChanged;
             silenced.OnValueChanged -= OnVolumeSwitched;
+
+            base.OnNetworkDespawn();
         }
 
         public override void OnDestroy()
@@ -341,7 +347,16 @@ namespace Scoops.gameobjects
 
         private void UpdateInfoList()
         {
-            if (allPhones.Count == 0) return;
+            if (allPhones.Count == 0)
+            {
+                // A catch for if a client's switchboard ends up null somehow.
+                if (!sentInfoRequest)
+                {
+                    PhoneNetworkHandler.Instance.RequestPhoneListUpdates();
+                    sentInfoRequest = true;
+                }
+                return;
+            }
 
             // The selected info box
             for (int i = 0; i < 5; i++)
@@ -600,6 +615,7 @@ namespace Scoops.gameobjects
 
         private void UpdatePhoneList()
         {
+            sentInfoRequest = false;
             if (allPhones == null)
             {
                 allPhones = new List<PhoneBehavior>();

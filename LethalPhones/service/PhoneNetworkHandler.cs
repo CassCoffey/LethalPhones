@@ -32,7 +32,7 @@ namespace Scoops.service
         public PlayerPhone localPhone;
         public SwitchboardPhone switchboard;
 
-        public UnityEvent phoneListUpdateEvent;
+        public static UnityEvent phoneListUpdateEvent = new UnityEvent();
 
         public void Start()
         {

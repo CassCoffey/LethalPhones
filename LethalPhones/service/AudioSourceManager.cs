@@ -453,7 +453,7 @@ namespace Scoops.service
             {
                 if (localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null)
                 {
-                    listenerPos = localPlayer.spectatedPlayerScript.lowerSpine.Find("spine.002/spine.003/shoulder.L/arm.L_upper/arm.L_lower/hand.L/ServerPhoneModel(Clone)");
+                    listenerPos = localPlayer.spectatedPlayerScript.playerGlobalHead;
                 }
                 else
                 {
@@ -488,6 +488,12 @@ namespace Scoops.service
                         storage.playPos = phone.playPos;
                         storage.listenerPos = listenerPos;
 
+                        // If we're spectating, put our ears inside the phone for clarity
+                        if (localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null)
+                        {
+                            storage.listenerPos = phone.playPos;
+                        }
+
                         float phoneInterference = phone.GetTotalInterference();
                         float callerPhoneInterference = callerPhone.GetTotalInterference();
 
@@ -518,20 +524,23 @@ namespace Scoops.service
                 {
                     PhoneBehavior callerPhone = phone.GetCallerPhone();
 
-                    float listenerDistToPhone = (phone.playPos.position - listenerPos.position).sqrMagnitude;
-                    float listenerDistToCaller = (callerPhone.playPos.position - listenerPos.position).sqrMagnitude;
-
-                    // Need the player to be in range of a phone, but not also in range of the phone it's calling
-                    if (listenerDistToPhone <= listenDistSqr && listenerDistToCaller > listenDistSqr)
+                    if (callerPhone != null)
                     {
-                        float audioDistToCaller = (callerPhone.recordPos.position - storage.sourcePos.position).sqrMagnitude;
-                        float audioDistToListener = (listenerPos.position - storage.sourcePos.position).sqrMagnitude;
+                        float listenerDistToPhone = (phone.playPos.position - listenerPos.position).sqrMagnitude;
+                        float listenerDistToCaller = (callerPhone.playPos.position - listenerPos.position).sqrMagnitude;
 
-                        // Need to be closer than the existing closest phone and the max recording dist
-                        // Also need to be closer to the phone than the local player
-                        if (audioDistToCaller <= closestDistSqr && audioDistToCaller < audioDistToListener)
+                        // Need the player to be in range of a phone, but not also in range of the phone it's calling
+                        if (listenerDistToPhone <= listenDistSqr && listenerDistToCaller > listenDistSqr)
                         {
-                            closestPhone = phone;
+                            float audioDistToCaller = (callerPhone.recordPos.position - storage.sourcePos.position).sqrMagnitude;
+                            float audioDistToListener = (listenerPos.position - storage.sourcePos.position).sqrMagnitude;
+
+                            // Need to be closer than the existing closest phone and the max recording dist
+                            // Also need to be closer to the phone than the local player
+                            if (audioDistToCaller <= closestDistSqr && audioDistToCaller < audioDistToListener)
+                            {
+                                closestPhone = phone;
+                            }
                         }
                     }
                 }
