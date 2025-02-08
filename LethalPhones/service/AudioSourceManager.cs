@@ -37,6 +37,7 @@ namespace Scoops.service
         private float origLowPassResQ;
         private float origHighPass;
         private float origHighPassResQ;
+        private AnimationCurve origSpatialCurve;
 
         public AudioSourceStorage(AudioSource audioSource)
         {
@@ -52,6 +53,9 @@ namespace Scoops.service
             this.origVolume = audioSource.volume;
             this.origSpatial = audioSource.spatialBlend;
             this.origPan = audioSource.panStereo;
+
+            // We need to account for audio sources using spatial curves
+            this.origSpatialCurve = audioSource.GetCustomCurve(AudioSourceCurveType.SpatialBlend);
 
             this.hadLowPass = audioSource.GetComponent<AudioLowPassFilter>() != null;
             this.hadHighPass = audioSource.GetComponent<AudioHighPassFilter>() != null;
@@ -269,6 +273,8 @@ namespace Scoops.service
             audioSource.panStereo = origPan;
             audioSource.spatialBlend = origSpatial;
             audioSource.volume = origVolume;
+
+            audioSource.SetCustomCurve(AudioSourceCurveType.SpatialBlend, origSpatialCurve);
 
             if (hadOcclude && audioSourceHolder.GetComponent<OccludeAudio>())
             {
