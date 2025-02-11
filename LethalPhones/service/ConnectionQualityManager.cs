@@ -239,7 +239,7 @@ namespace Scoops.service
                         }
                     }
                 }
-                else
+                else if (TimeOfDay.Instance != null)
                 {
                     if (badWeathers.Contains(TimeOfDay.Instance.currentLevelWeather))
                     {
