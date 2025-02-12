@@ -1,12 +1,19 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
 using LethalLib.Modules;
+using Scoops;
+using Scoops.customization;
 using Scoops.misc;
+using Scoops.service;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Unity.Properties;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Scoops.service
 {
@@ -88,12 +95,6 @@ namespace Scoops.service
         {
             if (AudioSourceManager.Instance != null && audioSource != null)
             {
-                if (audioSource.gameObject.name == "TerminalAudio" && GameNetworkManager.Instance.localPlayerController != null)
-                {
-                    Plugin.Log.LogInfo("outputAudioMixerGroup - " + audioSource.outputAudioMixerGroup.name);
-                    Plugin.Log.LogInfo("outputAudioMixer - " + audioSource.outputAudioMixerGroup.audioMixer.name);
-                }
-            
                 if (voice && player == null) return;
                 if (recordPos != null && playPos != null && listenerPos != null)
                 {
@@ -332,17 +333,36 @@ namespace Scoops.service
     {
         private AudioSourceStorage storage;
 
+        private AudioSource audioSource;
+
         private bool staticAudio = false;
 
         public void Start()
         {
-            if (AudioSourceManager.Instance == null)
+            if (audioSource == null)
+            {
+                audioSource = GetComponent<AudioSource>();
+            }
+
+            // if still null, give up
+            if (audioSource == null || AudioSourceManager.Instance == null)
             {
                 Destroy(this);
                 return;
             }
-            storage = AudioSourceManager.RegisterAudioSource(GetComponent<AudioSource>());
+
+            storage = AudioSourceManager.RegisterAudioSource(audioSource);
             storage.staticAudio = staticAudio;
+        }
+
+        public void SetAudioSource(AudioSource source)
+        {
+            audioSource = source;
+
+            if (storage != null)
+            {
+                storage.audioSource = source;
+            }
         }
 
         public void SetVoice(PlayerControllerB player)
@@ -438,11 +458,6 @@ namespace Scoops.service
             recordKeys[2].weightedMode = WeightedMode.None;
 
             recorderCurve = new AnimationCurve(recordKeys);
-        }
-
-        public void OnDestroy()
-        {
-            Instance = null;
         }
 
         public void Update()
@@ -594,14 +609,41 @@ namespace Scoops.service
             Instance.allPhones.Remove(phone);
         }
 
+        public static void CheckGameObject(GameObject @object)
+        {
+            if (@object.TryGetComponent(out AudioSourceHook __)) return; // already processed
+
+            AudioSource[] sources = @object.GetComponents<AudioSource>();
+            foreach (AudioSource source in sources)
+            {
+                AudioSourceHook hook = @object.AddComponent<AudioSourceHook>();
+                hook.SetAudioSource(source);
+            }
+        
+            foreach (Transform transform in @object.transform)
+            {
+                CheckGameObject(transform.gameObject);
+            }
+        }
+
+        public static void CheckAudioSourceSceneLoad(Scene scene, LoadSceneMode sceneMode)
+        {
+            foreach (AudioSource source in FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (source.gameObject.scene != scene || source.TryGetComponent<AudioSourceHook>(out AudioSourceHook __)) continue; // already processed
+
+                AudioSourceHook hook = source.gameObject.AddComponent<AudioSourceHook>();
+                hook.SetAudioSource(source);
+            }
+        }
+        
         [HarmonyPostfix, HarmonyPatch(typeof(GameObject)), HarmonyPatch(nameof(GameObject.AddComponent), new Type[] { typeof(Type) })]
         static void AddAudioSource(GameObject __instance, ref Component __result)
         {
             if (__result is not AudioSource) return;
-
-            Plugin.Log.LogInfo("Gameobject = " + __instance.name);
-
-            __instance.AddComponent<AudioSourceHook>();
+        
+            AudioSourceHook hook = __instance.AddComponent<AudioSourceHook>();
+            hook.SetAudioSource((AudioSource)__result);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.RefreshPlayerVoicePlaybackObjects))]
@@ -618,16 +660,39 @@ namespace Scoops.service
             }
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
         public static void SpawnAudioSourceManager()
         {
             if (Instance == null)
             {
                 GameObject audioSourceManagerObject = new GameObject("PhoneAudioSourceManager");
+                DontDestroyOnLoad(audioSourceManagerObject);
                 AudioSourceManager manager = audioSourceManagerObject.AddComponent<AudioSourceManager>();
                 manager.Init();
 
                 Instance = manager;
             }
         }
+    }
+}
+
+[HarmonyPatch]
+class GameObjectPatches
+{
+    // Thank you LoafOrcsSoundAPI for being a good reference of where to hook into this
+    // Is this the nuclear option? Maybe.
+    static IEnumerable<MethodBase> TargetMethods() => new[]
+    {
+        AccessTools.Method(typeof(UnityEngine.Object), "Instantiate", new Type[] { typeof(UnityEngine.Object) }),
+        AccessTools.Method(typeof(UnityEngine.Object), "Instantiate", new Type[] { typeof(UnityEngine.Object), typeof(Transform) }),
+        AccessTools.Method(typeof(UnityEngine.Object), "Instantiate", new Type[] { typeof(UnityEngine.Object), typeof(Transform), typeof(bool) }),
+        AccessTools.Method(typeof(UnityEngine.Object), "Instantiate", new Type[] { typeof(UnityEngine.Object), typeof(Vector3), typeof(Quaternion) }),
+        AccessTools.Method(typeof(UnityEngine.Object), "Instantiate", new Type[] { typeof(UnityEngine.Object), typeof(Vector3), typeof(Quaternion), typeof(Transform) })
+    };
+
+    static void Postfix(ref UnityEngine.Object __result)
+    {
+        if (__result is not GameObject) return;
+        AudioSourceManager.CheckGameObject(__result as GameObject);
     }
 }

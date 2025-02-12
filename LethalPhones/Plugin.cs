@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace Scoops;
 
@@ -35,7 +36,7 @@ public static class PluginInformation
 {
     public const string PLUGIN_GUID = "LethalPhones";
     public const string PLUGIN_NAME = "LethalPhones";
-    public const string PLUGIN_VERSION = "1.3.2";
+    public const string PLUGIN_VERSION = "1.3.3";
 }
 
 [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
@@ -99,11 +100,10 @@ public class Plugin : BaseUnityPlugin
 
         Log.LogInfo($"Applying patches...");
         Harmony harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), PluginInformation.PLUGIN_GUID);
-        //ApplyPluginPatch();
         Log.LogInfo($"Patches applied");
 
-        Log.LogInfo($"Creating Audio Source Manager.");
-        AudioSourceManager.SpawnAudioSourceManager();
+        Log.LogInfo($"Setting up AudioSource Hook");
+        SceneManager.sceneLoaded += AudioSourceManager.CheckAudioSourceSceneLoad;
 
         if (WeatherRegistryCompat.Enabled)
         {

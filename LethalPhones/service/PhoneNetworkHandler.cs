@@ -119,7 +119,7 @@ namespace Scoops.service
 
         public void SpawnClipboard()
         {
-            var phonebookClipboard = Object.Instantiate(NetworkObjectManager.clipboardPrefab, StartOfRound.Instance.elevatorTransform);
+            var phonebookClipboard = Instantiate(NetworkObjectManager.clipboardPrefab, StartOfRound.Instance.elevatorTransform);
             phonebookClipboard.GetComponent<NetworkObject>().Spawn();
             PhonebookClipboard = phonebookClipboard.GetComponent<Clipboard>();
         }
