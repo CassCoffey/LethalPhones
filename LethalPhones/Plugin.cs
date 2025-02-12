@@ -57,8 +57,6 @@ public class Plugin : BaseUnityPlugin
 
     public static string customizationSavePath;
 
-    private readonly Harmony _harmony = new(PluginInformation.PLUGIN_GUID);
-
     internal static LethalPhonesInputClass InputActionInstance;
 
     public Plugin()
@@ -100,8 +98,12 @@ public class Plugin : BaseUnityPlugin
         ReadCustomizationFromFile();
 
         Log.LogInfo($"Applying patches...");
-        ApplyPluginPatch();
+        Harmony harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), PluginInformation.PLUGIN_GUID);
+        //ApplyPluginPatch();
         Log.LogInfo($"Patches applied");
+
+        Log.LogInfo($"Creating Audio Source Manager.");
+        AudioSourceManager.SpawnAudioSourceManager();
 
         if (WeatherRegistryCompat.Enabled)
         {
@@ -121,27 +123,6 @@ public class Plugin : BaseUnityPlugin
         if (ReviveCompanyCompat.Enabled)
         {
             Log.LogInfo("Loaded ReviveCompany Compatability");
-        }
-    }
-
-    /// <summary>
-    /// Applies the patch to the game.
-    /// </summary>
-    private void ApplyPluginPatch()
-    {
-        _harmony.PatchAll(typeof(MainMenuPatch));
-        _harmony.PatchAll(typeof(PlayerPhonePatch));
-        _harmony.PatchAll(typeof(PlayerControllerB_SetPlayerSanityLevel_Patch));
-        _harmony.PatchAll(typeof(HoardingBugPhonePatch));
-        _harmony.PatchAll(typeof(MaskedPhonePatch));
-        _harmony.PatchAll(typeof(StartOfRoundPhonePatch));
-        _harmony.PatchAll(typeof(NetworkObjectManager));
-        _harmony.PatchAll(typeof(ShipTeleporterPhonePatch));
-        _harmony.PatchAll(typeof(AudioSourceManager));
-        _harmony.PatchAll(typeof(ConnectionQualityManager));
-        if (ReviveCompanyCompat.Enabled)
-        {
-            _harmony.PatchAll(typeof(ReviveCompanyCompat));
         }
     }
 

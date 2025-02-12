@@ -2,8 +2,10 @@
 using HarmonyLib;
 using LethalLib.Modules;
 using Scoops.misc;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Unity.Properties;
 using UnityEngine;
 
 namespace Scoops.service
@@ -86,6 +88,12 @@ namespace Scoops.service
         {
             if (AudioSourceManager.Instance != null && audioSource != null)
             {
+                if (audioSource.gameObject.name == "TerminalAudio" && GameNetworkManager.Instance.localPlayerController != null)
+                {
+                    Plugin.Log.LogInfo("outputAudioMixerGroup - " + audioSource.outputAudioMixerGroup.name);
+                    Plugin.Log.LogInfo("outputAudioMixer - " + audioSource.outputAudioMixerGroup.audioMixer.name);
+                }
+            
                 if (voice && player == null) return;
                 if (recordPos != null && playPos != null && listenerPos != null)
                 {
@@ -394,17 +402,6 @@ namespace Scoops.service
 
         public void Init()
         {
-            // Add a hook script to every audio source in the game
-            AudioSource[] loadedAudioSources = Resources.FindObjectsOfTypeAll<AudioSource>();
-
-            foreach (AudioSource source in loadedAudioSources)
-            {
-                if (source.GetComponent<AudioSourceHook>() == null)
-                {
-                    source.gameObject.AddComponent<AudioSourceHook>();
-                }
-            }
-
             // pre-square the config values
             listenDistSqr = Config.listeningDist.Value * Config.listeningDist.Value;
             recordDistSqr = Config.recordingDist.Value * Config.recordingDist.Value;
@@ -597,6 +594,16 @@ namespace Scoops.service
             Instance.allPhones.Remove(phone);
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(GameObject)), HarmonyPatch(nameof(GameObject.AddComponent), new Type[] { typeof(Type) })]
+        static void AddAudioSource(GameObject __instance, ref Component __result)
+        {
+            if (__result is not AudioSource) return;
+
+            Plugin.Log.LogInfo("Gameobject = " + __instance.name);
+
+            __instance.AddComponent<AudioSourceHook>();
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.RefreshPlayerVoicePlaybackObjects))]
         static void PlayerVoiceRefresh(ref PlayerVoiceIngameSettings __instance)
         {
@@ -611,8 +618,7 @@ namespace Scoops.service
             }
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
-        static void SpawnAudioSourceManager()
+        public static void SpawnAudioSourceManager()
         {
             if (Instance == null)
             {
