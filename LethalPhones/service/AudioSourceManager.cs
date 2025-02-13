@@ -1,17 +1,12 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
-using LethalLib.Modules;
 using Scoops;
-using Scoops.customization;
 using Scoops.misc;
 using Scoops.service;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using Unity.Properties;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -337,6 +332,9 @@ namespace Scoops.service
 
         private bool staticAudio = false;
 
+        private bool voice = false;
+        private PlayerControllerB player = null;
+
         public void Start()
         {
             if (audioSource == null)
@@ -353,6 +351,8 @@ namespace Scoops.service
 
             storage = AudioSourceManager.RegisterAudioSource(audioSource);
             storage.staticAudio = staticAudio;
+            storage.voice = voice;
+            storage.player = player;
         }
 
         public void SetAudioSource(AudioSource source)
@@ -365,10 +365,16 @@ namespace Scoops.service
             }
         }
 
-        public void SetVoice(PlayerControllerB player)
+        public void SetVoice(PlayerControllerB newPlayer)
         {
-            storage.voice = true;
-            storage.player = player;
+            voice = true;
+            player = newPlayer;
+
+            if (storage != null)
+            {
+                storage.voice = true;
+                storage.player = newPlayer;
+            }
         }
 
         public void SetStaticAudio()
@@ -597,8 +603,17 @@ namespace Scoops.service
             // Set static audio storage for new phone
             if (phone.GetStaticAudioSource() != null)
             {
-                AudioSourceHook hook = phone.GetStaticAudioSource().GetComponent<AudioSourceHook>();
-                hook.SetStaticAudio();
+                if (phone.GetStaticAudioSource().TryGetComponent(out AudioSourceHook hook))
+                {
+                    hook.SetStaticAudio();
+                }
+                else
+                {
+                    hook = phone.GetStaticAudioSource().gameObject.AddComponent<AudioSourceHook>();
+                    hook.SetAudioSource(phone.GetStaticAudioSource());
+                    hook.SetStaticAudio();
+                }
+                
             }
         }
 
@@ -613,8 +628,9 @@ namespace Scoops.service
         {
             if (@object.TryGetComponent(out AudioSourceHook __)) return; // already processed
 
-            AudioSource[] sources = @object.GetComponents<AudioSource>();
-            foreach (AudioSource source in sources)
+            @object.TryGetComponent<AudioSource>(out AudioSource source);
+
+            if (source != null)
             {
                 AudioSourceHook hook = @object.AddComponent<AudioSourceHook>();
                 hook.SetAudioSource(source);
@@ -636,15 +652,6 @@ namespace Scoops.service
                 hook.SetAudioSource(source);
             }
         }
-        
-        [HarmonyPostfix, HarmonyPatch(typeof(GameObject)), HarmonyPatch(nameof(GameObject.AddComponent), new Type[] { typeof(Type) })]
-        static void AddAudioSource(GameObject __instance, ref Component __result)
-        {
-            if (__result is not AudioSource) return;
-        
-            AudioSourceHook hook = __instance.AddComponent<AudioSourceHook>();
-            hook.SetAudioSource((AudioSource)__result);
-        }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.RefreshPlayerVoicePlaybackObjects))]
         static void PlayerVoiceRefresh(ref PlayerVoiceIngameSettings __instance)
@@ -654,8 +661,17 @@ namespace Scoops.service
             {
                 if (player.currentVoiceChatAudioSource != null)
                 {
-                    AudioSourceHook hook = player.currentVoiceChatAudioSource.GetComponent<AudioSourceHook>();
-                    hook.SetVoice(player);
+                    if (player.currentVoiceChatAudioSource.TryGetComponent<AudioSourceHook>(out AudioSourceHook hook))
+                    {
+                        hook.SetVoice(player);
+                    }
+                    else
+                    {
+                        hook = player.currentVoiceChatAudioSource.gameObject.AddComponent<AudioSourceHook>();
+                        hook.SetAudioSource(player.currentVoiceChatAudioSource);
+                        hook.SetVoice(player);
+                    }
+                    
                 }
             }
         }
@@ -694,5 +710,38 @@ class GameObjectPatches
     {
         if (__result is not GameObject) return;
         AudioSourceManager.CheckGameObject(__result as GameObject);
+    }
+}
+
+[HarmonyPatch]
+class NetworkObjectPatches
+{
+    // I'd like for this not to be necessary, but the above list doesn't catch client networkobject spawns
+    static IEnumerable<MethodBase> TargetMethods() => new[]
+    {
+        AccessTools.Method(typeof(NetworkSpawnManager), "CreateLocalNetworkObject", new Type[] { typeof(NetworkObject.SceneObject) })
+    };
+
+    static void Postfix(ref NetworkObject __result)
+    {
+        if (!__result.gameObject) return;
+        AudioSourceManager.CheckGameObject(__result.gameObject);
+    }
+}
+
+[HarmonyPatch]
+class ComponentPatches
+{
+    static IEnumerable<MethodBase> TargetMethods() => new[]
+    {
+        AccessTools.Method(typeof(GameObject), "AddComponent", new Type[] { typeof(Type) })
+    };
+
+    static void Postfix(ref Component __result)
+    {
+        if (__result is not AudioSource || __result.TryGetComponent(out AudioSourceHook __)) return;
+
+        AudioSourceHook hook = __result.gameObject.AddComponent<AudioSourceHook>();
+        hook.SetAudioSource((AudioSource)__result);
     }
 }
