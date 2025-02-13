@@ -94,8 +94,6 @@ public class Plugin : BaseUnityPlugin
         CustomizationManager.LoadCharmCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
         CustomizationManager.LoadRingtoneCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
 
-        LethalPhoneCustomization.Unload(false);
-
         Log.LogInfo("Loading user phone customization...");
         CustomizationManager.RecursiveCustomizationLoad(Paths.PluginPath);
 
