@@ -36,7 +36,7 @@ public static class PluginInformation
 {
     public const string PLUGIN_GUID = "LethalPhones";
     public const string PLUGIN_NAME = "LethalPhones";
-    public const string PLUGIN_VERSION = "1.3.3";
+    public const string PLUGIN_VERSION = "1.3.4";
 }
 
 [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
@@ -57,6 +57,8 @@ public class Plugin : BaseUnityPlugin
     public static AssetBundle LethalPhoneCustomization;
 
     public static string customizationSavePath;
+
+    private readonly Harmony _harmony = new(PluginInformation.PLUGIN_GUID);
 
     internal static LethalPhonesInputClass InputActionInstance;
 
@@ -99,7 +101,7 @@ public class Plugin : BaseUnityPlugin
         ReadCustomizationFromFile();
 
         Log.LogInfo($"Applying patches...");
-        Harmony harmony = Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), PluginInformation.PLUGIN_GUID);
+        ApplyPluginPatch();
         Log.LogInfo($"Patches applied");
 
         Log.LogInfo($"Setting up AudioSource Hook");
@@ -123,6 +125,30 @@ public class Plugin : BaseUnityPlugin
         if (ReviveCompanyCompat.Enabled)
         {
             Log.LogInfo("Loaded ReviveCompany Compatability");
+        }
+    }
+
+    /// <summary>
+    /// Applies the patch to the game.
+    /// </summary>
+    private void ApplyPluginPatch()
+    {
+        _harmony.PatchAll(typeof(MainMenuPatch));
+        _harmony.PatchAll(typeof(PlayerPhonePatch));
+        _harmony.PatchAll(typeof(PlayerControllerB_SetPlayerSanityLevel_Patch));
+        _harmony.PatchAll(typeof(HoardingBugPhonePatch));
+        _harmony.PatchAll(typeof(MaskedPhonePatch));
+        _harmony.PatchAll(typeof(StartOfRoundPhonePatch));
+        _harmony.PatchAll(typeof(NetworkObjectManager));
+        _harmony.PatchAll(typeof(ShipTeleporterPhonePatch));
+        _harmony.PatchAll(typeof(AudioSourceManager));
+        _harmony.PatchAll(typeof(GameObjectPatches));
+        _harmony.PatchAll(typeof(NetworkObjectPatches));
+        _harmony.PatchAll(typeof(ComponentPatches));
+        _harmony.PatchAll(typeof(ConnectionQualityManager));
+        if (ReviveCompanyCompat.Enabled)
+        {
+            _harmony.PatchAll(typeof(ReviveCompanyCompat));
         }
     }
 

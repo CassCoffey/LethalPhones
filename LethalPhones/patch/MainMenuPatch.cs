@@ -10,10 +10,9 @@ using UnityEngine.SceneManagement;
 
 namespace Scoops.patch
 {
-    internal class MainMenuPatch
+    public class MainMenuPatch
     {
         // Borrowing many methods for menu injection from LethalConfig.
-
         [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
         public static void Start(ref MenuManager __instance)
