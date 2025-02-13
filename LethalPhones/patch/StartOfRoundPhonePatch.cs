@@ -13,20 +13,6 @@ namespace Scoops.patch
     [HarmonyPatch(typeof(StartOfRound))]
     public class StartOfRoundPhonePatch
     {
-        [HarmonyPatch("ReviveDeadPlayers")]
-        [HarmonyPostfix]
-        private static void ResetPhones(ref StartOfRound __instance)
-        {
-            PlayerPhone[] allPhones = GameObject.FindObjectsByType<PlayerPhone>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-
-            for (int i = 0; i < allPhones.Length; i++)
-            {
-                allPhones[i].Revive();
-            }
-
-            PhoneNetworkHandler.Instance.localPhone.ToggleActive(false);
-        }
-
         [HarmonyPatch("OnPlayerDC")]
         [HarmonyPrefix]
         private static void CleanupPlayerPhone(ref StartOfRound __instance, int playerObjectNumber, ulong clientId)

@@ -202,6 +202,11 @@ public class PlayerPhonePatch
         {
             return;
         }
+        // No taking out the phone while using jetpack
+        if (localPlayer.jetpackControls)
+        {
+            return;
+        }
 
         PhoneManager.localPhone.ToggleActive(!PhoneManager.localPhone.toggled);
     }

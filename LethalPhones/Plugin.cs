@@ -36,7 +36,7 @@ public static class PluginInformation
 {
     public const string PLUGIN_GUID = "LethalPhones";
     public const string PLUGIN_NAME = "LethalPhones";
-    public const string PLUGIN_VERSION = "1.3.4";
+    public const string PLUGIN_VERSION = "1.3.5";
 }
 
 [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
@@ -45,7 +45,6 @@ public static class PluginInformation
 [BepInDependency("mrov.WeatherRegistry", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("WeatherTweaks", BepInDependency.DependencyFlags.SoftDependency)]
 [BepInDependency("qwbarch.Mirage", BepInDependency.DependencyFlags.SoftDependency)]
-[BepInDependency("OpJosMod.ReviveCompany", BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BaseUnityPlugin
 {
     public static Plugin Instance { get; set; }
@@ -95,6 +94,8 @@ public class Plugin : BaseUnityPlugin
         CustomizationManager.LoadCharmCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
         CustomizationManager.LoadRingtoneCustomizations(LethalPhoneCustomization, "lethalphones.customizations");
 
+        LethalPhoneCustomization.Unload(false);
+
         Log.LogInfo("Loading user phone customization...");
         CustomizationManager.RecursiveCustomizationLoad(Paths.PluginPath);
 
@@ -121,11 +122,6 @@ public class Plugin : BaseUnityPlugin
         {
             Log.LogInfo("Loaded Mirage Compatability");
         }
-
-        if (ReviveCompanyCompat.Enabled)
-        {
-            Log.LogInfo("Loaded ReviveCompany Compatability");
-        }
     }
 
     /// <summary>
@@ -146,10 +142,6 @@ public class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(NetworkObjectPatches));
         _harmony.PatchAll(typeof(ComponentPatches));
         _harmony.PatchAll(typeof(ConnectionQualityManager));
-        if (ReviveCompanyCompat.Enabled)
-        {
-            _harmony.PatchAll(typeof(ReviveCompanyCompat));
-        }
     }
 
     private static void NetcodePatcher()

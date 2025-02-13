@@ -425,7 +425,7 @@ namespace Scoops.misc
             thisAudio.Stop();
         }
 
-        protected IEnumerator PhoneRingCoroutine(int repeats)
+        protected virtual IEnumerator PhoneRingCoroutine(int repeats)
         {
             for (int i = 0; i < repeats; i++)
             {

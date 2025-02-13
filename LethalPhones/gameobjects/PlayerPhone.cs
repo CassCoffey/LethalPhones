@@ -50,6 +50,7 @@ namespace Scoops.misc
         private AudioSource rotaryAudio;
 
         private AudioSource nonCorpseRingAudio;
+        private AudioSource corpseRingAudio;
 
         private Transform currentDialingNumber;
 
@@ -581,14 +582,6 @@ namespace Scoops.misc
             }
         }
 
-        public void Revive()
-        {
-            SetPhoneLocalModelActive(false);
-            SetPhoneServerModelActive(false);
-
-            ringAudio = nonCorpseRingAudio;
-        }
-
         public void Death(int causeOfDeath)
         {
             this.enabled = true;
@@ -611,7 +604,7 @@ namespace Scoops.misc
             {
                 GameObject corpsePhoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
                 GameObject tempCorpseAudio = GameObject.Instantiate(corpsePhoneAudioPrefab, player.deadBody.transform);
-                ringAudio = tempCorpseAudio.GetComponent<AudioSource>();
+                corpseRingAudio = tempCorpseAudio.GetComponent<AudioSource>();
             }
         }
 
@@ -1012,7 +1005,15 @@ namespace Scoops.misc
 
         protected override void StartRinging()
         {
+            AudioSource currentRingAudio = ringAudio;
+
+            if (player.isPlayerDead && corpseRingAudio != null)
+            {
+                currentRingAudio = corpseRingAudio;
+            }
+
             ringAudio.Stop();
+            currentRingAudio.Stop();
             switch (currentVolume.Value)
             {
                 case phoneVolume.Ring:
@@ -1020,13 +1021,13 @@ namespace Scoops.misc
                     StartCoroutine(activePhoneRingCoroutine);
                     if ((Config.disableRingtones.Value && !IsOwner) || !CustomizationManager.ringtoneCustomizations.ContainsKey(phoneRingtoneId))
                     {
-                        ringAudio.clip = CustomizationManager.ringtoneCustomizations[CustomizationManager.DEFAULT_RINGTONE];
+                        currentRingAudio.clip = CustomizationManager.ringtoneCustomizations[CustomizationManager.DEFAULT_RINGTONE];
                     } 
                     else
                     {
-                        ringAudio.clip = CustomizationManager.ringtoneCustomizations[phoneRingtoneId];
+                        currentRingAudio.clip = CustomizationManager.ringtoneCustomizations[phoneRingtoneId];
                     }
-                    ringAudio.Play();
+                    currentRingAudio.Play();
                     break;
                 case phoneVolume.Vibrate:
                     thisAudio.Stop();
@@ -1038,6 +1039,29 @@ namespace Scoops.misc
                     break;
                 default:
                     break;
+            }
+        }
+
+        protected override void StopRinging()
+        {
+            if (activePhoneRingCoroutine != null) StopCoroutine(activePhoneRingCoroutine);
+            ringAudio.Stop();
+            if (corpseRingAudio != null) corpseRingAudio.Stop();
+        }
+
+        protected override IEnumerator PhoneRingCoroutine(int repeats)
+        {
+            AudioSource currentRingAudio = ringAudio;
+
+            if (player.isPlayerDead && corpseRingAudio != null)
+            {
+                currentRingAudio = corpseRingAudio;
+            }
+
+            for (int i = 0; i < repeats; i++)
+            {
+                RoundManager.Instance.PlayAudibleNoise(currentRingAudio.transform.position, 50f, 0.95f, i, PhoneInsideShip(), 0);
+                yield return new WaitForSeconds(4f);
             }
         }
 
