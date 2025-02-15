@@ -74,6 +74,9 @@ namespace Scoops.misc
                 ringtone = phone.phoneRingtoneId;
             }
 
+            recordPos = serverPhoneModel.transform;
+            playPos = serverPhoneModel.transform;
+
             if (IsOwner)
             {
                 StartCoroutine(CustomizationCoroutine());
@@ -153,7 +156,7 @@ namespace Scoops.misc
 
         public override void Update()
         {
-            if (IsOwner && !masked.isEnemyDead)
+            if (IsOwner && !enemy.isEnemyDead)
             {
                 if (outgoingCall.Value == -1 && activeCall.Value == -1)
                 {
@@ -161,6 +164,20 @@ namespace Scoops.misc
                     if (armsActive)
                     {
                         ToggleServerPhoneModelServerRpc(false);
+                    }
+                    if (incomingCall.Value == -1)
+                    {
+                        // we NEED to be on a call or we'll DIE
+                        if (!preppingCall)
+                        {
+                            activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneMaskedInterval.Value, Config.maxPhoneMaskedInterval.Value));
+                            StartCoroutine(activeCallDelayCoroutine);
+                        }
+                    }
+                    else if (!preppingPickup)
+                    {
+                        activePickupDelayCoroutine = PickupDelayCoroutine(2f);
+                        StartCoroutine(activePickupDelayCoroutine);
                     }
                 }
                 else if (activeCall.Value != -1 && !preppingHangup)
@@ -209,7 +226,13 @@ namespace Scoops.misc
             preppingPickup = true;
             yield return new WaitForSeconds(time);
 
-            if (!IsBusy() && !enemy.isEnemyDead)
+            // Hang up our active call first
+            if (activeCall.Value != -1)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+            }
+
+            if (incomingCall.Value != -1 && !enemy.isEnemyDead)
             {
                 activeCall.Value = incomingCall.Value;
                 activeCaller.Value = incomingCaller.Value;
@@ -234,6 +257,8 @@ namespace Scoops.misc
                 if (number != -1)
                 {
                     outgoingCall.Value = number;
+                    PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                    StartOutgoingRingingServerRpc();
                     activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall.Value);
                     StartCoroutine(activeCallTimeoutCoroutine);
                     ToggleServerPhoneModelServerRpc(true);
@@ -249,6 +274,7 @@ namespace Scoops.misc
             if (outgoingCall.Value == number)
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                StopOutgoingRingingServerRpc();
                 outgoingCall.Value = -1;
                 ToggleServerPhoneModelServerRpc(false);
             }

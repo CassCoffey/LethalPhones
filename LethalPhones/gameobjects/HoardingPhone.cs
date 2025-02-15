@@ -26,6 +26,9 @@ namespace Scoops.misc
             GameObject serverPhoneModelPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("BugServerPhoneModel");
             serverPhoneModel = GameObject.Instantiate(serverPhoneModelPrefab, bug.animationContainer.Find("Armature/Abdomen/Chest/Head/Bone.03/Bone.04/Bone.04_end"), false);
 
+            recordPos = serverPhoneModel.transform;
+            playPos = serverPhoneModel.transform;
+
             if (IsOwner)
             {
                 PhoneNetworkHandler.Instance.CreateNewPhone(NetworkObjectId, CustomizationManager.DEFAULT_SKIN, CustomizationManager.DEFAULT_CHARM, CustomizationManager.DEFAULT_RINGTONE);
@@ -41,6 +44,27 @@ namespace Scoops.misc
 
         public override void Update()
         {
+            if (IsOwner && !enemy.isEnemyDead)
+            {
+                if (outgoingCall.Value == -1 && activeCall.Value == -1)
+                {
+                    if (incomingCall.Value == -1)
+                    {
+                        // we NEED to be on a call or we'll DIE
+                        if (!preppingCall)
+                        {
+                            activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneBugInterval.Value, Config.maxPhoneBugInterval.Value));
+                            StartCoroutine(activeCallDelayCoroutine);
+                        }
+                    }
+                    else if (!preppingPickup)
+                    {
+                        activePickupDelayCoroutine = PickupDelayCoroutine(2f);
+                        StartCoroutine(activePickupDelayCoroutine);
+                    }
+                }
+            }
+
             if (activeCall != null && !(MirageCompat.Enabled && MirageCompat.IsEnemyMimicking(bug)))
             {
                 if (this.chitterInterval >= randomChitterTime)

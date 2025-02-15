@@ -12,6 +12,7 @@ using System.Numerics;
 using Unity.Netcode;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Scoops.misc
 {
@@ -113,9 +114,12 @@ namespace Scoops.misc
 
         public short GetRandomExistingPhoneNumber()
         {
-            if (PhoneNetworkHandler.allPhoneBehaviors.Count > 0)
+            if (PhoneNetworkHandler.allPhoneBehaviors.Count > 1)
             {
-                PhoneBehavior randPhone = PhoneNetworkHandler.allPhoneBehaviors[UnityEngine.Random.Range(0, PhoneNetworkHandler.allPhoneBehaviors.Count)];
+                List<PhoneBehavior> otherPhones = new List<PhoneBehavior>();
+                otherPhones.CopyFrom(PhoneNetworkHandler.allPhoneBehaviors);
+                otherPhones.Remove(this);
+                PhoneBehavior randPhone = otherPhones[UnityEngine.Random.Range(0, otherPhones.Count)];
 
                 return randPhone.phoneNumber;
             }

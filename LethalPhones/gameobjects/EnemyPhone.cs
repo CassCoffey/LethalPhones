@@ -32,7 +32,12 @@ namespace Scoops.gameobjects
             base.Start();
 
             this.enemy = transform.parent.GetComponent<EnemyAI>();
-            this.ringAudio = this.GetComponent<AudioSource>();
+
+            GameObject phoneAudioPrefab = (GameObject)Plugin.LethalPhoneAssets.LoadAsset("PhoneAudioExternal");
+            GameObject phoneAudio = GameObject.Instantiate(phoneAudioPrefab, transform);
+
+            this.ringAudio = phoneAudio.GetComponent<AudioSource>();
+
             ringAudio.volume = Config.ringtoneVolume.Value;
         }
 
@@ -66,32 +71,6 @@ namespace Scoops.gameobjects
             }
         }
 
-        public override void Update()
-        {
-            if (IsOwner && !enemy.isEnemyDead)
-            {
-                if (outgoingCall.Value == -1 && activeCall.Value == -1)
-                {
-                    if (incomingCall.Value == -1)
-                    {
-                        // we NEED to be on a call or we'll DIE
-                        if (!preppingCall)
-                        {
-                            activeCallDelayCoroutine = CallDelayCoroutine(UnityEngine.Random.Range(Config.minPhoneBugInterval.Value, Config.maxPhoneBugInterval.Value));
-                            StartCoroutine(activeCallDelayCoroutine);
-                        }
-                    }
-                    else if (!preppingPickup)
-                    {
-                        activePickupDelayCoroutine = PickupDelayCoroutine(2f);
-                        StartCoroutine(activePickupDelayCoroutine);
-                    }
-                }
-            }
-
-            base.Update();
-        }
-
         public void LateUpdate()
         {
             if (MirageCompat.Enabled && activeCall.Value != -1)
@@ -102,7 +81,7 @@ namespace Scoops.gameobjects
 
         public override bool PhoneInsideFactory()
         {
-            return true;
+            return false;
         }
 
         protected virtual IEnumerator PickupDelayCoroutine(float time)
@@ -110,7 +89,13 @@ namespace Scoops.gameobjects
             preppingPickup = true;
             yield return new WaitForSeconds(time);
 
-            if (!IsBusy() && !enemy.isEnemyDead)
+            // Hang up our active call first
+            if (activeCall.Value != -1)
+            {
+                PhoneNetworkHandler.Instance.HangUpCallServerRpc(activeCall.Value, NetworkObjectId);
+            }
+
+            if (incomingCall.Value != -1 && !enemy.isEnemyDead)
             {
                 activeCall.Value = incomingCall.Value;
                 activeCaller.Value = incomingCaller.Value;
@@ -136,6 +121,7 @@ namespace Scoops.gameobjects
                 {
                     outgoingCall.Value = number;
                     PhoneNetworkHandler.Instance.MakeOutgoingCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                    StartOutgoingRingingServerRpc();
                     activeCallTimeoutCoroutine = CallTimeoutCoroutine(outgoingCall.Value);
                     StartCoroutine(activeCallTimeoutCoroutine);
                 }
@@ -150,6 +136,7 @@ namespace Scoops.gameobjects
             if (outgoingCall.Value == number)
             {
                 PhoneNetworkHandler.Instance.HangUpCallServerRpc(outgoingCall.Value, NetworkObjectId);
+                StopOutgoingRingingServerRpc();
                 outgoingCall.Value = -1;
             }
         }
