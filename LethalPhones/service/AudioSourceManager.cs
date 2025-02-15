@@ -724,7 +724,7 @@ class NetworkObjectPatches
 
     static void Postfix(ref NetworkObject __result)
     {
-        if (!__result.gameObject) return;
+        if (__result == null || !__result.gameObject) return;
         AudioSourceManager.CheckGameObject(__result.gameObject);
     }
 }
