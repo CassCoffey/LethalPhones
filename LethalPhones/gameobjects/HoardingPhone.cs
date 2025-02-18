@@ -65,7 +65,7 @@ namespace Scoops.misc
                 }
             }
 
-            if (activeCall != null && !(MirageCompat.Enabled && MirageCompat.IsEnemyMimicking(bug)))
+            if (enemy && activeCall != null && !(MirageCompat.Enabled && MirageCompat.IsEnemyMimicking(bug)))
             {
                 if (this.chitterInterval >= randomChitterTime)
                 {

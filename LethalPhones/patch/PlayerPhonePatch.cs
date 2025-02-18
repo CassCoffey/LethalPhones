@@ -198,7 +198,7 @@ public class PlayerPhonePatch
         {
             return;
         }
-        if (localPlayer.quickMenuManager.isMenuOpen || localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem)
+        if (localPlayer.quickMenuManager.isMenuOpen || localPlayer.isGrabbingObjectAnimation || localPlayer.isTypingChat || localPlayer.inTerminalMenu || localPlayer.throwingObject || localPlayer.IsInspectingItem || localPlayer.isPlayerDead)
         {
             return;
         }
