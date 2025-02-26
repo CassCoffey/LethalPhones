@@ -9,7 +9,7 @@
         <LangVersion>latest</LangVersion>
 
         <!-- Number of instances of the game to start to test the plugin -->
-        <NumberOfClients>1</NumberOfClients>
+        <NumberOfClients>2</NumberOfClients>
         <!-- Delay between each start of the game in seconds -->
         <DelayBetweenClientsInSeconds>5</DelayBetweenClientsInSeconds>
         <!-- To apply the correct delay between each instance, we need to add 1 to the delay because the first "echo" sent by the ping command is instant -->
@@ -108,7 +108,7 @@
     <!-- Move the plugin to the game's plugin directory and start the game to test it -->
     <Target Condition="'$(CI)' != 'true' And $(StartGame)" Name="StartGame" AfterTargets="PostBuildEvent">
         <PropertyGroup>
-          <PluginVersion>1.3.8</PluginVersion>
+          <PluginVersion>1.3.9</PluginVersion>
         </PropertyGroup>
         <!-- Create a temporary copy of the plugin in the target directory -->
         <!-- This is a workaround because if we copy it directly to the game's plugin directory, an error is thrown because the game is using the plugin -->
@@ -125,6 +125,6 @@
         <!-- Start new instances of the game as many times as specified in NumberOfClients -->
         <!-- The ping command is used to apply a delay between each instance, otherwise only one BepInEx debug terminal would be opened -->
         <!-- Use ping command is a workaround because Windows doesn't have a sleep command -->
-        <Exec Command="for /L %%i in (1,1,$(NumberOfClients)) do (start &quot;&quot; &quot;$(GameExePath)&quot; -deepprofiling -profiler-maxusedmemory 2404217728 &amp; if %%i lss $(NumberOfClients) (ping 127.0.0.1 -n $(PingDelay) &gt; nul))" />
+        <Exec Command="for /L %%i in (1,1,$(NumberOfClients)) do (start &quot;&quot; &quot;$(GameExePath)&quot; -profiler-maxusedmemory 2404217728 &amp; if %%i lss $(NumberOfClients) (ping 127.0.0.1 -n $(PingDelay) &gt; nul))" />
     </Target>
 </Project>

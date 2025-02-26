@@ -1,6 +1,7 @@
 ﻿using Dissonance;
 using GameNetcodeStuff;
 using HarmonyLib;
+using Scoops.gameobjects;
 using Scoops.misc;
 using Scoops.service;
 using System.Collections.Generic;
@@ -69,6 +70,28 @@ namespace Scoops.patch
                 return;
             }
             PhoneNetworkHandler.CheckPhoneUnlock();
+        }
+
+        [HarmonyPatch(typeof(HUDManager))]
+        [HarmonyPatch("AddPlayerChatMessageClientRpc")]
+        [HarmonyPostfix]
+        private static void AddPlayerChatMessageClientRpc(ref HUDManager __instance, string chatMessage, int playerId)
+        {
+            PlayerControllerB otherPlayer = __instance.playersManager.allPlayerScripts[playerId];
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+
+            if (otherPlayer != localPlayer && (localPlayer.transform.position - otherPlayer.transform.position).sqrMagnitude > (25f * 25f))
+            {
+                PhoneBehavior otherPhone = otherPlayer.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
+                PhoneBehavior localPhone = PhoneNetworkHandler.Instance.localPhone;
+                SwitchboardPhone switchboard = PhoneNetworkHandler.Instance.switchboard;
+                if (localPhone.GetCallerPhone() == otherPhone || 
+                    (switchboard != null && ((switchboard.switchboardOperator == otherPlayer && localPhone.GetCallerPhone() == switchboard) ||
+                    switchboard.switchboardOperator == localPlayer && otherPhone.GetCallerPhone() == switchboard)))
+                {
+                    __instance.AddChatMessage(chatMessage, otherPlayer.playerUsername);
+                }
+            }
         }
     }
 }

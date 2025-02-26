@@ -531,6 +531,8 @@ namespace Scoops.service
 
         private PhoneBehavior ClosestActivePhone(AudioSourceStorage storage)
         {
+            if (storage == null) return null;
+
             PhoneBehavior closestPhone = null;
 
             // Max distance is set in the config, if the audio source has a shorter max dist, use that
@@ -544,7 +546,7 @@ namespace Scoops.service
             // Only continue if there are actually calls happening within range
             foreach (PhoneBehavior phone in allPhones)
             {
-                if (phone.IsActive())
+                if (phone != null && phone.IsActive())
                 {
                     PhoneBehavior callerPhone = phone.GetCallerPhone();
 
@@ -613,7 +615,6 @@ namespace Scoops.service
                     hook.SetAudioSource(phone.GetStaticAudioSource());
                     hook.SetStaticAudio();
                 }
-                
             }
         }
 

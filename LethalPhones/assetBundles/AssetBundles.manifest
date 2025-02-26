@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 2982140246
+CRC: 2343209079
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -7,4 +7,7 @@ AssetBundleManifest:
       Dependencies: {}
     Info_1:
       Name: lethalphonecustomizations
+      Dependencies: {}
+    Info_2:
+      Name: spongeassets
       Dependencies: {}
