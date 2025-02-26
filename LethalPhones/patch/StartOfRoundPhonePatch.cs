@@ -84,7 +84,9 @@ namespace Scoops.patch
             {
                 PhoneBehavior otherPhone = otherPlayer.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
                 PhoneBehavior localPhone = PhoneNetworkHandler.Instance.localPhone;
-                SwitchboardPhone switchboard = PhoneNetworkHandler.Instance.switchboard;
+                SwitchboardPhone switchboard = otherPhone.GetCallerPhone() as SwitchboardPhone;
+                if (switchboard == null) switchboard = localPhone.GetCallerPhone() as SwitchboardPhone;
+
                 if (localPhone.GetCallerPhone() == otherPhone || 
                     (switchboard != null && ((switchboard.switchboardOperator == otherPlayer && localPhone.GetCallerPhone() == switchboard) ||
                     switchboard.switchboardOperator == localPlayer && otherPhone.GetCallerPhone() == switchboard)))

@@ -104,6 +104,8 @@ namespace Scoops.misc
 
         public PhoneBehavior GetCallerPhone()
         {
+            if (activeCall.Value == -1) return null;
+
             NetworkObject otherPhone = GetNetworkObject(activeCaller.Value);
             if (otherPhone.gameObject != null)
             {
