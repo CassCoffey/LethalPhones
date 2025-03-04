@@ -23,7 +23,7 @@ public class HoardingBugPhonePatch
 
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
         {
-            if (phoneBugs < Config.maxPhoneBugs.Value)
+            if (!PhoneNetworkHandler.Locked.Value && phoneBugs < Config.maxPhoneBugs.Value)
             {
                 if (Random.Range(0f, 1f) <= Config.chancePhoneBug.Value)
                 {

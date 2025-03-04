@@ -26,7 +26,7 @@ public class MaskedPhonePatch
         {
             if (MirageCompat.Enabled)
             {
-                if (phoneMasks < Config.maxPhoneMasked.Value)
+                if (!PhoneNetworkHandler.Locked.Value && phoneMasks < Config.maxPhoneMasked.Value)
                 {
                     if (Random.Range(0f, 1f) <= Config.chancePhoneMask.Value)
                     {

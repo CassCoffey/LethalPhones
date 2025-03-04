@@ -531,7 +531,7 @@ namespace Scoops.service
 
         private PhoneBehavior ClosestActivePhone(AudioSourceStorage storage)
         {
-            if (storage == null) return null;
+            if (storage == null || storage.audioSource == null) return null;
 
             PhoneBehavior closestPhone = null;
 
