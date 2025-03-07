@@ -1182,7 +1182,7 @@ namespace Scoops.misc
                 PlayerPhone phone = playerController.transform.Find("PhonePrefab(Clone)").GetComponent<PlayerPhone>();
                 if (phone)
                 {
-                    if (phone.activeCall != null)
+                    if (phone.activeCall.Value != -1)
                     {
                         float totalInterference = phone.GetTotalInterference();
                         playerController.insanitySpeedMultiplier = -3f * (1f - totalInterference);
