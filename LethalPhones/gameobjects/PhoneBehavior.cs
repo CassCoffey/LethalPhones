@@ -107,7 +107,7 @@ namespace Scoops.misc
             if (activeCall.Value == -1) return null;
 
             NetworkObject otherPhone = GetNetworkObject(activeCaller.Value);
-            if (otherPhone.gameObject != null)
+            if (!ReferenceEquals(otherPhone.gameObject, null))
             {
                 return otherPhone.GetComponent<PhoneBehavior>();
             }

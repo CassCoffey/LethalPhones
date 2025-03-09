@@ -17,7 +17,7 @@ namespace Scoops.compatability
         {
             MimicVoice mimic = enemy.gameObject.GetComponent<MimicVoice>();
 
-            if (mimic.mimicPlayer.MimickingPlayer == null || mimic.enemyAI == null)
+            if (mimic == null || mimic.mimicPlayer == null || mimic.mimicPlayer.MimickingPlayer == null || mimic.enemyAI == null)
             {
                 return;
             }
@@ -47,7 +47,7 @@ namespace Scoops.compatability
         {
             MimicVoice mimic = enemy.gameObject.GetComponent<MimicVoice>();
 
-            return !(mimic.mimicPlayer.MimickingPlayer == null || mimic.enemyAI == null);
+            return !(mimic == null || mimic.mimicPlayer == null || mimic.mimicPlayer.MimickingPlayer == null || mimic.enemyAI == null);
         }
     }
 }

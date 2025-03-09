@@ -5,7 +5,9 @@ using Scoops.misc;
 using Scoops.service;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,6 +26,8 @@ namespace Scoops.service
         public Transform playPos;
         public Transform listenerPos;
         public Transform sourcePos;
+
+        public float maxDistanceSqr;
 
         public float recordInterference;
 
@@ -46,6 +50,8 @@ namespace Scoops.service
         public AudioSourceStorage(AudioSource audioSource)
         {
             this.audioSource = audioSource;
+
+            this.maxDistanceSqr = audioSource.maxDistance * audioSource.maxDistance;
 
             this.recordPos = null;
             this.playPos = null;
@@ -337,7 +343,7 @@ namespace Scoops.service
 
         public void Start()
         {
-            if (audioSource == null)
+            if (ReferenceEquals(audioSource, null))
             {
                 audioSource = GetComponent<AudioSource>();
             }
@@ -389,11 +395,6 @@ namespace Scoops.service
 
         public void Update()
         {
-            if (AudioSourceManager.Instance == null)
-            {
-                Destroy(this);
-                return;
-            }
             storage.Update();
         }
 
@@ -404,6 +405,18 @@ namespace Scoops.service
                 storage.Reset();
                 AudioSourceManager.DeregisterAudioSource(storage);
             }
+        }
+    }
+
+    public class PhonePair
+    {
+        public PhoneBehavior primaryPhone;
+        public PhoneBehavior callerPhone;
+
+        public PhonePair(PhoneBehavior primary, PhoneBehavior caller)
+        {
+            primaryPhone = primary;
+            callerPhone = caller;
         }
     }
 
@@ -418,6 +431,7 @@ namespace Scoops.service
         private List<AudioSourceStorage> trackedAudioSources = new List<AudioSourceStorage>();
 
         private List<PhoneBehavior> allPhones = new List<PhoneBehavior>();
+        private List<PhonePair> activePhonePairs = new List<PhonePair>();
 
         private PlayerControllerB localPlayer;
         private Transform listenerPos;
@@ -484,6 +498,8 @@ namespace Scoops.service
                     listenerPos = localPlayer.playerGlobalHead;
                 }
 
+                CheckActivePhones();
+
                 // Update the audio redirect info for all audio source storages
                 UpdateAudioSourceStorages();
             }
@@ -499,27 +515,26 @@ namespace Scoops.service
 
                 storage.recordInterference = 0f;
 
-                PhoneBehavior phone = ClosestActivePhone(storage);
-                if (phone != null)
-                {
-                    PhoneBehavior callerPhone = phone.GetCallerPhone();
+                PhonePair pair = ClosestActivePhone(storage);
 
+                if (pair != null)
+                {
                     float realVol = storage.GetAudioVolumeAtPos(listenerPos.position);
                     
                     if (realVol < 0.1f)
                     {
-                        storage.recordPos = callerPhone.recordPos;
-                        storage.playPos = phone.playPos;
+                        storage.recordPos = pair.callerPhone.recordPos;
+                        storage.playPos = pair.primaryPhone.playPos;
                         storage.listenerPos = listenerPos;
 
                         // If we're spectating, put our ears inside the phone for clarity
                         if (localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null)
                         {
-                            storage.listenerPos = phone.playPos;
+                            storage.listenerPos = pair.primaryPhone.playPos;
                         }
 
-                        float phoneInterference = phone.GetTotalInterference();
-                        float callerPhoneInterference = callerPhone.GetTotalInterference();
+                        float phoneInterference = pair.primaryPhone.GetTotalInterference();
+                        float callerPhoneInterference = pair.callerPhone.GetTotalInterference();
 
                         float worseInterference = phoneInterference < callerPhoneInterference ? callerPhoneInterference : phoneInterference;
 
@@ -529,28 +544,17 @@ namespace Scoops.service
             }
         }
 
-        private PhoneBehavior ClosestActivePhone(AudioSourceStorage storage)
+        private void CheckActivePhones()
         {
-            if (storage == null || storage.audioSource == null) return null;
+            activePhonePairs.Clear();
 
-            PhoneBehavior closestPhone = null;
-
-            // Max distance is set in the config, if the audio source has a shorter max dist, use that
-            float closestDistSqr = recordDistSqr;
-            float maxDistSqr = storage.audioSource.maxDistance * storage.audioSource.maxDistance;
-            if (maxDistSqr < closestDistSqr)
-            {
-                closestDistSqr = maxDistSqr;
-            }
-
-            // Only continue if there are actually calls happening within range
             foreach (PhoneBehavior phone in allPhones)
             {
-                if (phone != null && phone.IsActive())
+                if (!ReferenceEquals(phone, null) && phone.IsActive())
                 {
                     PhoneBehavior callerPhone = phone.GetCallerPhone();
 
-                    if (callerPhone != null)
+                    if (!ReferenceEquals(callerPhone, null))
                     {
                         float listenerDistToPhone = (phone.playPos.position - listenerPos.position).sqrMagnitude;
                         float listenerDistToCaller = (callerPhone.playPos.position - listenerPos.position).sqrMagnitude;
@@ -558,21 +562,41 @@ namespace Scoops.service
                         // Need the player to be in range of a phone, but not also in range of the phone it's calling
                         if (listenerDistToPhone <= listenDistSqr && listenerDistToCaller > listenDistSqr)
                         {
-                            float audioDistToCaller = (callerPhone.recordPos.position - storage.sourcePos.position).sqrMagnitude;
-                            float audioDistToListener = (listenerPos.position - storage.sourcePos.position).sqrMagnitude;
-
-                            // Need to be closer than the existing closest phone and the max recording dist
-                            // Also need to be closer to the phone than the local player
-                            if (audioDistToCaller <= closestDistSqr && audioDistToCaller < audioDistToListener)
-                            {
-                                closestPhone = phone;
-                            }
+                            activePhonePairs.Add(new PhonePair(phone, callerPhone));
                         }
                     }
                 }
             }
+        }
 
-            return closestPhone;
+        private PhonePair ClosestActivePhone(AudioSourceStorage storage)
+        {
+            if (storage == null) return null;
+
+            PhonePair closestPhonePair = null;
+
+            // Only continue if there are actually calls happening within range
+            foreach (PhonePair pair in activePhonePairs)
+            {
+                float audioDistToCaller = (pair.callerPhone.recordPos.position - storage.sourcePos.position).sqrMagnitude;
+                float audioDistToListener = (listenerPos.position - storage.sourcePos.position).sqrMagnitude;
+
+                // Max distance is set in the config, if the audio source has a shorter max dist, use that
+                float closestDistSqr = recordDistSqr;
+                if (storage.maxDistanceSqr < closestDistSqr)
+                {
+                    closestDistSqr = storage.maxDistanceSqr;
+                }
+
+                // Need to be closer than the existing closest phone and the max recording dist
+                // Also need to be closer to the phone than the local player
+                if (audioDistToCaller <= closestDistSqr && audioDistToCaller < audioDistToListener)
+                {
+                    closestPhonePair = pair;
+                }
+            }
+
+            return closestPhonePair;
         }
 
         public static AudioSourceStorage RegisterAudioSource(AudioSource source)
