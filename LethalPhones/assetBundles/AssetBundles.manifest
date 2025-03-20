@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 4214961439
+CRC: 3149198831
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -10,4 +10,7 @@ AssetBundleManifest:
       Dependencies: {}
     Info_2:
       Name: spongeassets
+      Dependencies: {}
+    Info_3:
+      Name: basegameassets
       Dependencies: {}

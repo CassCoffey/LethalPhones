@@ -347,7 +347,7 @@ namespace Scoops.gameobjects
 
         private void UpdateInfoList()
         {
-            if (allPhones.Count == 0)
+            if (allPhones == null || allPhones.Count == 0)
             {
                 // A catch for if a client's switchboard ends up null somehow.
                 if (!sentInfoRequest)
@@ -357,6 +357,8 @@ namespace Scoops.gameobjects
                 }
                 return;
             }
+
+            if (phoneInfoArray == null) return;
 
             // The selected info box
             for (int i = 0; i < 5; i++)
@@ -374,7 +376,7 @@ namespace Scoops.gameobjects
                     }
                 }
 
-                if (allPhones[index] != null)
+                if (allPhones[index] != null && phoneInfoArray[0] != null)
                 {
                     phoneInfoArray[i].Find("NameText").GetComponent<TextMeshProUGUI>().text = allPhones[index].GetPhoneName();
                     phoneInfoArray[i].Find("NumberText").GetComponent<TextMeshProUGUI>().text = allPhones[index].phoneNumber.ToString("D4");
