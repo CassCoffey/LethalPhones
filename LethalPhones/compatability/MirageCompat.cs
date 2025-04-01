@@ -1,8 +1,6 @@
 ﻿using GameNetcodeStuff;
 using System.Runtime.CompilerServices;
-using UnityEngine;
-using WeatherRegistry;
-using static Mirage.Unity.MirageVoice;
+using static Mirage.Unity.MimicVoice;
 
 namespace Scoops.compatability
 {
