@@ -36,7 +36,7 @@ public static class PluginInformation
 {
     public const string PLUGIN_GUID = "LethalPhones";
     public const string PLUGIN_NAME = "LethalPhones";
-    public const string PLUGIN_VERSION = "1.3.16";
+    public const string PLUGIN_VERSION = "1.3.17";
 }
 
 [BepInPlugin(PluginInformation.PLUGIN_GUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]

@@ -101,6 +101,7 @@ public class PlayerPhonePatch
         if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
         {
             GameObject playerPhone = GameObject.Instantiate(NetworkObjectManager.phonePrefab, Vector3.zero, Quaternion.identity);
+            playerPhone.GetComponent<NetworkObject>().DontDestroyWithOwner = true;
             playerPhone.GetComponent<NetworkObject>().Spawn();
             playerPhone.GetComponent<NetworkObject>().TrySetParent(__instance.transform, false);
         }
