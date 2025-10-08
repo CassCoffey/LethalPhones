@@ -95,7 +95,7 @@
     <!-- Syntax to use the tool installed globally -->
     <!-- Allows to patch elements like networked behaviours, RPCs, etc. -->
     <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
-        <Exec Command="netcode-patch &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
+        <Exec Command="netcode-patch -uv 2022.3.62 -nv 1.12.0 -tv 1.0.0 &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
     </Target>
 
     <!-- Avoid that the game's assemblies are copied to the plugin's target directory -->
@@ -108,7 +108,7 @@
     <!-- Move the plugin to the game's plugin directory and start the game to test it -->
     <Target Condition="'$(CI)' != 'true' And $(StartGame)" Name="StartGame" AfterTargets="PostBuildEvent">
         <PropertyGroup>
-          <PluginVersion>1.3.17</PluginVersion>
+          <PluginVersion>1.3.18</PluginVersion>
         </PropertyGroup>
         <!-- Create a temporary copy of the plugin in the target directory -->
         <!-- This is a workaround because if we copy it directly to the game's plugin directory, an error is thrown because the game is using the plugin -->
